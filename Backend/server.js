@@ -63,6 +63,11 @@ app.use(express.static(path.join(process.cwd(), "public")));
 
 /* ===================== START ===================== */
 const PORT = process.env.PORT || 8000;
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(statusCode).json({ success: false, message });
+});
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌍 Allowed Origins:`, allowedOrigins); // Log để kiểm tra xem đã đọc đúng chưa

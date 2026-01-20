@@ -18,9 +18,13 @@ import { getAdminStats } from "../controllers/admin.stats.controller.js";
 const router = express.Router();
 
 /* ========= HOTEL ========= */
-router.post("/hotels", protect, adminOnly, async (req, res) => {
-  const hotel = await Hotel.create(req.body);
-  res.json(hotel);
+router.post("/hotels", protect, adminOnly, async (req, res, next) => {
+  try {
+    const hotel = await Hotel.create(req.body);
+    res.json(hotel);
+  } catch (err) {
+    next(err); // Đẩy lỗi sang Middleware xử lý lỗi mà tôi đã nhắc ở file server.js
+  }
 });
 
 router.put(
@@ -50,7 +54,7 @@ router.post("/rooms/:hotelId", protect, adminOnly, async (req, res) => {
   });
   res.json(room);
 });
-router.get("/admin/room-map", protect, adminOnly, getAdminRoomMap);
+router.get("/room-map", protect, adminOnly, getAdminRoomMap);
 /* ========= BOOKINGS ========= */
 router.get("/bookings", protect, adminOnly, getAdminBookings);
 

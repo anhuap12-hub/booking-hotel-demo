@@ -211,11 +211,14 @@ export const getAdminRoomMap = async (req, res) => {
       .sort({ name: 1 }); // Sắp xếp theo tên/số phòng cho dễ nhìn
 
     // 2. Lấy danh sách booking đang hiệu lực (Checked-in hoặc sắp Check-in hôm nay)
-    const activeBookings = await Booking.find({
-      status: { $in: ["pending", "confirmed"] }, // Không lấy đơn đã hủy
-      checkIn: { $lte: now },
-      checkOut: { $gte: now },
-    }).populate("user", "name email");
+   const bookingQuery = {
+  status: { $in: ["pending", "confirmed"] },
+  checkIn: { $lte: now },
+  checkOut: { $gte: now },
+};
+if (hotelId) bookingQuery.hotel = hotelId; // Chỉ lấy booking của hotel đang xem
+
+const activeBookings = await Booking.find(bookingQuery).populate("user", "name email");
 
     // 3. Tổ chức lại dữ liệu cho Map
     const roomMap = rooms.map((room) => {
