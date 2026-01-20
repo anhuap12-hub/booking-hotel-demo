@@ -9,12 +9,14 @@ import {
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import HotelIcon from "@mui/icons-material/Hotel";
+import MapIcon from "@mui/icons-material/Map";
 import BookOnlineIcon from "@mui/icons-material/BookOnline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const menuItems = [
   { label: "Dashboard", path: "/admin", icon: <DashboardIcon /> },
   { label: "Hotels", path: "/admin/hotels", icon: <HotelIcon /> },
+  { label: "Room Map", path: "/admin/room-map", icon: <MapIcon /> },
   { label: "Bookings", path: "/admin/bookings", icon: <BookOnlineIcon /> },
 ];
 
