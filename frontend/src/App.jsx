@@ -42,7 +42,7 @@ const AdminRooms = lazy(() => import("./pages/admin/AdminRooms"));
 const AdminAddRoom = lazy(() => import("./pages/admin/AdminAddRoom"));
 const AdminEditRoom = lazy(() => import("./pages/admin/AdminEditRoom"));
 const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
-
+const AdminRoomMap = lazy(() => import("./pages/admin/AdminRoomMap"));
 // Chat
 const ChatSupport = lazy(() =>
   import("./components/ChatSupport/ChatSupport")
@@ -97,6 +97,7 @@ export default function App() {
                     </AdminRoute>
                   }
                 >
+                  <Route path="room-map" element={<AdminRoomMap />} />
                   <Route index element={<AdminDashboard />} />
                   <Route path="hotels" element={<AdminHotels />} />
                   <Route path="hotels/new" element={<AdminAddHotel />} />

@@ -199,3 +199,58 @@ export const getRoomBookedDates = async (req, res) => {
   }
 };
 
+export const getAdminRoomMap = async (req, res) => {
+  try {
+    const { hotelId } = req.query;
+    const now = new Date();
+
+    // 1. Lấy danh sách phòng (Lọc theo hotelId nếu có)
+    const query = hotelId ? { hotel: hotelId } : {};
+    const rooms = await Room.find(query)
+      .populate("hotel", "name")
+      .sort({ name: 1 }); // Sắp xếp theo tên/số phòng cho dễ nhìn
+
+    // 2. Lấy danh sách booking đang hiệu lực (Checked-in hoặc sắp Check-in hôm nay)
+    const activeBookings = await Booking.find({
+      status: { $in: ["pending", "confirmed"] }, // Không lấy đơn đã hủy
+      checkIn: { $lte: now },
+      checkOut: { $gte: now },
+    }).populate("user", "name email");
+
+    // 3. Tổ chức lại dữ liệu cho Map
+    const roomMap = rooms.map((room) => {
+      const currentBooking = activeBookings.find(
+        (b) => b.room.toString() === room._id.toString()
+      );
+
+      let displayStatus = "available"; // Mặc định
+      
+      // Kiểm tra trạng thái vận hành từ Schema của bạn
+      if (room.status === "maintenance") displayStatus = "maintenance";
+      else if (room.status === "inactive") displayStatus = "inactive";
+      // Nếu phòng active, mới kiểm tra đến booking
+      else if (currentBooking) {
+        displayStatus = currentBooking.paymentStatus === "PAID" ? "occupied" : "booked";
+      }
+
+      return {
+        _id: room._id,
+        roomName: room.name,
+        roomType: room.type,
+        hotelName: room.hotel?.name,
+        price: room.price,
+        displayStatus,
+        bookingDetails: currentBooking ? {
+          bookingId: currentBooking._id,
+          customerName: currentBooking.guest?.name || currentBooking.user?.name,
+          checkOut: currentBooking.checkOut,
+          paymentStatus: currentBooking.paymentStatus
+        } : null
+      };
+    });
+
+    res.json(roomMap);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+dotenv.config();
 import path from "path";
 import express from "express";
 import cors from "cors";
@@ -14,9 +15,6 @@ import roomRoutes from "./src/routes/room.route.js";
 import uploadRoutes from "./src/routes/upload.route.js";
 import bookingRoutes from "./src/routes/booking.route.js";
 import adminRoutes from "./src/routes/admin.route.js";
-
-
-dotenv.config();
 
 const app = express();
 
@@ -65,6 +63,7 @@ app.use(express.static(path.join(process.cwd(), "public")));
 
 /* ===================== START ===================== */
 const PORT = process.env.PORT || 8000;
-app.listen(PORT,"0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌍 Allowed Origins:`, allowedOrigins); // Log để kiểm tra xem đã đọc đúng chưa
 });

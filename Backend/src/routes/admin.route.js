@@ -5,7 +5,7 @@ import uploadImage from "../middleware/uploadImage.js";
 
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
-
+import { getAdminRoomMap } from "../controllers/room.controller.js";
 import {
   markBookingPaid,
   getAdminBookings,
@@ -50,7 +50,7 @@ router.post("/rooms/:hotelId", protect, adminOnly, async (req, res) => {
   });
   res.json(room);
 });
-
+router.get("/admin/room-map", protect, adminOnly, getAdminRoomMap);
 /* ========= BOOKINGS ========= */
 router.get("/bookings", protect, adminOnly, getAdminBookings);
 

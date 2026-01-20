@@ -14,3 +14,6 @@ export const getFollowUpBookings = () =>
 
 export const markBookingPaid = (id, note) =>
   instance.put(`/admin/bookings/${id}/pay`, { note });
+
+export const getAdminRoomMap = (params) => 
+  instance.get("/api/rooms/admin/room-map", { params });
