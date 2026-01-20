@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Demo Advanced</title>
+</head>
+<body>
+    <h1>Booking Demo Advanced</h1>
+
+    <h2>Create Booking</h2>
+    <form id="bookingForm">
+        <label for="roomSelect">Select Room:</label>
+        <select id="roomSelect"></select>
+        <br><br>
+        <label for="checkIn">Check-in:</label>
+        <input type="date" id="checkIn" required>
+        <br><br>
+        <label for="checkOut">Check-out:</label>
+        <input type="date" id="checkOut" required>
+        <br><br>
+        <button type="submit">Create Booking</button>
+    </form>
+
+    <div id="result" style="color:red;"></div>
+
+    <h2>Bookings</h2>
+    <ul id="bookingList"></ul>
+
+    <script>
+        const roomSelect = document.getElementById("roomSelect");
+        const bookingForm = document.getElementById("bookingForm");
+        const bookingList = document.getElementById("bookingList");
+        const resultDiv = document.getElementById("result");
+
+        // Load rooms từ API
+        async function loadRooms() {
+            try {
+                const res = await fetch("/api/rooms");
+                if (!res.ok) throw new Error(res.statusText);
+                const rooms = await res.json();
+                roomSelect.innerHTML = "";
+                rooms.forEach(r => {
+                    const opt = document.createElement("option");
+                    opt.value = r._id;
+                    opt.textContent = `${r.name} (${r.type}) - $${r.price}`;
+                    roomSelect.appendChild(opt);
+                });
+            } catch (error) {
+                roomSelect.innerHTML = "<option>Error loading rooms</option>";
+            }
+        }
+
+        // Load danh sách booking
+        async function loadBookings() {
+            bookingList.innerHTML = "Loading bookings...";
+            try {
+                const res = await fetch("/api/bookings");
+                if (!res.ok) throw new Error(res.statusText);
+                const bookings = await res.json();
+                bookingList.innerHTML = "";
+                if (bookings.length === 0) {
+                    bookingList.innerHTML = "<li>No bookings found</li>";
+                    return;
+                }
+                bookings.forEach(b => {
+                    const li = document.createElement("li");
+                    li.textContent = `Room: ${b.room.name} (${b.room.type}) | Check-in: ${new Date(b.checkIn).toLocaleDateString()} | Check-out: ${new Date(b.checkOut).toLocaleDateString()} | Status: ${b.status}`;
+                    bookingList.appendChild(li);
+                });
+            } catch (error) {
+                bookingList.innerHTML = "Error loading bookings: " + error.message;
+            }
+        }
+
+        // Tạo booking mới qua POST
+        bookingForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            resultDiv.textContent = "";
+
+            const roomId = roomSelect.value;
+            const checkIn = document.getElementById("checkIn").value;
+            const checkOut = document.getElementById("checkOut").value;
+
+            const checkInDate = new Date(checkIn);
+            const checkOutDate = new Date(checkOut);
+
+            if (checkOutDate < checkInDate) {
+                resultDiv.textContent = "Error: Check-out date must be after Check-in date!";
+                return;
+            }
+
+            resultDiv.textContent = "Creating booking...";
+
+            try {
+                const res = await fetch("/api/bookings/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ roomId, checkIn, checkOut })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    resultDiv.style.color = "green";
+                    resultDiv.textContent = data.message;
+                    await loadBookings();
+                } else {
+                    resultDiv.style.color = "red";
+                    resultDiv.textContent = data.message;
+                }
+            } catch (error) {
+                resultDiv.style.color = "red";
+                resultDiv.textContent = "Error creating booking: " + error.message;
+            }
+        });
+
+        // Init
+        loadRooms();
+        loadBookings();
+    </script>
+</body>
+</html>
