@@ -26,21 +26,23 @@ instance.interceptors.response.use(
 
     // 🔐 Access token hết hạn → refresh
     if (
-      error.response.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url.includes("/auth/refresh")
-    ) {
-      originalRequest._retry = true;
+  error.response.status === 401 &&
+  !originalRequest._retry &&
+  !originalRequest.url.includes("/auth/refresh")
+) {
+  originalRequest._retry = true;
 
-      try {
-        // ⚠️ DÙNG axios thường, KHÔNG dùng instance
-        const res = await axios.post(
-          `${import.meta.env.VITE_API_URL.replace(/\/$/, "")}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
+  try {
+    // Lấy baseURL đã chuẩn hóa
+    const baseUrl = instance.defaults.baseURL?.replace(/\/$/, "") || "";
+    
+    const res = await axios.post(
+      `${baseUrl}/auth/refresh`,
+      {},
+      { withCredentials: true }
+    );
 
-        const newToken = res.data.accessToken;
+    const newToken = res.data.accessToken;
         if (!newToken) throw new Error("No access token");
 
         localStorage.setItem("accessToken", newToken);

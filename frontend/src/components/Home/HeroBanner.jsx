@@ -1,3 +1,4 @@
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -16,11 +17,9 @@ import {
   DeleteOutline,
 } from "@mui/icons-material";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "../../context/SearchContext";
-import { DEFAULT_SEARCH } from "../../utils/searchConstants";
-import { detectCity } from "../../utils/detectCity";
+import { DEFAULT_SEARCH } from "../../context/SearchContext";
 import {
   getRecentSearches,
   clearRecentSearches,
@@ -39,12 +38,12 @@ export default function HeroBanner({ hotels = [] }) {
   const navigate = useNavigate();
   const { updateSearch } = useSearch();
 
-  /* ===== LOAD HISTORY ===== */
+  /* ================= LOAD HISTORY ================= */
   useEffect(() => {
     setHistory(getRecentSearches().slice(0, MAX_HISTORY));
   }, []);
 
-  /* ===== CLICK OUTSIDE ===== */
+  /* ================= CLICK OUTSIDE ================= */
   useEffect(() => {
     const close = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) {
@@ -55,7 +54,7 @@ export default function HeroBanner({ hotels = [] }) {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  /* ===== HOTEL SUGGEST ===== */
+  /* ================= HOTEL SUGGEST ================= */
   const hotelSuggest = useMemo(() => {
     if (!keyword) return [];
     const k = normalizeText(keyword);
@@ -69,40 +68,60 @@ export default function HeroBanner({ hotels = [] }) {
       .slice(0, VISIBLE_HOTELS);
   }, [keyword, hotels]);
 
-  /* ===== SUBMIT SEARCH ===== */
+  /* ================= SUBMIT (ENTER / BUTTON) ================= */
   const submit = (text = keyword) => {
     const value = text.trim();
     if (!value) return;
 
-    const cityDetected = detectCity(value);
-
-    const searchData = {
+    // ✅ QUAN TRỌNG: KHÔNG SET CITY
+    updateSearch({
       ...DEFAULT_SEARCH,
-      keyword: cityDetected ? "" : value,
-      city: cityDetected?.label || "",
-    };
-
-    updateSearch(searchData);
-
-    /* ===== UPDATE HISTORY (FIFO 6 ITEMS) ===== */
-    const newItem = {
       keyword: value,
-      city: searchData.city,
-    };
+      city: "",
+    });
 
-    const nextHistory = [
+    saveHistory(value, "");
+
+    navigate("/hotels");
+    setOpen(false);
+  };
+
+  /* ================= SAVE HISTORY ================= */
+  const saveHistory = (keyword, city) => {
+    const newItem = { keyword, city };
+
+    const next = [
       newItem,
       ...history.filter(
-        (h) =>
-          h.keyword !== newItem.keyword || h.city !== newItem.city
+        (h) => h.keyword !== keyword || h.city !== city
       ),
     ].slice(0, MAX_HISTORY);
 
-    setHistory(nextHistory);
-    localStorage.setItem(
-      "recentSearches",
-      JSON.stringify(nextHistory)
-    );
+    setHistory(next);
+    localStorage.setItem("recentSearches", JSON.stringify(next));
+  };
+
+  /* ================= CLICK HOTEL SUGGEST ================= */
+  const selectHotel = (hotel) => {
+    updateSearch({
+      ...DEFAULT_SEARCH,
+      keyword: hotel.name,
+      city: "",
+    });
+
+    saveHistory(hotel.name, "");
+
+    navigate("/hotels");
+    setOpen(false);
+  };
+
+  /* ================= CLICK HISTORY ================= */
+  const selectHistory = (item) => {
+    updateSearch({
+      ...DEFAULT_SEARCH,
+      keyword: item.keyword || "",
+      city: item.city || "",
+    });
 
     navigate("/hotels");
     setOpen(false);
@@ -132,7 +151,7 @@ export default function HeroBanner({ hotels = [] }) {
         Trải nghiệm kỳ nghỉ tuyệt vời tại các thành phố hàng đầu
       </Typography>
 
-      {/* SEARCH */}
+      {/* ================= SEARCH ================= */}
       <Box
         ref={wrapRef}
         sx={{ width: "100%", maxWidth: 560, position: "relative" }}
@@ -195,7 +214,7 @@ export default function HeroBanner({ hotels = [] }) {
           </Button>
         </Paper>
 
-        {/* DROPDOWN */}
+        {/* ================= DROPDOWN ================= */}
         <AnimatePresence>
           {open && (hotelSuggest.length || history.length) && (
             <motion.div
@@ -206,7 +225,7 @@ export default function HeroBanner({ hotels = [] }) {
               style={{ position: "absolute", width: "100%", zIndex: 10 }}
             >
               <Paper sx={{ borderRadius: "0 0 22px 22px" }}>
-                {/* HOTEL */}
+                {/* HOTEL SUGGEST */}
                 {hotelSuggest.length > 0 && (
                   <>
                     <Typography px={3} py={1} fontSize={12}>
@@ -215,7 +234,7 @@ export default function HeroBanner({ hotels = [] }) {
                     {hotelSuggest.map((h) => (
                       <Box
                         key={h._id}
-                        onClick={() => submit(h.name)}
+                        onClick={() => selectHotel(h)}
                         sx={{
                           px: 3,
                           py: 1.5,
@@ -227,7 +246,9 @@ export default function HeroBanner({ hotels = [] }) {
                       >
                         <Hotel fontSize="small" />
                         <Box>
-                          <Typography fontWeight={600}>{h.name}</Typography>
+                          <Typography fontWeight={600}>
+                            {h.name}
+                          </Typography>
                           <Typography fontSize={12}>
                             {h.city}
                           </Typography>
@@ -238,7 +259,7 @@ export default function HeroBanner({ hotels = [] }) {
                   </>
                 )}
 
-                {/* HISTORY HEADER */}
+                {/* HISTORY */}
                 {history.length > 0 && (
                   <Box
                     px={3}
@@ -248,7 +269,7 @@ export default function HeroBanner({ hotels = [] }) {
                     alignItems="center"
                   >
                     <Typography fontSize={12}>
-                      Lịch sử tìm kiếm (6 gần nhất)
+                      Lịch sử tìm kiếm
                     </Typography>
                     <IconButton
                       size="small"
@@ -262,11 +283,10 @@ export default function HeroBanner({ hotels = [] }) {
                   </Box>
                 )}
 
-                {/* HISTORY ITEMS */}
                 {history.map((h, i) => (
                   <Box
                     key={i}
-                    onClick={() => submit(h.keyword || h.city)}
+                    onClick={() => selectHistory(h)}
                     sx={{
                       px: 3,
                       py: 1.5,
