@@ -1,4 +1,3 @@
-import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -17,9 +16,13 @@ import {
   DeleteOutline,
 } from "@mui/icons-material";
 import { AnimatePresence, motion } from "framer-motion";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "../../context/SearchContext";
-import { DEFAULT_SEARCH } from "../../context/SearchContext";
+import {
+  useSearch,
+  createDefaultSearch,
+} from "../../context/SearchContext";
+import { detectCity } from "../../utils/detectCity";
 import {
   getRecentSearches,
   clearRecentSearches,
@@ -38,12 +41,12 @@ export default function HeroBanner({ hotels = [] }) {
   const navigate = useNavigate();
   const { updateSearch } = useSearch();
 
-  /* ================= LOAD HISTORY ================= */
+  /* ===== LOAD HISTORY ===== */
   useEffect(() => {
     setHistory(getRecentSearches().slice(0, MAX_HISTORY));
   }, []);
 
-  /* ================= CLICK OUTSIDE ================= */
+  /* ===== CLICK OUTSIDE ===== */
   useEffect(() => {
     const close = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) {
@@ -54,7 +57,7 @@ export default function HeroBanner({ hotels = [] }) {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  /* ================= HOTEL SUGGEST ================= */
+  /* ===== HOTEL SUGGEST ===== */
   const hotelSuggest = useMemo(() => {
     if (!keyword) return [];
     const k = normalizeText(keyword);
@@ -68,60 +71,43 @@ export default function HeroBanner({ hotels = [] }) {
       .slice(0, VISIBLE_HOTELS);
   }, [keyword, hotels]);
 
-  /* ================= SUBMIT (ENTER / BUTTON) ================= */
+  /* ===== SUBMIT SEARCH ===== */
   const submit = (text = keyword) => {
     const value = text.trim();
     if (!value) return;
 
-    // ✅ QUAN TRỌNG: KHÔNG SET CITY
-    updateSearch({
-      ...DEFAULT_SEARCH,
+    const cityDetected = detectCity(value);
+
+    // 🔑 CHUẨN THỰC TẾ:
+    // - Reset search
+    // - KHÔNG ép city filter
+    // - Keyword dùng để search backend
+    const searchData = {
+      ...createDefaultSearch(),
       keyword: value,
-      city: "",
-    });
+    };
 
-    saveHistory(value, "");
+    updateSearch(searchData);
 
-    navigate("/hotels");
-    setOpen(false);
-  };
+    /* ===== UPDATE HISTORY ===== */
+    const newItem = {
+      keyword: value,
+      city: cityDetected?.label || "",
+    };
 
-  /* ================= SAVE HISTORY ================= */
-  const saveHistory = (keyword, city) => {
-    const newItem = { keyword, city };
-
-    const next = [
+    const nextHistory = [
       newItem,
       ...history.filter(
-        (h) => h.keyword !== keyword || h.city !== city
+        (h) =>
+          h.keyword !== newItem.keyword || h.city !== newItem.city
       ),
     ].slice(0, MAX_HISTORY);
 
-    setHistory(next);
-    localStorage.setItem("recentSearches", JSON.stringify(next));
-  };
-
-  /* ================= CLICK HOTEL SUGGEST ================= */
-  const selectHotel = (hotel) => {
-    updateSearch({
-      ...DEFAULT_SEARCH,
-      keyword: hotel.name,
-      city: "",
-    });
-
-    saveHistory(hotel.name, "");
-
-    navigate("/hotels");
-    setOpen(false);
-  };
-
-  /* ================= CLICK HISTORY ================= */
-  const selectHistory = (item) => {
-    updateSearch({
-      ...DEFAULT_SEARCH,
-      keyword: item.keyword || "",
-      city: item.city || "",
-    });
+    setHistory(nextHistory);
+    localStorage.setItem(
+      "recentSearches",
+      JSON.stringify(nextHistory)
+    );
 
     navigate("/hotels");
     setOpen(false);
@@ -151,7 +137,7 @@ export default function HeroBanner({ hotels = [] }) {
         Trải nghiệm kỳ nghỉ tuyệt vời tại các thành phố hàng đầu
       </Typography>
 
-      {/* ================= SEARCH ================= */}
+      {/* SEARCH */}
       <Box
         ref={wrapRef}
         sx={{ width: "100%", maxWidth: 560, position: "relative" }}
@@ -214,7 +200,7 @@ export default function HeroBanner({ hotels = [] }) {
           </Button>
         </Paper>
 
-        {/* ================= DROPDOWN ================= */}
+        {/* DROPDOWN */}
         <AnimatePresence>
           {open && (hotelSuggest.length || history.length) && (
             <motion.div
@@ -225,7 +211,7 @@ export default function HeroBanner({ hotels = [] }) {
               style={{ position: "absolute", width: "100%", zIndex: 10 }}
             >
               <Paper sx={{ borderRadius: "0 0 22px 22px" }}>
-                {/* HOTEL SUGGEST */}
+                {/* HOTEL */}
                 {hotelSuggest.length > 0 && (
                   <>
                     <Typography px={3} py={1} fontSize={12}>
@@ -234,14 +220,16 @@ export default function HeroBanner({ hotels = [] }) {
                     {hotelSuggest.map((h) => (
                       <Box
                         key={h._id}
-                        onClick={() => selectHotel(h)}
+                        onClick={() => submit(h.name)}
                         sx={{
                           px: 3,
                           py: 1.5,
                           display: "flex",
                           gap: 2,
                           cursor: "pointer",
-                          "&:hover": { bgcolor: "rgba(0,0,0,.05)" },
+                          "&:hover": {
+                            bgcolor: "rgba(0,0,0,.05)",
+                          },
                         }}
                       >
                         <Hotel fontSize="small" />
@@ -286,14 +274,16 @@ export default function HeroBanner({ hotels = [] }) {
                 {history.map((h, i) => (
                   <Box
                     key={i}
-                    onClick={() => selectHistory(h)}
+                    onClick={() => submit(h.keyword || h.city)}
                     sx={{
                       px: 3,
                       py: 1.5,
                       display: "flex",
                       gap: 2,
                       cursor: "pointer",
-                      "&:hover": { bgcolor: "rgba(0,0,0,.05)" },
+                      "&:hover": {
+                        bgcolor: "rgba(0,0,0,.05)",
+                      },
                     }}
                   >
                     <History fontSize="small" />
