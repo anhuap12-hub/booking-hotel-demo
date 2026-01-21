@@ -2,9 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { 
   Box, Container, Paper, Typography, Stack, Divider, 
-  Button, CircularProgress, Alert, Grid 
+  Button, CircularProgress, Alert, Grid, IconButton, Tooltip 
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { createBooking, getBookingStatus } from '../../api/booking.api';
 
 export default function Checkout() {
@@ -12,15 +14,9 @@ export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Nhận data từ RoomDetail qua state (đã bao gồm guestName và guestPhone từ Dialog)
   const { 
-    roomName, 
-    hotelName, 
-    checkIn, 
-    checkOut, 
-    guestsCount, 
-    guestName, 
-    guestPhone 
+    roomName, hotelName, checkIn, checkOut, 
+    guestsCount, guestName, guestPhone 
   } = location.state || {};
 
   const [booking, setBooking] = useState(null);
@@ -28,18 +24,17 @@ export default function Checkout() {
   const [isPaid, setIsPaid] = useState(false);
   const pollingRef = useRef(null);
 
+  // 1. Khởi tạo đơn hàng
   useEffect(() => {
     const initOrder = async () => {
       try {
+        setLoading(true);
         const res = await createBooking({
           room: roomId,
           checkIn,
           checkOut,
           guestsCount: guestsCount || 1,
-          guest: { 
-            name: guestName || "Khách đặt", 
-            phone: guestPhone // Dùng trực tiếp phone từ Dialog truyền sang
-          }
+          guest: { name: guestName, phone: guestPhone }
         });
         setBooking(res.data.booking);
       } catch (err) {
@@ -49,99 +44,162 @@ export default function Checkout() {
       }
     };
 
-    // Điều kiện: Phải có phone từ Dialog mới cho tạo đơn
     if (roomId && checkIn && guestPhone) {
       initOrder();
     } else {
-      console.warn("Thiếu thông tin Phone hoặc ngày đặt. Quay lại...");
       navigate(-1); 
     }
-  }, [roomId, checkIn, checkOut, navigate, guestsCount, guestName, guestPhone]);
+  }, [roomId, checkIn, checkOut, guestName, guestPhone, guestsCount, navigate]);
 
-  // Cơ chế Polling tự động check thanh toán
+  // 2. Polling kiểm tra trạng thái thanh toán SePay
   useEffect(() => {
-    if (booking && !isPaid) {
+    if (booking?._id && !isPaid) {
       pollingRef.current = setInterval(async () => {
         try {
           const res = await getBookingStatus(booking._id);
+          // DEPOSITED là trạng thái đã nhận tiền cọc từ Webhook SePay
           if (res.data.paymentStatus === 'DEPOSITED' || res.data.paymentStatus === 'PAID') {
             setIsPaid(true);
             clearInterval(pollingRef.current);
           }
         } catch (err) {
-          console.log("Đang chờ thanh toán...", err);
+          console.log("Đang chờ...", err);
         }
       }, 3000);
     }
     return () => clearInterval(pollingRef.current);
   }, [booking, isPaid]);
 
-  if (loading) return <Box textAlign="center" py={10}><CircularProgress /><Typography mt={2}>Đang tạo hóa đơn...</Typography></Box>;
+  // Hàm copy nhanh
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    // Có thể thêm toast notification ở đây
+  };
 
-  // Cấu hình mã QR SePay
-  const bankID = "vietinbank"; 
-  const accountNo = "108877368467"; 
-  const accountName = "NGUYEN HOANG ANH";
-  const content = `DH${booking?._id}`; 
-  const qrUrl = `https://img.vietqr.io/image/${bankID}-${accountNo}-compact.png?amount=${booking?.depositAmount}&addInfo=${content}&accountName=${accountName}`;
+  if (loading) return (
+    <Box textAlign="center" py={15}>
+      <CircularProgress size={50} thickness={4} />
+      <Typography mt={3} variant="h6" color="text.secondary">Đang thiết lập kênh thanh toán an toàn...</Typography>
+    </Box>
+  );
+
+  const bankInfo = {
+    id: "vietinbank",
+    no: "108877368467",
+    name: "NGUYEN HOANG ANH",
+    content: `DH${booking?._id?.slice(-6).toUpperCase()}` // Rút ngắn mã cho khách dễ nhìn
+  };
+
+  const qrUrl = `https://img.vietqr.io/image/${bankInfo.id}-${bankInfo.no}-compact.png?amount=${booking?.depositAmount}&addInfo=${bankInfo.content}&accountName=${bankInfo.name}`;
 
   return (
-    <Container maxWidth="md" sx={{ py: 5 }}>
-      <Grid container spacing={4}>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" fontWeight={800} mb={3}>Thông tin cọc</Typography>
-          <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#f8f9fa' }}>
-            <Typography variant="subtitle1" fontWeight={700}>{roomName}</Typography>
-            <Typography variant="body2" color="text.secondary">{hotelName}</Typography>
+    <Container maxWidth="lg" sx={{ py: 6 }}>
+      <Grid container spacing={4} justifyContent="center">
+        
+        {/* CỘT 1: TÓM TẮT ĐƠN HÀNG */}
+        <Grid item xs={12} md={5}>
+          <Typography variant="h5" fontWeight={800} mb={3}>Chi tiết đặt phòng</Typography>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, border: '1px solid #eef2f6', bgcolor: '#fff' }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom>{roomName}</Typography>
+            <Typography variant="body2" color="text.secondary" mb={2}>{hotelName}</Typography>
             
-            <Stack direction="row" spacing={2} my={2}>
-               <Box>
-                  <Typography variant="caption" color="text.secondary">Liên hệ</Typography>
-                  <Typography variant="body2" fontWeight={600}>{guestName} - {guestPhone}</Typography>
-               </Box>
+            <Stack spacing={2} sx={{ bgcolor: '#f8f9fa', p: 2, borderRadius: 2 }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Thời gian lưu trú</Typography>
+                <Typography variant="body2" fontWeight={600}>{new Date(checkIn).toLocaleDateString('vi-VN')} - {new Date(checkOut).toLocaleDateString('vi-VN')}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Khách hàng</Typography>
+                <Typography variant="body2" fontWeight={600}>{guestName} • {guestPhone}</Typography>
+              </Box>
             </Stack>
 
-            <Divider sx={{ my: 2 }} />
-            <Stack direction="row" justifyContent="space-between" mb={1}>
-              <Typography>Tổng tiền phòng:</Typography>
-              <Typography fontWeight={600}>{booking?.totalPrice?.toLocaleString()}đ</Typography>
-            </Stack>
-            <Stack direction="row" justifyContent="space-between" mb={2} color="primary.main">
-              <Typography fontWeight={700}>Tiền cọc 30%:</Typography>
-              <Typography variant="h6" fontWeight={800}>{booking?.depositAmount?.toLocaleString()}đ</Typography>
-            </Stack>
+            <Divider sx={{ my: 3 }} />
             
-            <Alert severity="info" icon={false} sx={{ mt: 2, fontSize: '0.85rem' }}>
-              Số tiền còn lại <b>{booking?.remainingAmount?.toLocaleString()}đ</b> thanh toán tại quầy.
+            <Stack spacing={1.5}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography color="text.secondary">Tổng tiền phòng</Typography>
+                <Typography fontWeight={700}>{booking?.totalPrice?.toLocaleString()}đ</Typography>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between" color="primary.main">
+                <Typography fontWeight={700}>Tiền cọc cần thanh toán (30%)</Typography>
+                <Typography variant="h5" fontWeight={900}>{booking?.depositAmount?.toLocaleString()}đ</Typography>
+              </Stack>
+            </Stack>
+
+            <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mt: 3, borderRadius: 2 }}>
+              Vui lòng chuyển <b>chính xác</b> số tiền và nội dung để hệ thống tự động xác nhận.
             </Alert>
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 4, border: isPaid ? '2px solid #4caf50' : '2px solid #0076FF' }}>
+        {/* CỘT 2: KHU VỰC QUÉT MÃ QR */}
+        <Grid item xs={12} md={5}>
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 4, textAlign: 'center', borderRadius: 5, 
+              border: isPaid ? '3px solid #4caf50' : '1px solid #dbeafe',
+              bgcolor: isPaid ? '#f1fcf1' : '#fff',
+              transition: 'all 0.3s ease'
+            }}
+          >
             {isPaid ? (
               <Box py={4}>
-                <CheckCircleIcon sx={{ fontSize: 80, color: '#4caf50', mb: 2 }} />
-                <Typography variant="h5" fontWeight={800} color="success.main">CỌC THÀNH CÔNG!</Typography>
-                <Button fullWidth variant="contained" color="success" sx={{ mt: 4 }} onClick={() => navigate('/my-bookings')}>XEM ĐƠN HÀNG</Button>
+                <CheckCircleIcon sx={{ fontSize: 100, color: '#4caf50', mb: 2 }} />
+                <Typography variant="h4" fontWeight={900} color="success.main" gutterBottom>ĐÃ XÁC NHẬN</Typography>
+                <Typography variant="body1" color="text.secondary" mb={4}>
+                  Cảm ơn bạn! Tiền cọc đã được ghi nhận. Mã đơn hàng đã được gửi về số điện thoại của bạn.
+                </Typography>
+                <Button 
+                  fullWidth size="large" variant="contained" color="success" 
+                  sx={{ py: 2, borderRadius: 3, fontWeight: 700 }}
+                  onClick={() => navigate('/my-bookings')}
+                >
+                  XEM LỊCH TRÌNH CỦA TÔI
+                </Button>
               </Box>
             ) : (
-              <>
-                <Typography variant="h6" fontWeight={800} mb={2}>Quét mã để giữ chỗ</Typography>
-                <Box sx={{ p: 1, bgcolor: '#fff', display: 'inline-block', border: '1px solid #eee', mb: 3 }}>
-                  <img src={qrUrl} alt="VietQR" style={{ width: '100%', maxWidth: '240px' }} />
+              <Box>
+                <Typography variant="h6" fontWeight={800} mb={1}>Quét mã VietQR</Typography>
+                <Typography variant="body2" color="text.secondary" mb={3}>Sử dụng ứng dụng Ngân hàng hoặc Ví điện tử để quét</Typography>
+                
+                <Box sx={{ position: 'relative', display: 'inline-block', p: 1.5, bgcolor: '#fff', border: '1px solid #e2e8f0', borderRadius: 3, mb: 3 }}>
+                  <img src={qrUrl} alt="VietQR SePay" style={{ width: '100%', maxWidth: '260px', display: 'block' }} />
+                  {/* Watermark bảo mật */}
+                  <Typography variant="caption" sx={{ position: 'absolute', bottom: 15, left: 0, right: 0, opacity: 0.5, fontSize: 10 }}>
+                    SEPAY SECURE PAYMENT
+                  </Typography>
                 </Box>
-                <Stack spacing={1} textAlign="left" sx={{ bgcolor: '#fff4e5', p: 2, borderRadius: 2 }}>
-                   <Typography variant="caption"><b>Nội dung:</b> <span style={{color:'red', fontWeight:'bold'}}>{content}</span></Typography>
-                   <Typography variant="caption"><b>Số tiền:</b> {booking?.depositAmount?.toLocaleString()}đ</Typography>
+
+                <Stack spacing={1.5}>
+                  <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'left', position: 'relative', bgcolor: '#fff' }}>
+                    <Typography variant="caption" color="text.secondary" display="block">Nội dung chuyển khoản</Typography>
+                    <Typography variant="body1" fontWeight={800} color="error.main">{bankInfo.content}</Typography>
+                    <Tooltip title="Sao chép nội dung">
+                      <IconButton size="small" sx={{ position: 'absolute', right: 8, top: 12 }} onClick={() => handleCopy(bankInfo.content)}>
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Paper>
+
+                  <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} py={2}>
+                    <CircularProgress size={16} thickness={5} />
+                    <Typography variant="body2" fontWeight={600} color="primary.main">
+                      Đang chờ tín hiệu từ ngân hàng...
+                    </Typography>
+                  </Stack>
                 </Stack>
-                <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} mt={3}>
-                  <CircularProgress size={14} />
-                  <Typography variant="caption" color="text.secondary">Đang chờ ngân hàng xác nhận...</Typography>
-                </Stack>
-              </>
+              </Box>
             )}
           </Paper>
+          
+          {!isPaid && (
+            <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ mt: 3 }}>
+              Hệ thống sẽ tự động chuyển trang ngay sau khi nhận được tiền. <br/>
+              Đừng đóng cửa sổ này cho đến khi nhận được thông báo thành công.
+            </Typography>
+          )}
         </Grid>
       </Grid>
     </Container>

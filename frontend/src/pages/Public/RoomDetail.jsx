@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { 
   Box, Container, Grid, Typography, Stack, Chip, Button, 
   Divider, Paper, List, ListItem, ListItemIcon, ListItemText,
-  CircularProgress, Alert, ImageList, ImageListItem 
+  CircularProgress, Alert, ImageList, ImageListItem, Breadcrumbs, Link
 } from '@mui/material';
+
+// Icons
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import KingBedIcon from '@mui/icons-material/KingBed';
 import SecurityIcon from '@mui/icons-material/Security';
-import PaymentsIcon from '@mui/icons-material/Payments'; // Icon mới cho thanh toán
+import PaymentsIcon from '@mui/icons-material/Payments';
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import WifiIcon from '@mui/icons-material/Wifi';
+import PoolIcon from '@mui/icons-material/Pool';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+
 import { getRoomDetail } from '../../api/room.api';
 
 export default function RoomDetail() {
@@ -35,13 +42,9 @@ export default function RoomDetail() {
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>;
   if (!room) return <Container sx={{ py: 5 }}><Alert severity="error">Không tìm thấy thông tin phòng!</Alert></Container>;
 
-  // Tính toán giá sau khi giảm (Làm tròn để phù hợp với giao dịch ngân hàng)
-  const finalPrice = Math.round(
-    room.discount ? room.price * (1 - room.discount / 100) : room.price
-  );
+  const finalPrice = Math.round(room.discount ? room.price * (1 - room.discount / 100) : room.price);
 
   const handleBooking = () => {
-    // Truyền dữ liệu sang trang Checkout để tạo mã QR SePay
     navigate(`/checkout/${room._id}`, { 
       state: { 
         roomName: room.name,
@@ -52,150 +55,138 @@ export default function RoomDetail() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Grid container spacing={4}>
-        {/* BÊN TRÁI: HÌNH ẢNH & MÔ TẢ */}
-        <Grid item xs={12} md={8}>
-          <Typography variant="h4" fontWeight={800} mb={1}>{room.name}</Typography>
-          <Typography variant="body2" color="text.secondary" mb={3}>
-            Địa chỉ: {room.hotel?.address} ({room.hotel?.name})
-          </Typography>
+    <Box sx={{ bgcolor: "#F8F9FA", minHeight: "100vh" }}>
+      {/* 1. BREADCRUMBS NAVIGATION */}
+      <Box sx={{ bgcolor: "#fff", borderBottom: "1px solid #eee", py: 1.5, mb: 3 }}>
+        <Container>
+          <Breadcrumbs separator={<NavigateNextIcon sx={{ fontSize: 14 }} />}>
+            <Link component={RouterLink} to="/" color="inherit" underline="hover" sx={{ fontSize: '0.85rem' }}>Trang chủ</Link>
+            <Link component={RouterLink} to={`/hotel/${room.hotel?._id}`} color="inherit" underline="hover" sx={{ fontSize: '0.85rem' }}>
+              {room.hotel?.name}
+            </Link>
+            <Typography color="text.primary" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{room.name}</Typography>
+          </Breadcrumbs>
+        </Container>
+      </Box>
 
-          <Paper elevation={0} sx={{ borderRadius: 4, overflow: 'hidden', mb: 2 }}>
-            <img 
-              src={room.photos[0]?.url || 'https://via.placeholder.com/800x450'} 
-              alt="main" 
-              style={{ width: '100%', height: '400px', objectFit: 'cover' }} 
-            />
-          </Paper>
-          
-          <ImageList cols={4} rowHeight={120} gap={8}>
-            {room.photos.slice(1, 5).map((item, idx) => (
-              <ImageListItem key={idx} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                <img src={item.url} alt={`sub-${idx}`} loading="lazy" style={{ height: '100%', objectFit: 'cover' }} />
-              </ImageListItem>
-            ))}
-          </ImageList>
+      <Container maxWidth="lg" sx={{ pb: 8 }}>
+        <Grid container spacing={4}>
+          {/* BÊN TRÁI: THÔNG TIN PHÒNG */}
+          <Grid item xs={12} md={8}>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
+              <Box>
+                <Typography variant="h3" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 1 }}>{room.name}</Typography>
+                <Stack direction="row" spacing={1} alignItems="center" color="text.secondary">
+                  <LocationOnIcon sx={{ fontSize: 18 }} />
+                  <Typography variant="body2">{room.hotel?.address}</Typography>
+                </Stack>
+              </Box>
+              <Chip label={room.type} color="primary" variant="outlined" sx={{ textTransform: 'capitalize', fontWeight: 600 }} />
+            </Stack>
 
-          <Box mt={4}>
-            <Typography variant="h6" fontWeight={700} mb={2}>Mô tả phòng</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-line', lineHeight: 1.7 }}>
-              {room.desc}
-            </Typography>
-          </Box>
-
-          <Box mt={4}>
-            <Typography variant="h6" fontWeight={700} mb={2}>Tiện nghi có sẵn</Typography>
-            <Grid container spacing={2}>
-              {room.amenities.map((item, idx) => (
-                <Grid item xs={6} sm={4} key={idx}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 18 }} />
-                    <Typography variant="body2" fontWeight={500}>{item}</Typography>
+            {/* GALLERY COMPONENT */}
+            <Paper elevation={0} sx={{ borderRadius: 4, overflow: 'hidden', mb: 3 }}>
+              <Grid container spacing={1}>
+                <Grid item xs={12} sm={8}>
+                  <img src={room.photos[0]?.url} alt="main" style={{ width: '100%', height: '450px', objectFit: 'cover' }} />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Stack spacing={1} sx={{ height: '450px' }}>
+                    {room.photos.slice(1, 3).map((img, idx) => (
+                      <Box key={idx} sx={{ flex: 1, overflow: 'hidden' }}>
+                        <img src={img.url} alt="sub" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </Box>
+                    ))}
                   </Stack>
                 </Grid>
-              ))}
-            </Grid>
-          </Box>
-        </Grid>
+              </Grid>
+            </Paper>
 
-        {/* BÊN PHẢI: ĐẶT PHÒNG & CHÍNH SÁCH THANH TOÁN */}
-        <Grid item xs={12} md={4}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 3, 
-              borderRadius: 4, 
-              border: '1px solid #e0e0e0', 
-              position: 'sticky', 
-              top: 24,
-              bgcolor: '#fff'
-            }}
-          >
-            {/* Phần giá cả */}
-            <Box mb={3}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>Giá mỗi đêm</Typography>
-              {room.discount ? (
-                <Stack spacing={0.5}>
-                  <Typography variant="body2" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
-                    {room.price.toLocaleString()}đ
+            {/* DESCRIPTION & AMENITIES */}
+            <Stack spacing={4}>
+              <Box>
+                <Typography variant="h6" fontWeight={700} mb={2}>Về căn phòng này</Typography>
+                <Typography variant="body1" sx={{ color: '#444', lineHeight: 1.8 }}>{room.desc}</Typography>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="h6" fontWeight={700} mb={2}>Tiện nghi chuẩn quốc tế</Typography>
+                <Grid container spacing={3}>
+                  {room.amenities.map((item, idx) => (
+                    <Grid item xs={6} sm={4} key={idx}>
+                      <Stack direction="row" alignItems="center" spacing={1.5}>
+                        <Box sx={{ bgcolor: '#E8F5E9', p: 0.8, borderRadius: 1.5, display: 'flex' }}>
+                          <CheckCircleIcon sx={{ color: '#2E7D32', fontSize: 18 }} />
+                        </Box>
+                        <Typography variant="body2" fontWeight={600}>{item}</Typography>
+                      </Stack>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </Stack>
+          </Grid>
+
+          {/* BÊN PHẢI: BOOKING CARD (STICKY) */}
+          <Grid item xs={12} md={4}>
+            <Paper elevation={0} sx={{ p: 4, borderRadius: 4, border: '1px solid #eef2f6', position: 'sticky', top: 24, boxShadow: '0 10px 40px rgba(0,0,0,0.04)' }}>
+              {/* Giá cả */}
+              <Box mb={3}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase' }}>Giá chỉ từ</Typography>
+                <Stack direction="row" alignItems="baseline" spacing={1}>
+                  <Typography variant="h3" fontWeight={800} color="primary">
+                    {finalPrice.toLocaleString()}đ
                   </Typography>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography variant="h4" fontWeight={800} color="primary.main">
-                      {finalPrice.toLocaleString()}đ
-                    </Typography>
-                    <Chip label={`-${room.discount}%`} size="small" color="error" sx={{ fontWeight: 700, borderRadius: 1 }} />
-                  </Stack>
+                  <Typography variant="body2" color="text.secondary">/đêm</Typography>
                 </Stack>
-              ) : (
-                <Typography variant="h4" fontWeight={800} color="primary.main">
-                  {room.price.toLocaleString()}đ
+                {room.discount > 0 && (
+                   <Chip label={`Giảm ${room.discount}%`} size="small" color="error" sx={{ mt: 1, borderRadius: 1, fontWeight: 700 }} />
+                )}
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Thông tin nhanh */}
+              <Stack spacing={2} mb={4}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography color="text.secondary">Số khách tối đa</Typography>
+                  <Typography fontWeight={700}>{room.maxPeople} người</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography color="text.secondary">Loại giường</Typography>
+                  <Typography fontWeight={700} sx={{ textTransform: 'capitalize' }}>{room.type}</Typography>
+                </Box>
+              </Stack>
+
+              {/* Thanh toán SePay - Highlight */}
+              <Box sx={{ p: 2.5, bgcolor: '#F0F7FF', borderRadius: 3, mb: 3, border: '1px solid #D0E3FF' }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+                  <PaymentsIcon color="primary" />
+                  <Typography variant="subtitle2" fontWeight={700}>Thanh toán tự động</Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  Hệ thống sử dụng SePay giúp bạn xác nhận phòng ngay lập tức qua mã VietQR mà không cần chờ đợi.
                 </Typography>
-              )}
-            </Box>
+              </Box>
 
-            <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
-
-            <List sx={{ py: 0 }}>
-              <ListItem disableGutters>
-                <ListItemIcon sx={{ minWidth: 32 }}><PeopleAltIcon fontSize="small" color="action" /></ListItemIcon>
-                <ListItemText primary={`Sức chứa: ${room.maxPeople} người`} primaryTypographyProps={{ variant: 'body2' }} />
-              </ListItem>
-              <ListItem disableGutters>
-                <ListItemIcon sx={{ minWidth: 32 }}><KingBedIcon fontSize="small" color="action" /></ListItemIcon>
-                <ListItemText primary={`Loại: ${room.type}`} primaryTypographyProps={{ variant: 'body2', sx: { textTransform: 'capitalize' } }} />
-              </ListItem>
-            </List>
-
-            {/* Thông tin thanh toán SePay */}
-            <Box sx={{ bgcolor: '#f0f7ff', p: 2, borderRadius: 2, my: 2 }}>
-              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                <PaymentsIcon sx={{ color: '#0288d1', fontSize: 18 }} />
-                <Typography variant="subtitle2" fontWeight={700} color="#0288d1">Thanh toán tự động</Typography>
-              </Stack>
-              <Typography variant="caption" color="text.secondary" display="block">
-                Hỗ trợ chuyển khoản qua VietQR. Hệ thống xác nhận đơn hàng ngay lập tức sau khi nhận tiền.
-              </Typography>
-            </Box>
-
-            {/* Chính sách hủy */}
-            <Box sx={{ bgcolor: '#fff9f0', p: 2, borderRadius: 2, mb: 3 }}>
-              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                <SecurityIcon sx={{ color: '#ff9800', fontSize: 18 }} />
-                <Typography variant="subtitle2" fontWeight={700} color="#b47c00">Chính sách hủy</Typography>
-              </Stack>
-              <Typography variant="caption" display="block" color="text.secondary">
-                • Hủy miễn phí trước <b>{room.cancellationPolicy?.freeCancelBeforeHours}h</b> check-in.
-              </Typography>
-              <Typography variant="caption" display="block" color="text.secondary">
-                • Hoàn tiền <b>{room.cancellationPolicy?.refundPercent}%</b> giá trị đơn.
-              </Typography>
-            </Box>
-
-            <Button 
-              fullWidth 
-              variant="contained" 
-              size="large" 
-              disabled={room.status !== 'active'}
-              onClick={handleBooking}
-              sx={{ 
-                borderRadius: 2, 
-                py: 1.8, 
-                fontWeight: 800, 
-                fontSize: '1rem',
-                boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)',
-                '&:hover': { boxShadow: '0 6px 20px rgba(0,118,255,0.23)' }
-              }}
-            >
-              {room.status === 'active' ? 'TIẾP TỤC ĐẶT PHÒNG' : 'PHÒNG KHÔNG SẴN SÀNG'}
-            </Button>
-            
-            <Typography variant="caption" color="text.disabled" align="center" display="block" sx={{ mt: 1.5 }}>
-              Mã bảo mật giao dịch: 256-bit SSL
-            </Typography>
-          </Paper>
+              <Button 
+                fullWidth 
+                variant="contained" 
+                size="large"
+                onClick={handleBooking}
+                sx={{ 
+                  py: 2, borderRadius: 3, fontWeight: 800, fontSize: '1.1rem',
+                  boxShadow: '0 8px 24px rgba(25, 118, 210, 0.3)'
+                }}
+              >
+                ĐẶT PHÒNG NGAY
+              </Button>
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
+      </Container>
+    </Box>
   );
 }
