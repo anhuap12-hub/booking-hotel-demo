@@ -1,37 +1,38 @@
-import nodemailer from "nodemailer";
-
 export const sendVerifyEmail = async (to, verifyLink) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 465, // Chuyển sang cổng 465
-    secure: true, // Phải để là true khi dùng cổng 465
-    auth: {
-      user: process.env.BREVO_USER || "a091db001@smtp-brevo.com",
-      pass: process.env.BREVO_PASS || "Nq9LMbAfaWRk80UD",
-    },
-    // Thêm timeout để tránh chờ đợi quá lâu nếu có lỗi mạng
-    connectionTimeout: 10000, 
-  });
+  console.log(`🚀 Đang gửi mail qua API tới: ${to}...`);
 
-  console.log(`🚀 Đang cố gắng gửi mail tới: ${to} qua Port 465...`);
-
-  // Chạy ngầm để không làm treo server
-  transporter.sendMail({
-    from: `"Coffee Stay" <anhuap12@gmail.com>`,
-    to: to,
+  const data = {
+    // Email này đã được bạn Verify thành công (tích xanh) trong hình image_b93d12.png
+    sender: { name: "Coffee Stay", email: "anhuap12@gmail.com" }, 
+    to: [{ email: to }],
     subject: "Xác thực tài khoản Coffee Stay",
-    html: `
+    htmlContent: `
       <div style="font-family: Arial; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <h2 style="color: #1976d2;">Chào mừng bạn!</h2>
-        <p>Vui lòng xác thực tài khoản của bạn tại đây:</p>
-        <a href="${verifyLink}" style="background: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Xác thực ngay</a>
+        <h2 style="color: #1976d2;">Xác thực tài khoản</h2>
+        <p>Chào mừng bạn! Vui lòng nhấn vào nút bên dưới để xác thực:</p>
+        <a href="${verifyLink}" style="background: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Xác thực ngay</a>
       </div>
     `,
+  };
+
+  // Sử dụng fetch để gọi API của Brevo - Cực nhanh và không bị timeout
+  fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": process.env.BREVO_API_KEY,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(data),
   })
-  .then(() => {
-    console.log(`✅ [SUCCESS] Mail đã gửi tới ${to} thành công!`);
+  .then((response) => {
+    if (response.ok) {
+      console.log(`✅ [SUCCESS] API đã gửi mail tới ${to} thành công!`);
+    } else {
+      console.error("❌ [API ERROR]:", response.statusText);
+    }
   })
   .catch((error) => {
-    console.error(`❌ [ERROR] Lỗi gửi mail vẫn bị: ${error.message}`);
+    console.error("❌ [FETCH ERROR]:", error.message);
   });
 };
