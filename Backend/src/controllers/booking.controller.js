@@ -9,70 +9,49 @@ import Room from "../models/Room.js";
 export const createBooking = async (req, res) => {
   try {
     console.log("📥 CREATE BOOKING BODY:", req.body);
-    console.log("👤 USER:", req.user);
-
     const { room, checkIn, checkOut, guest, guestsCount } = req.body;
 
-    if (!req.user?.id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
 
     if (!room || !checkIn || !checkOut || !guest || !guestsCount) {
       return res.status(400).json({ message: "Missing booking data" });
     }
 
-    if (!guest.name || !guest.phone) {
-      return res.status(400).json({ message: "Guest info invalid" });
-    }
-
     const roomExists = await Room.findById(room).populate("hotel");
-    if (!roomExists) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-
-    if (!roomExists.hotel?._id) {
-      return res.status(400).json({ message: "Room missing hotel" });
+    if (!roomExists || !roomExists.hotel?._id) {
+      return res.status(404).json({ message: "Room or Hotel not found" });
     }
 
     if (guestsCount > roomExists.maxPeople) {
-      return res
-        .status(400)
-        .json({ message: "Guests exceed room capacity" });
+      return res.status(400).json({ message: "Guests exceed room capacity" });
     }
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-
     if (checkInDate >= checkOutDate) {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    const nights = Math.ceil(
-      (checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)
-    );
+    const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+    if (nights < 1) return res.status(400).json({ message: "At least 1 night required" });
 
-    if (nights < 1) {
-      return res.status(400).json({ message: "At least 1 night required" });
-    }
+    const pricePerNight = roomExists.price ?? roomExists.pricePerNight;
+    if (!pricePerNight) return res.status(400).json({ message: "Room price missing" });
 
-    const pricePerNight =
-      roomExists.price ?? roomExists.pricePerNight;
-
-    if (!pricePerNight) {
-      return res.status(400).json({ message: "Room price missing" });
-    }
-
-    // ❗ Check trùng lịch
+    // Kiểm tra trùng lịch
     const conflict = await Booking.findOne({
       room,
       status: { $nin: ["cancelled"] },
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
+    if (conflict) return res.status(400).json({ message: "Room already booked" });
 
-    if (conflict) {
-      return res.status(400).json({ message: "Room already booked" });
-    }
+    // --- LOGIC TÍNH TIỀN CỌC (30%) ---
+    const totalPrice = pricePerNight * nights;
+    const DEPOSIT_RATE = 0.3; 
+    const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
+    const remainingAmount = totalPrice - depositAmount;
 
     const booking = await Booking.create({
       user: req.user.id,
@@ -90,17 +69,16 @@ export const createBooking = async (req, res) => {
         cancellationPolicy: roomExists.cancellationPolicy,
       },
       nights,
-      totalPrice: pricePerNight * nights,
-      status: "pending", // ✅ CSKH xử lý
-      contactStatus: "new",
+      totalPrice,
+      depositAmount,    // Số tiền cần thanh toán qua SePay
+      remainingAmount,  // Số tiền thu tại quầy
+      status: "pending",
+      paymentStatus: "UNPAID",
+      contactStatus: "NEW",
     });
 
     console.log("✅ BOOKING CREATED:", booking._id);
-
-    return res.status(201).json({
-      message: "Booking created successfully",
-      booking,
-    });
+    return res.status(201).json({ message: "Booking created successfully", booking });
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
     return res.status(500).json({ message: error.message });
@@ -114,38 +92,19 @@ export const createBooking = async (req, res) => {
  */
 export const cancelBooking = async (req, res) => {
   try {
-    console.log("❌ CANCEL BOOKING:", req.params.id);
-
     const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (
-      booking.user.toString() !== req.user.id &&
-      req.user.role !== "admin"
-    ) {
+    if (booking.user.toString() !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    if (booking.status === "cancelled") {
-      return res
-        .status(400)
-        .json({ message: "Booking already cancelled" });
-    }
-
     booking.status = "cancelled";
+    // Nếu hủy đơn, bạn có thể cân nhắc logic hoàn cọc ở đây nếu cần
     await booking.save();
 
-    console.log("✅ BOOKING CANCELLED:", booking._id);
-
-    return res.json({
-      message: "Booking cancelled successfully",
-      booking,
-    });
+    return res.json({ message: "Booking cancelled successfully", booking });
   } catch (error) {
-    console.error("❌ CANCEL BOOKING ERROR:", error);
     return res.status(500).json({ message: error.message });
   }
 };
@@ -157,27 +116,14 @@ export const cancelBooking = async (req, res) => {
  */
 export const getUserBookings = async (req, res) => {
   try {
-    console.log("📦 GET USER BOOKINGS:", req.user.id);
-
     let bookings = await Booking.find({ user: req.user.id })
       .sort({ createdAt: -1 })
-      .populate({
-        path: "room",
-        select: "name type price photos maxPeople",
-      })
-      .populate({
-        path: "hotel",
-        select: "name city address photos rating",
-      });
+      .populate("room", "name type price photos")
+      .populate("hotel", "name city address photos");
 
-    // 🔥 lọc booking lỗi
-    bookings = bookings.filter(
-      (b) => b.room !== null && b.hotel !== null
-    );
-
+    bookings = bookings.filter((b) => b.room !== null && b.hotel !== null);
     return res.json(bookings);
   } catch (error) {
-    console.error("❌ GET USER BOOKINGS ERROR:", error);
     return res.status(500).json({ message: error.message });
   }
 };
@@ -189,12 +135,8 @@ export const getUserBookings = async (req, res) => {
  */
 export const getAllBookings = async (req, res) => {
   try {
-    console.log("📊 ADMIN GET ALL BOOKINGS");
-
     const filter = {};
-    if (req.query.status) {
-      filter.status = req.query.status;
-    }
+    if (req.query.status) filter.status = req.query.status;
 
     const bookings = await Booking.find(filter)
       .sort({ createdAt: -1 })
@@ -204,7 +146,6 @@ export const getAllBookings = async (req, res) => {
 
     return res.json(bookings);
   } catch (error) {
-    console.error("❌ GET ALL BOOKINGS ERROR:", error);
     return res.status(500).json({ message: error.message });
   }
 };
@@ -216,34 +157,39 @@ export const getAllBookings = async (req, res) => {
  */
 export const updateBooking = async (req, res) => {
   try {
-    console.log("✏️ UPDATE BOOKING:", req.params.id, req.body);
-
-    const { status } = req.body;
-    const allowedStatus = ["pending", "confirmed", "cancelled"];
-
-    if (!allowedStatus.includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
+    const { status, paymentStatus } = req.body;
+    const updateData = {};
+    
+    if (status) updateData.status = status;
+    if (paymentStatus) updateData.paymentStatus = paymentStatus.toUpperCase();
 
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true }
     );
 
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    console.log("✅ BOOKING UPDATED:", booking._id, status);
-
-    return res.json({
-      message: "Booking updated successfully",
-      booking,
-    });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    return res.json({ message: "Booking updated successfully", booking });
   } catch (error) {
-    console.error("❌ UPDATE BOOKING ERROR:", error);
     return res.status(500).json({ message: error.message });
   }
 };
 
+export const getBookingStatus = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .select("paymentStatus status"); // Chỉ lấy các trường cần thiết để tối ưu tốc độ
+
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    return res.json({
+      paymentStatus: booking.paymentStatus, // UNPAID, DEPOSITED, hoặc PAID
+      status: booking.status                // pending, confirmed...
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};

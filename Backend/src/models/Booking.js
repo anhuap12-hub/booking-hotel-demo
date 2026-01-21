@@ -122,6 +122,19 @@ const bookingSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // --- CẬP NHẬT: Thêm thông tin đặt cọc ---
+    depositAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    remainingAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    // ---------------------------------------
+
     currency: {
       type: String,
       default: "VND",
@@ -133,28 +146,31 @@ const bookingSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+
     paymentStatus: {
-  type: String,
-  enum: ["UNPAID", "PAID", "REFUNDED"],
-  default: "UNPAID",
-  index: true,
-},
+      type: String,
+      // CẬP NHẬT: Thêm trạng thái DEPOSITED
+      enum: ["UNPAID", "DEPOSITED", "PAID", "REFUNDED"],
+      default: "UNPAID",
+      index: true,
+    },
 
-paidAt: Date,
+    paidAt: Date,
 
-paidBy: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User",
-},
+    paidBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
 
-paymentLogs: [
-  {
-    at: { type: Date, default: Date.now },
-    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    action: { type: String, enum: ["PAID", "REFUNDED"] },
-    note: String,
-  },
-],
+    paymentLogs: [
+      {
+        at: { type: Date, default: Date.now },
+        by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        // CẬP NHẬT: Cho phép lưu log đặt cọc
+        action: { type: String, enum: ["DEPOSITED", "PAID", "REFUNDED"] },
+        note: String,
+      },
+    ],
 
     cancelledAt: Date,
     cancelReason: String,
@@ -178,6 +194,7 @@ bookingSchema.index({
   status: 1,
   createdAt: -1,
 });
+
 /**
  * ======================
  * Validation
@@ -189,14 +206,12 @@ bookingSchema.pre("validate", function () {
   }
 
   if (this.checkIn >= this.checkOut) {
-    this.invalidate(
-      "checkOut",
-      "checkOut must be after checkIn"
-    );
+    this.invalidate("checkOut", "checkOut must be after checkIn");
   }
+
   if (this.paymentStatus) {
-  this.paymentStatus = this.paymentStatus.toUpperCase();
-}
+    this.paymentStatus = this.paymentStatus.toUpperCase();
+  }
 });
 
 export default mongoose.model("Booking", bookingSchema);

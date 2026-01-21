@@ -7,6 +7,7 @@ import {
   getUserBookings,
   getAllBookings,
   updateBooking,
+  getBookingStatus
 } from "../controllers/booking.controller.js";
 import { requireEmailVerified } from "../middleware/requireEmailVerified.js";
 
@@ -16,7 +17,7 @@ const router = express.Router();
 router.post("/", protect, requireEmailVerified, createBooking);
 router.get("/my", protect, getUserBookings);
 router.put("/:id/cancel", protect, cancelBooking);
-
+router.get("/:id/status", protect, getBookingStatus);
 // ================= ADMIN =================
 router.get("/admin", protect, adminOnly, getAllBookings);
 router.put("/:id", protect, adminOnly, updateBooking);

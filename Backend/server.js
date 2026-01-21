@@ -6,7 +6,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 import connectDB from "./src/config/db.js";
-
+import webhookRoutes from "./src/routes/webhook.route.js";
 import userRoutes from "./src/routes/user.route.js";
 import testRoutes from "./src/routes/test.route.js";
 import authRoutes from "./src/routes/auth.route.js";
@@ -55,7 +55,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/bookings", bookingRoutes);
-
+app.use("/api/webhooks", webhookRoutes);
 
 /* ===================== STATIC ===================== */
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

@@ -278,3 +278,24 @@ export const updateRoomStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const getRoomDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Tìm phòng và lấy thêm dữ liệu từ model Hotel đã ref trong Schema
+    const room = await Room.findById(id).populate("hotel", "name location address");
+
+    if (!room) {
+      return res.status(404).json({ message: "Không tìm thấy phòng này" });
+    }
+
+    // Nếu phòng đang ở trạng thái 'inactive', có thể chặn không cho khách xem (tùy logic của bạn)
+    if (room.status === "inactive") {
+      return res.status(400).json({ message: "Phòng hiện tại đã ngừng kinh doanh" });
+    }
+
+    res.status(200).json(room);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
+  }
+};

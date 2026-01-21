@@ -1,28 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  Box,
-  Typography,
-  Stack,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Chip,
-  Button,
-  CircularProgress,
+  Box, Typography, Stack, Paper, Table, TableHead, TableRow, TableCell,
+  TableBody, Chip, Button, CircularProgress, Tooltip
 } from "@mui/material";
-
-import {
-  getAdminBookings,
-  updateContactStatus,
-  markBookingPaid,
-} from "../../api/admin.api";
-
+import { getAdminBookings, updateContactStatus, markBookingPaid } from "../../api/admin.api";
 import AdminBookingLogsDialog from "./AdminBookingLogsDialog";
 
-/* ================= HELPERS (Giữ logic hiển thị tách biệt) ================= */
+/* ================= HELPERS ================= */
 
 const bookingColor = (status) => {
   switch (status) {
@@ -36,6 +20,7 @@ const bookingColor = (status) => {
 const paymentColor = (status) => {
   switch (status) {
     case "PAID": return "success";
+    case "DEPOSITED": return "primary"; // Màu xanh dương cho tiền cọc
     case "REFUNDED": return "info";
     default: return "default";
   }
@@ -58,7 +43,6 @@ export default function AdminBookings() {
   const [openLogs, setOpenLogs] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  /* ================= FETCH DATA ================= */
   const fetchBookings = useCallback(async () => {
     try {
       const res = await getAdminBookings();
@@ -90,34 +74,26 @@ export default function AdminBookings() {
   };
 
   const handlePaid = async (id) => {
-    await markBookingPaid(id);
-    fetchBookings();
+    if (window.confirm("Xác nhận khách đã thanh toán TOÀN BỘ số tiền còn lại?")) {
+      await markBookingPaid(id);
+      fetchBookings();
+    }
   };
 
-  /* ================= RENDER LOGIC ================= */
-
-  if (loading) {
-    return (
-      <Box py={6} textAlign="center">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <Box py={6} textAlign="center"><CircularProgress /></Box>;
 
   return (
     <>
       <Stack spacing={3}>
-        <Typography fontSize={22} fontWeight={600}>
-          Customer Care – Bookings
-        </Typography>
+        <Typography fontSize={22} fontWeight={600}>Quản lý Đặt phòng & Thanh toán</Typography>
 
         <Paper sx={{ borderRadius: 2, border: "1px solid #E5E2DC", overflow: "hidden" }}>
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: "#EFEAE3" }}>
-                <TableCell>Khách</TableCell>
-                <TableCell>Khách sạn</TableCell>
-                <TableCell>Ngày ở</TableCell>
+                <TableCell>Khách hàng</TableCell>
+                <TableCell>Phòng / Khách sạn</TableCell>
+                <TableCell>Chi tiết Tiền (VNĐ)</TableCell>
                 <TableCell>Trạng thái</TableCell>
                 <TableCell>CSKH</TableCell>
                 <TableCell align="right">Hành động</TableCell>
@@ -126,114 +102,91 @@ export default function AdminBookings() {
 
             <TableBody>
               {!bookings.length ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                    <Typography color="text.secondary">Không có booking nào</Typography>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={6} align="center" sx={{ py: 3 }}>Trống</TableCell></TableRow>
               ) : (
                 bookings.map((b) => {
                   const isCancelled = b.status === "cancelled" || b.result === "CANCELLED";
-                  const isPaid = b.paymentStatus === "PAID";
+                  const isPaidFull = b.paymentStatus === "PAID";
+                  const isDeposited = b.paymentStatus === "DEPOSITED";
 
                   return (
-                    <TableRow key={b._id} sx={{ opacity: isCancelled ? 0.7 : 1 }}>
-                      {/* THÔNG TIN KHÁCH */}
+                    <TableRow key={b._id} sx={{ opacity: isCancelled ? 0.7 : 1, bgcolor: isDeposited ? '#f0f7ff' : 'inherit' }}>
+                      {/* KHÁCH HÀNG */}
                       <TableCell>
                         <Typography fontWeight={600}>{b.guest?.name}</Typography>
-                        <Typography fontSize={12} color="text.secondary">
-                          {b.guest?.phone} • {b.guest?.email}
-                        </Typography>
-                        <Typography fontSize={12} color="text.secondary">
-                          {b.guestsCount} khách
-                        </Typography>
+                        <Typography fontSize={12} color="text.secondary">{b.guest?.phone}</Typography>
+                        <Typography fontSize={11} color="primary">ID: ...{b._id.slice(-6).toUpperCase()}</Typography>
                       </TableCell>
 
-                      {/* KHÁCH SẠN */}
+                      {/* PHÒNG */}
                       <TableCell>
-                        <Typography fontSize={14}>{b.hotel?.name}</Typography>
-                        <Typography fontSize={12} color="text.secondary">{b.room?.name}</Typography>
+                        <Typography fontSize={14} fontWeight={500}>{b.room?.name}</Typography>
+                        <Typography fontSize={12} color="text.secondary">{b.hotel?.name}</Typography>
+                        <Typography fontSize={11}>{b.guestsCount} khách | {new Date(b.checkIn).toLocaleDateString()} - {new Date(b.checkOut).toLocaleDateString()}</Typography>
                       </TableCell>
 
-                      {/* NGÀY THÁNG */}
+                      {/* CHI TIẾT TIỀN */}
                       <TableCell>
-                        <Typography fontSize={13}>
-                          {new Date(b.checkIn).toLocaleDateString()} → {new Date(b.checkOut).toLocaleDateString()}
-                        </Typography>
-                        <Typography fontSize={11} color="text.secondary">
-                          Đặt lúc: {new Date(b.createdAt).toLocaleString()}
-                        </Typography>
-                      </TableCell>
-
-                      {/* TRẠNG THÁI BOOKING */}
-                      <TableCell>
-                        <Stack spacing={0.5} alignItems="flex-start">
-                          <Chip size="small" label={b.status} color={bookingColor(b.status)} />
-                          <Chip size="small" label={b.paymentStatus || "UNPAID"} color={paymentColor(b.paymentStatus)} />
-                          <Typography fontWeight={700} fontSize={13} sx={{ mt: 0.5 }}>
-                            {b.totalPrice?.toLocaleString()} đ
+                        <Tooltip title="Tổng tiền đơn hàng">
+                          <Typography fontSize={13} fontWeight={600}>{b.totalPrice?.toLocaleString()} đ</Typography>
+                        </Tooltip>
+                        {isDeposited && (
+                          <Typography fontSize={11} color="primary.main">
+                            Đã cọc: {b.depositAmount?.toLocaleString()} đ
                           </Typography>
-                        </Stack>
+                        )}
+                        {(isDeposited || !isPaidFull) && (
+                          <Typography fontSize={11} color="error.main" fontWeight={600}>
+                            Còn lại: {b.remainingAmount?.toLocaleString()} đ
+                          </Typography>
+                        )}
                       </TableCell>
 
-                      {/* TRẠNG THÁI CSKH */}
+                      {/* TRẠNG THÁI */}
                       <TableCell>
-                        <Stack spacing={0.5} alignItems="flex-start">
+                        <Stack spacing={0.5}>
+                          <Chip size="small" label={b.status.toUpperCase()} color={bookingColor(b.status)} />
                           <Chip 
                             size="small" 
-                            label={displayResult(b)} 
-                            color={b.result === "CONFIRMED" ? "success" : b.result === "CANCELLED" ? "error" : "default"} 
+                            label={isDeposited ? "ĐÃ CỌC 30%" : b.paymentStatus || "CHƯA TRẢ"} 
+                            color={paymentColor(b.paymentStatus)} 
                           />
-                          <Typography fontSize={11} color="text.secondary">{b.contactStatus}</Typography>
                         </Stack>
                       </TableCell>
 
-                      {/* CÁC NÚT THAO TÁC */}
+                      {/* CSKH */}
+                      <TableCell>
+                        <Chip 
+                          size="small" 
+                          variant="outlined"
+                          label={displayResult(b)} 
+                          color={b.result === "CONFIRMED" ? "success" : b.result === "CANCELLED" ? "error" : "default"} 
+                        />
+                      </TableCell>
+
+                      {/* HÀNH ĐỘNG */}
                       <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
                           {b.contactStatus !== "CLOSED" && (
                             <>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                onClick={() => handleConfirm(b._id)}
-                                sx={{ bgcolor: "#4F6F52", "&:hover": { bgcolor: "#3E5A42" } }}
-                              >
-                                Confirm
-                              </Button>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                onClick={() => handleCancel(b._id)}
-                                sx={{ bgcolor: "#8B3A3A", "&:hover": { bgcolor: "#6E2D2D" } }}
-                              >
-                                Cancel
-                              </Button>
+                              <Button size="small" variant="contained" color="success" onClick={() => handleConfirm(b._id)}>Duyệt</Button>
+                              <Button size="small" variant="contained" color="error" onClick={() => handleCancel(b._id)}>Hủy</Button>
                             </>
                           )}
 
-                          {/* FIX: Chỉ hiện nút Thanh toán nếu chưa trả tiền VÀ chưa bị hủy */}
-                          {!isPaid && !isCancelled && (
+                          {/* Chỉ hiện nút Thanh Toán nếu chưa trả đủ 100% và đơn không bị hủy */}
+                          {!isPaidFull && !isCancelled && (
                             <Button
                               size="small"
                               variant="contained"
                               onClick={() => handlePaid(b._id)}
-                              sx={{ bgcolor: "#9A6A3A", "&:hover": { bgcolor: "#7C5430" } }}
+                              sx={{ bgcolor: "#FF9800", "&:hover": { bgcolor: "#F57C00" } }}
                             >
-                              Thanh toán
+                              Thu tiền mặt
                             </Button>
                           )}
 
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              setSelectedBooking(b);
-                              setOpenLogs(true);
-                            }}
-                          >
-                            Logs
-                          </Button>
+                          <Button size="small" variant="outlined" onClick={() => { setSelectedBooking(b); setOpenLogs(true); }}>Logs</Button>
                         </Stack>
                       </TableCell>
                     </TableRow>
@@ -245,11 +198,7 @@ export default function AdminBookings() {
         </Paper>
       </Stack>
 
-      <AdminBookingLogsDialog
-        open={openLogs}
-        onClose={() => setOpenLogs(false)}
-        booking={selectedBooking}
-      />
+      <AdminBookingLogsDialog open={openLogs} onClose={() => setOpenLogs(false)} booking={selectedBooking} />
     </>
   );
 }

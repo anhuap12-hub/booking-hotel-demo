@@ -1,4 +1,5 @@
 import instance from "./axios.js";
+
 export const updateProfile = (data) =>
   instance.put("/users/profile", data);
 
@@ -17,3 +18,7 @@ export const getAllBookings = () =>
 
 export const updateBookingStatus = (id, status) =>
   instance.put(`/bookings/${id}`, { status });
+
+// --- THÊM HÀM NÀY ĐỂ CHECK THANH TOÁN ---
+export const getBookingStatus = (id) => 
+  instance.get(`/bookings/${id}/status`);
