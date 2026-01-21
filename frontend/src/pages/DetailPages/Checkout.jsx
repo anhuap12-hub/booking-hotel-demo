@@ -5,7 +5,7 @@ import {
   Button, CircularProgress, Alert, Grid 
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { createBooking, getBookingDetail } from '../api/booking.api';
+import { createBooking, getBookingDetail } from '../../api/booking.api';
 
 export default function Checkout() {
   const { id: roomId } = useParams();
