@@ -22,11 +22,9 @@ export const createBooking = async (req, res) => {
       return res.status(404).json({ message: "Room or Hotel not found" });
     }
 
-    // --- LOGIC TÍNH GIÁ ĐÃ GIẢM (DISCOUNT) ---
+    // --- LOGIC TÍNH GIÁ ĐÃ GIẢM ---
     const originalPrice = roomExists.price ?? roomExists.pricePerNight;
-    const discount = roomExists.discount || 0; // Lấy % giảm giá từ Database
-    
-    // Tính giá thực tế của 1 đêm sau khi giảm
+    const discount = roomExists.discount || 0;
     const finalPricePerNight = discount > 0 
       ? Math.round(originalPrice * (1 - discount / 100)) 
       : originalPrice;
@@ -34,33 +32,35 @@ export const createBooking = async (req, res) => {
     if (!finalPricePerNight) return res.status(400).json({ message: "Room price missing" });
 
     // --- KIỂM TRA SỨC CHỨA & NGÀY THÁNG ---
-    if (guestsCount > roomExists.maxPeople) {
-      return res.status(400).json({ message: "Guests exceed room capacity" });
-    }
-
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
     if (checkInDate >= checkOutDate) {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-    if (nights < 1) return res.status(400).json({ message: "At least 1 night required" });
+    const nights = Math.ceil((checkOutDate - checkInDate) / (1 * 60 * 1000));
 
-    // Kiểm tra trùng lịch
+    // --- KIỂM TRA TRÙNG LỊCH (Đã cập nhật logic mới) ---
+    // Chỉ chặn nếu đơn đó đã CONFIRMED hoặc đã PAID/DEPOSITED
     const conflict = await Booking.findOne({
       room,
-      status: { $nin: ["cancelled"] },
+      $or: [
+        { status: "confirmed" },
+        { paymentStatus: { $in: ["PAID", "DEPOSITED"] } }
+      ],
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
-    if (conflict) return res.status(400).json({ message: "Room already booked" });
+    if (conflict) return res.status(400).json({ message: "Room already booked by someone else" });
 
-    // --- LOGIC TÍNH TỔNG TIỀN VÀ CỌC ---
-    const totalPrice = finalPricePerNight * nights; // Tổng tiền dựa trên giá đã giảm
+    const totalPrice = finalPricePerNight * nights;
     const DEPOSIT_RATE = 0.3; 
     const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
     const remainingAmount = totalPrice - depositAmount;
+
+    // --- THIẾT LẬP THỜI GIAN HẾT HẠN (30 PHÚT) ---
+    // Đơn hàng sẽ tự động bị xóa khỏi DB nếu sau 30 phút vẫn là UNPAID
+    const expiryTime = new Date(Date.now() + 30 * 60 * 1000);
 
     const booking = await Booking.create({
       user: req.user.id,
@@ -73,8 +73,8 @@ export const createBooking = async (req, res) => {
       roomSnapshot: {
         name: roomExists.name,
         type: roomExists.type,
-        pricePerNight: finalPricePerNight, // Lưu lại giá đã giảm vào lịch sử đơn
-        originalPrice: originalPrice,      // Lưu thêm giá gốc để đối soát nếu cần
+        pricePerNight: finalPricePerNight,
+        originalPrice: originalPrice,
         discount: discount,
         maxPeople: roomExists.maxPeople,
         cancellationPolicy: roomExists.cancellationPolicy,
@@ -86,9 +86,10 @@ export const createBooking = async (req, res) => {
       status: "pending",
       paymentStatus: "UNPAID",
       contactStatus: "NEW",
+      expireAt: expiryTime, // Kích hoạt TTL Index
     });
 
-    console.log("✅ BOOKING CREATED WITH DISCOUNT:", booking._id, "Total:", totalPrice);
+    console.log("✅ BOOKING CREATED. Expire at:", expiryTime);
     return res.status(201).json({ message: "Booking created successfully", booking });
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
@@ -206,30 +207,28 @@ export const getBookingStatus = async (req, res) => {
 export const checkAvailability = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { checkInDate, checkOutDate } = req.body; // Đây là dữ liệu từ Frontend gửi lên
+    const { checkInDate, checkOutDate } = req.body;
 
-    // Chuyển đổi sang Date để so sánh
     const start = new Date(checkInDate);
     const end = new Date(checkOutDate);
 
-    // TÌM KIẾM THEO ĐÚNG TÊN TRƯỜNG TRONG MODEL (checkIn, checkOut)
+    // TÌM KIẾM XUNG ĐỘT THEO CHIẾN THUẬT MỚI
     const conflict = await Booking.findOne({
       room: roomId,
-      status: { $nin: ["cancelled"] }, // Bỏ qua đơn đã hủy
+      // CHỈ COI LÀ HẾT PHÒNG NẾU:
       $or: [
-        {
-          // Logic: Nếu ngày Check-in hiện có TRƯỚC ngày khách định Check-out
-          // VÀ ngày Check-out hiện có SAU ngày khách định Check-in
-          checkIn: { $lt: end }, 
-          checkOut: { $gt: start }
-        }
-      ]
+        { status: "confirmed" }, // 1. Đã được Admin duyệt
+        { paymentStatus: { $in: ["PAID", "DEPOSITED"] } } // 2. Hoặc đã trả tiền/cọc
+      ],
+      // Logic overlap ngày tháng giữ nguyên
+      checkIn: { $lt: end }, 
+      checkOut: { $gt: start }
     });
 
     return res.status(200).json({
       success: true,
-      available: !conflict, // Nếu tìm thấy conflict thì available = false
-      message: conflict ? "Phòng đã có khách đặt" : "Phòng trống"
+      available: !conflict, 
+      message: conflict ? "Phòng đã có khách đặt chắc chắn" : "Phòng trống"
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
