@@ -5,7 +5,7 @@ import uploadImage from "../middleware/uploadImage.js";
 
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
-import { getAdminRoomMap } from "../controllers/room.controller.js";
+import { getAdminRoomMap, updateRoomStatusg } from "../controllers/room.controller.js";
 import {
   markBookingPaid,
   getAdminBookings,
@@ -78,6 +78,7 @@ router.get(
   adminOnly,
   getFollowUpBookings
 );
+router.put("/rooms-status/:id", protect, adminOnly, updateRoomStatus);
 
 /* ========= STATS ========= */
 router.get("/stats", protect, adminOnly, getAdminStats);

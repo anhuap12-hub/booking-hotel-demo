@@ -17,3 +17,6 @@ export const markBookingPaid = (id, note) =>
 
 export const getAdminRoomMap = (params) => 
   instance.get("/admin/room-map", { params });
+
+export const updateRoomStatus = (id, status) => 
+  instance.put(`/admin/rooms-status/${id}`, { status });

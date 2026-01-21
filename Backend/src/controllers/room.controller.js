@@ -257,3 +257,24 @@ const activeBookings = await Booking.find(bookingQuery).populate("user", "name e
     res.status(500).json({ message: error.message });
   }
 };
+
+export const updateRoomStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // active hoặc maintenance
+
+    const updatedRoom = await Room.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedRoom) {
+      return res.status(404).json({ message: "Không tìm thấy phòng" });
+    }
+
+    res.status(200).json(updatedRoom);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
