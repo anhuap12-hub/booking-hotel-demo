@@ -9,6 +9,8 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Paper,
+  Button, // Thêm Button bị thiếu
 } from "@mui/material";
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
@@ -35,55 +37,51 @@ export default function HotelRoom() {
 
   // 1. Lấy dữ liệu từ API
   useEffect(() => {
+    let isMounted = true; // Phòng tránh setState trên component đã unmount
     const fetchRooms = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Gọi API getRoomsByHotel đã sửa ở Backend
         const res = await axios.get(`/rooms/hotel/${hotelId}`);
         
-        console.log("Dữ liệu nhận được từ Backend:", res.data);
-
-        // Đảm bảo lấy đúng mảng rooms từ response { hotel, rooms }
-        const roomData = res.data.rooms || [];
-        setRooms(roomData);
-        setHotel(res.data.hotel);
-        
+        if (isMounted) {
+          const roomData = res.data.rooms || [];
+          setRooms(roomData);
+          setHotel(res.data.hotel);
+        }
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu:", err);
-        setError("Không thể tải danh sách phòng. Vui lòng thử lại sau.");
+        if (isMounted) {
+          console.error("Lỗi khi tải dữ liệu:", err);
+          setError("Không thể tải danh sách phòng. Vui lòng thử lại sau.");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     if (hotelId) {
       fetchRooms();
     }
+    return () => { isMounted = false; };
   }, [hotelId]);
 
-  // 2. Logic lọc phòng (Đã sửa lỗi so sánh Case-sensitive và ép kiểu Số)
+  // 2. Logic lọc phòng
   const filteredRooms = useMemo(() => {
     if (!rooms.length) return [];
 
     return rooms.filter((room) => {
-      // Ép kiểu về Number để tránh lỗi so sánh chuỗi/NaN
       const roomPrice = Number(room.price) || 0;
       const filterPrice = Number(filter?.price) || 10000000;
       const matchesPrice = roomPrice <= filterPrice;
 
-      // So sánh loại phòng (Case-insensitive)
       const roomType = room.type?.toLowerCase();
       const filterType = filter?.type?.toLowerCase() || "all";
       const matchesType = filterType === "all" || roomType === filterType;
 
-      // So sánh số lượng khách
       const roomMaxPeople = Number(room.maxPeople) || 0;
       const filterMaxPeople = Number(filter?.maxPeople) || 1;
       const matchesPeople = roomMaxPeople >= filterMaxPeople;
 
-      // Lọc theo tiện nghi
       const roomAmenities = room.amenities?.map(a => a.toLowerCase()) || [];
       const filterAmenities = filter?.amenities || [];
       const matchesAmenities = filterAmenities.every((a) =>
@@ -106,7 +104,7 @@ export default function HotelRoom() {
   if (loading) return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 20 }}>
       <CircularProgress size={50} thickness={4} />
-      <Typography sx={{ mt: 2, color: 'text.secondary' }}>Đang tìm kiếm phòng tốt nhất cho bạn...</Typography>
+      <Typography sx={{ mt: 2, color: 'text.secondary' }}>Đang tìm kiếm phòng...</Typography>
     </Box>
   );
 
@@ -115,12 +113,12 @@ export default function HotelRoom() {
       
       {/* SECTION 1: BREADCRUMBS */}
       <Box sx={{ bgcolor: "#fff", borderBottom: "1px solid #eee", py: 1.5 }}>
-        <Container>
+        <Container maxWidth="lg">
           <Breadcrumbs separator={<NavigateNextIcon sx={{ fontSize: 14 }} />} sx={{ fontSize: "0.85rem" }}>
             <Link component={RouterLink} to="/" color="inherit" underline="hover">Trang chủ</Link>
             <Link component={RouterLink} to="/hotels" color="inherit" underline="hover">Khách sạn</Link>
             <Typography color="text.primary" sx={{ fontWeight: 600 }}>
-              {hotel?.name || "Khách sạn"}
+              {hotel?.name || "Chi tiết"}
             </Typography>
           </Breadcrumbs>
         </Container>
@@ -128,7 +126,7 @@ export default function HotelRoom() {
 
       {/* SECTION 2: HOTEL HEADER */}
       <Box sx={{ bgcolor: "#fff", pt: 4, pb: 4, mb: 4, boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
-        <Container>
+        <Container maxWidth="lg">
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={8}>
               <Typography 
@@ -138,7 +136,7 @@ export default function HotelRoom() {
                   fontWeight: 800, 
                   color: "#1A1A1A", 
                   mb: 1,
-                  fontSize: { xs: '2rem', md: '3rem' }
+                  fontSize: { xs: '1.8rem', md: '2.5rem' }
                 }}
               >
                 {hotel?.name}
@@ -146,71 +144,72 @@ export default function HotelRoom() {
               <Stack direction="row" spacing={1} alignItems="center">
                 <LocationOnIcon sx={{ color: "primary.main", fontSize: "1.2rem" }} />
                 <Typography variant="body1" color="text.secondary">
-                  {hotel?.address || hotel?.city}
+                  {hotel?.address}
                 </Typography>
               </Stack>
             </Grid>
             <Grid item xs={12} md={4} sx={{ textAlign: { md: "right" } }}>
               <Chip 
                 icon={<VerifiedUserIcon />} 
-                label="Thanh toán an toàn qua SePay" 
+                label="Thanh toán an toàn" 
                 color="success" 
                 variant="outlined" 
-                sx={{ fontWeight: 700, px: 1 }} 
+                sx={{ fontWeight: 700 }} 
               />
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* SECTION 3: MAIN CONTENT */}
-      <Container sx={{ pb: 10 }}>
+      {/* SECTION 3: MAIN CONTENT - Đây là nơi chia cột */}
+      <Container maxWidth="lg" sx={{ pb: 10 }}>
         {error ? (
-          <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
+          <Alert severity="error">{error}</Alert>
         ) : (
           <Grid container spacing={4}>
             
-            {/* CỘT TRÁI: BỘ LỌC */}
-            <Grid item xs={12} lg={3.5}>
-              <RoomFilter />
+            {/* CỘT TRÁI (Sticky Filter) */}
+            <Grid item xs={12} md={4} lg={3.5}>
+              <Box sx={{ position: { md: 'sticky' }, top: 20 }}>
+                <RoomFilter />
+              </Box>
             </Grid>
 
-            {/* CỘT PHẢI: DANH SÁCH PHÒNG */}
-            <Grid item xs={12} lg={8.5}>
+            {/* CỘT PHẢI (Room List) */}
+            <Grid item xs={12} md={8} lg={8.5}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   Phòng sẵn có ({filteredRooms.length})
                 </Typography>
                 
                 {(filter.type !== "all" || filter.amenities.length > 0 || filter.price < 10000000) && (
-                  <Typography 
-                    variant="body2" 
-                    color="primary" 
-                    sx={{ cursor: 'pointer', fontWeight: 600, "&:hover": { textDecoration: 'underline' } }}
+                  <Button 
+                    size="small"
                     onClick={handleResetFilter}
+                    sx={{ fontWeight: 600 }}
                   >
                     Xóa tất cả bộ lọc
-                  </Typography>
+                  </Button>
                 )}
               </Stack>
               
               {filteredRooms.length > 0 ? (
-                <RoomList 
-                  rooms={filteredRooms} 
-                  hotel={hotel} 
-                />
+                <RoomList rooms={filteredRooms} hotel={hotel} />
               ) : (
-                <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3 }}>
+                <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, border: '2px dashed #eee' }}>
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     Không tìm thấy phòng phù hợp
                   </Typography>
                   <Typography variant="body2" color="text.disabled" mb={3}>
-                    Bạn hãy thử thay đổi tiêu chí lọc hoặc ngày đặt phòng xem sao nhé!
+                    Vui lòng thay đổi bộ lọc hoặc chọn ngày khác.
                   </Typography>
-                  <Button variant="outlined" onClick={handleResetFilter}>Xem lại tất cả phòng</Button>
+                  <Button variant="contained" onClick={handleResetFilter}>
+                    Reset bộ lọc
+                  </Button>
                 </Paper>
               )}
             </Grid>
+
           </Grid>
         )}
       </Container>

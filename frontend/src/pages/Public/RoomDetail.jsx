@@ -7,16 +7,10 @@ import {
 } from '@mui/material';
 
 // Icons
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import KingBedIcon from '@mui/icons-material/KingBed';
-import SecurityIcon from '@mui/icons-material/Security';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import WifiIcon from '@mui/icons-material/Wifi';
-import PoolIcon from '@mui/icons-material/Pool';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-
 import { getRoomDetail } from '../../api/room.api';
 
 export default function RoomDetail() {
