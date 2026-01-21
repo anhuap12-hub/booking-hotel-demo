@@ -2,24 +2,29 @@ import nodemailer from "nodemailer";
 
 export const sendVerifyEmail = async (to, verifyLink) => {
   const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com", //
-    port: 587, //
-    secure: false, 
+    service: "gmail",
     auth: {
-      user: process.env.BREVO_USER,
-      pass: process.env.BREVO_PASS,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
   try {
     await transporter.sendMail({
-      from: `"Coffee Stay" <anhuap12@gmail.com>`, // Email thực tế bạn đã đăng ký
+      from: `"Coffee Stay" <${process.env.EMAIL_USER}>`,
       to: to,
-      subject: "Xác thực tài khoản của bạn",
-      html: `<p>Nhấn vào link để xác thực: <a href="${verifyLink}">${verifyLink}</a></p>`,
+      subject: "Xác thực tài  khoản Coffee Stay",
+      html: `
+        <div style="padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+          <h2 style="color: #333;">Chào mừng bạn đến với Coffee Stay!</h2>
+          <p>Bạn nhận được mail này vì đã dùng email này để đăng ký test hệ thống.</p>
+          <p>Vui lòng nhấn vào link bên dưới để xác thực:</p>
+          <a href="${verifyLink}" style="color: blue;">${verifyLink}</a>
+        </div>
+      `,
     });
-    console.log("✅ THÀNH CÔNG: Mail đã được gửi qua Brevo Relay!");
+    console.log("✅ Đã gửi mail thành công từ chính Gmail cá nhân!");
   } catch (error) {
-    console.error("❌ LỖI GỬI MAIL:", error.message);
+    console.error("❌ Lỗi gửi mail qua Gmail:", error.message);
   }
 };
