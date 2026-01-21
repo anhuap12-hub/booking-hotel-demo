@@ -1,30 +1,31 @@
-import nodemailer from "nodemailer";
+import { Resend } from 'resend';
+
+// Sử dụng API Key từ môi trường Render
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendVerifyEmail = async (to, verifyLink) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465, // Đổi từ 587 thành 465
-    secure: true, // Port 465 bắt buộc phải là true
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-
-  console.log("📨 Thử gửi mail qua cổng 465...");
-
+  console.log("🚀 Resend đang gửi mail tới:", to);
+  
   try {
-    const info = await transporter.sendMail({
-      from: `"Booking Hotel" <${process.env.EMAIL_USER}>`,
-      to,
-      subject: "Xác thực tài khoản",
-      html: `<p>Nhấn vào đây để xác thực: <a href="${verifyLink}">${verifyLink}</a></p>`,
+    await resend.emails.send({
+      from: 'onboarding@resend.dev', // Để mặc định như này để test
+      to: to,
+      subject: 'Xác thực tài khoản BookingHotel',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #1976d2; text-align: center;">Xác Thực Email</h2>
+          <p>Chào bạn, vui lòng nhấn vào nút bên dưới để hoàn tất đăng ký tài khoản tại BookingHotel:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verifyLink}" style="background-color: #1976d2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Xác Thực Ngay
+            </a>
+          </div>
+          <p style="font-size: 12px; color: #777;">Liên kết này sẽ hết hạn sau 30 phút.</p>
+        </div>
+      `
     });
-    console.log("✅ EMAIL ĐÃ GỬI THÀNH CÔNG qua cổng 465!");
+    console.log("✅ RESEND: Đã gửi mail thành công!");
   } catch (error) {
-    console.error("❌ VẪN LỖI GỬI MAIL:", error.message);
+    console.error("❌ RESEND ERROR:", error.message);
   }
 };
