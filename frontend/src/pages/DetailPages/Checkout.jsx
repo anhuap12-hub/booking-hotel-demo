@@ -46,18 +46,23 @@ export default function Checkout() {
   );
 
   // Lấy 6 ký tự cuối ID làm mã đơn hàng
-  const orderIdSuffix = booking?._id ? booking._id.slice(-6).toUpperCase() : "ERROR";
-  
-  const bankInfo = {
-    id: "vietinbank",
-    no: "108877368467",
-    name: "NGUYEN HOANG ANH",
-    content: `DH${orderIdSuffix}`
-  };
+  // Lấy 6 ký tự cuối ID làm mã đơn hàng
+const orderIdSuffix = booking?._id ? booking._id.slice(-6).toUpperCase() : "ERROR";
 
-  // URL VietQR lấy giá trị depositAmount trực tiếp từ Backend trả về
-  const qrUrl = `https://img.vietqr.io/image/${bankInfo.id}-${bankInfo.no}-compact.png?amount=${booking?.depositAmount}&addInfo=${bankInfo.content}&accountName=${bankInfo.name}`;
+const bankInfo = {
+  id: "vietinbank", // ID ngân hàng của bạn
+  no: "108877368467",
+  name: "NGUYEN HOANG ANH",
+  content: `DH${orderIdSuffix}`
+};
 
+// --- LOGIC TEST: Cố định 2000đ để test quét mã ---
+const testAmount = 2000; 
+// Sử dụng testAmount nếu bạn muốn test, hoặc dùng booking?.depositAmount cho thực tế
+const finalAmount = testAmount; 
+
+// URL VietQR 
+const qrUrl = `https://img.vietqr.io/image/${bankInfo.id}-${bankInfo.no}-compact.png?amount=${finalAmount}&addInfo=${bankInfo.content}&accountName=${encodeURIComponent(bankInfo.name)}`;
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
       <Typography variant="h4" fontWeight={800} mb={4}>Chi tiết đặt phòng</Typography>

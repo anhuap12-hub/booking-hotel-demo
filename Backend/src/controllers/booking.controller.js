@@ -38,10 +38,10 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    const nights = Math.ceil((checkOutDate - checkInDate) / (1 * 60 * 1000));
+    // ✅ ĐÃ SỬA: Chia cho (24 giờ * 60 phút * 60 giây * 1000 ms) để ra số ĐÊM
+    const nights = Math.ceil((checkOutDate - checkInDate) / (24 * 60 * 60 * 1000));
 
-    // --- KIỂM TRA TRÙNG LỊCH (Đã cập nhật logic mới) ---
-    // Chỉ chặn nếu đơn đó đã CONFIRMED hoặc đã PAID/DEPOSITED
+    // --- KIỂM TRA TRÙNG LỊCH ---
     const conflict = await Booking.findOne({
       room,
       $or: [
@@ -59,7 +59,6 @@ export const createBooking = async (req, res) => {
     const remainingAmount = totalPrice - depositAmount;
 
     // --- THIẾT LẬP THỜI GIAN HẾT HẠN (30 PHÚT) ---
-    // Đơn hàng sẽ tự động bị xóa khỏi DB nếu sau 30 phút vẫn là UNPAID
     const expiryTime = new Date(Date.now() + 30 * 60 * 1000);
 
     const booking = await Booking.create({
@@ -86,10 +85,10 @@ export const createBooking = async (req, res) => {
       status: "pending",
       paymentStatus: "UNPAID",
       contactStatus: "NEW",
-      expireAt: expiryTime, // Kích hoạt TTL Index
+      expireAt: expiryTime,
     });
 
-    console.log("✅ BOOKING CREATED. Expire at:", expiryTime);
+    console.log("✅ BOOKING CREATED. Nights:", nights, "Total:", totalPrice);
     return res.status(201).json({ message: "Booking created successfully", booking });
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
