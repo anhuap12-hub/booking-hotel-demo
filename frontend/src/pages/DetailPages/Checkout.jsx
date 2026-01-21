@@ -5,7 +5,7 @@ import {
   Button, CircularProgress, Alert, Grid 
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { createBooking, getBookingDetail } from '../../api/booking.api';
+import { createBooking, getBookingStatus } from '../../api/booking.api';
 
 export default function Checkout() {
   const { id: roomId } = useParams();
@@ -63,7 +63,7 @@ export default function Checkout() {
     if (booking && !isPaid) {
       pollingRef.current = setInterval(async () => {
         try {
-          const res = await getBookingDetail(booking._id);
+          const res = await getBookingStatus(booking._id);
           if (res.data.paymentStatus === 'DEPOSITED' || res.data.paymentStatus === 'PAID') {
             setIsPaid(true);
             clearInterval(pollingRef.current);
