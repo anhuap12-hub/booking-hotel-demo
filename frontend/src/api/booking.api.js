@@ -22,3 +22,15 @@ export const updateBookingStatus = (id, status) =>
 // --- THÊM HÀM NÀY ĐỂ CHECK THANH TOÁN ---
 export const getBookingStatus = (id) => 
   instance.get(`/bookings/${id}/status`);
+
+export const checkAvailability = (roomId, checkInDate, checkOutDate) => {
+  const url = `/bookings/rooms/${roomId}/check-availability`;
+  const data = { checkInDate, checkOutDate };
+
+  // DEBUG LOG
+  console.log("--- 🚀 API CALL: checkAvailability ---");
+  console.log("📍 URL:", url);
+  console.log("📦 Body:", data);
+
+  return instance.post(url, data);
+};

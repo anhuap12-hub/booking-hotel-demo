@@ -30,10 +30,9 @@ const VerifySuccess = lazy(() => import("./pages/AuthPages/VerifySuccess"));
 const VerifyFailed = lazy(() => import("./pages/AuthPages/VerifyFailed"));
 const RoomDetail = lazy(() => import("./pages/Public/RoomDetail"));
 const Checkout = lazy(() => import("./pages/DetailPages/Checkout"));
+const BookingInfo = lazy(() => import("./pages/Public/BookingInfo"));
 // User
 const MyBookings = lazy(() => import("./pages/DetailPages/MyBookings"));
-
-
 // Admin
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminHotels = lazy(() => import("./pages/admin/AdminHotels"));
@@ -86,6 +85,7 @@ export default function App() {
                   <Route element={<ProtectRoute />}>
                     <Route path="/my-bookings" element={<MyBookings />} />
                   <Route path="/checkout/:id" element={<Checkout />} />
+                  <Route path="/booking-info/:id" element={<BookingInfo />} />
                   </Route>
                 </Route>
 

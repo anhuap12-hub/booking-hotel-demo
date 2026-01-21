@@ -3,14 +3,13 @@ import {
   Container,
   Typography,
   Stack,
-  Grid,
   Breadcrumbs,
   Link,
   Chip,
   CircularProgress,
   Alert,
   Paper,
-  Button, // Thêm Button bị thiếu
+  Button,
 } from "@mui/material";
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
@@ -29,188 +28,169 @@ import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 export default function HotelRoom() {
   const { hotelId } = useParams();
   const { filter, setFilter } = useFilter();
-  
+
   const [rooms, setRooms] = useState([]);
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 1. Lấy dữ liệu từ API
   useEffect(() => {
-    let isMounted = true; // Phòng tránh setState trên component đã unmount
+    let mounted = true;
     const fetchRooms = async () => {
       try {
         setLoading(true);
-        setError(null);
         const res = await axios.get(`/rooms/hotel/${hotelId}`);
-        
-        if (isMounted) {
-          const roomData = res.data.rooms || [];
-          setRooms(roomData);
+        if (mounted) {
+          setRooms(res.data.rooms || []);
           setHotel(res.data.hotel);
         }
       } catch (err) {
-        if (isMounted) {
-          console.error("Lỗi khi tải dữ liệu:", err);
-          setError("Không thể tải danh sách phòng. Vui lòng thử lại sau.");
-        }
+        if (mounted) setError("Không thể tải danh sách phòng",err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
-
-    if (hotelId) {
-      fetchRooms();
-    }
-    return () => { isMounted = false; };
+    if (hotelId) fetchRooms();
+    return () => (mounted = false);
   }, [hotelId]);
 
-  // 2. Logic lọc phòng
   const filteredRooms = useMemo(() => {
-    if (!rooms.length) return [];
+  if (!rooms.length) return [];
 
-    return rooms.filter((room) => {
-      const roomPrice = Number(room.price) || 0;
-      const filterPrice = Number(filter?.price) || 10000000;
-      const matchesPrice = roomPrice <= filterPrice;
+  const maxPrice = Number.isFinite(Number(filter?.price))
+    ? Number(filter.price)
+    : 10000000;
 
-      const roomType = room.type?.toLowerCase();
-      const filterType = filter?.type?.toLowerCase() || "all";
-      const matchesType = filterType === "all" || roomType === filterType;
+  const type = filter?.type || "all";
+  const maxPeople = Number(filter?.maxPeople) || 1;
+  const amenities = filter?.amenities || [];
 
-      const roomMaxPeople = Number(room.maxPeople) || 0;
-      const filterMaxPeople = Number(filter?.maxPeople) || 1;
-      const matchesPeople = roomMaxPeople >= filterMaxPeople;
+  return rooms.filter(room => {
+    if (Number(room.price) > maxPrice) return false;
 
-      const roomAmenities = room.amenities?.map(a => a.toLowerCase()) || [];
-      const filterAmenities = filter?.amenities || [];
-      const matchesAmenities = filterAmenities.every((a) =>
-        roomAmenities.includes(a.toLowerCase())
-      );
+    if (
+      type !== "all" &&
+      room.type?.toLowerCase() !== type.toLowerCase()
+    ) return false;
 
-      return matchesPrice && matchesType && matchesPeople && matchesAmenities;
-    });
-  }, [rooms, filter]);
+    if (Number(room.maxPeople) < maxPeople) return false;
 
-  const handleResetFilter = () => {
+    if (
+      amenities.length &&
+      !amenities.every(a =>
+        room.amenities?.map(x => x.toLowerCase()).includes(a.toLowerCase())
+      )
+    ) return false;
+
+    return true;
+  });
+}, [rooms, filter]);
+
+  const resetFilter = () =>
     setFilter({
       price: 10000000,
       type: "all",
       amenities: [],
-      maxPeople: 1
+      maxPeople: 1,
     });
-  };
 
-  if (loading) return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 20 }}>
-      <CircularProgress size={50} thickness={4} />
-      <Typography sx={{ mt: 2, color: 'text.secondary' }}>Đang tìm kiếm phòng...</Typography>
-    </Box>
-  );
+  if (loading)
+    return (
+      <Box py={20} textAlign="center">
+        <CircularProgress />
+        <Typography mt={2}>Đang tải phòng...</Typography>
+      </Box>
+    );
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#F8F9FA" }}>
-      
-      {/* SECTION 1: BREADCRUMBS */}
-      <Box sx={{ bgcolor: "#fff", borderBottom: "1px solid #eee", py: 1.5 }}>
+    <Box bgcolor="#F8F9FA" minHeight="100vh">
+      {/* BREADCRUMB */}
+      <Box bgcolor="#fff" borderBottom="1px solid #eee" py={1.5}>
         <Container maxWidth="lg">
-          <Breadcrumbs separator={<NavigateNextIcon sx={{ fontSize: 14 }} />} sx={{ fontSize: "0.85rem" }}>
-            <Link component={RouterLink} to="/" color="inherit" underline="hover">Trang chủ</Link>
-            <Link component={RouterLink} to="/hotels" color="inherit" underline="hover">Khách sạn</Link>
-            <Typography color="text.primary" sx={{ fontWeight: 600 }}>
-              {hotel?.name || "Chi tiết"}
-            </Typography>
+          <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />}>
+            <Link component={RouterLink} to="/">Trang chủ</Link>
+            <Link component={RouterLink} to="/hotels">Khách sạn</Link>
+            <Typography fontWeight={600}>{hotel?.name}</Typography>
           </Breadcrumbs>
         </Container>
       </Box>
 
-      {/* SECTION 2: HOTEL HEADER */}
-      <Box sx={{ bgcolor: "#fff", pt: 4, pb: 4, mb: 4, boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
+      {/* HEADER */}
+      <Box bgcolor="#fff" py={4} mb={4}>
         <Container maxWidth="lg">
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={8}>
-              <Typography 
-                variant="h3" 
-                sx={{ 
-                  fontFamily: "'Playfair Display', serif", 
-                  fontWeight: 800, 
-                  color: "#1A1A1A", 
-                  mb: 1,
-                  fontSize: { xs: '1.8rem', md: '2.5rem' }
-                }}
-              >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="space-between"
+            spacing={2}
+          >
+            <Box>
+              <Typography variant="h4" fontWeight={800}>
                 {hotel?.name}
               </Typography>
               <Stack direction="row" spacing={1} alignItems="center">
-                <LocationOnIcon sx={{ color: "primary.main", fontSize: "1.2rem" }} />
-                <Typography variant="body1" color="text.secondary">
+                <LocationOnIcon color="primary" fontSize="small" />
+                <Typography color="text.secondary">
                   {hotel?.address}
                 </Typography>
               </Stack>
-            </Grid>
-            <Grid item xs={12} md={4} sx={{ textAlign: { md: "right" } }}>
-              <Chip 
-                icon={<VerifiedUserIcon />} 
-                label="Thanh toán an toàn" 
-                color="success" 
-                variant="outlined" 
-                sx={{ fontWeight: 700 }} 
-              />
-            </Grid>
-          </Grid>
+            </Box>
+            <Chip
+              icon={<VerifiedUserIcon />}
+              label="Thanh toán an toàn"
+              color="success"
+              variant="outlined"
+            />
+          </Stack>
         </Container>
       </Box>
 
-      {/* SECTION 3: MAIN CONTENT - Đây là nơi chia cột */}
-      <Container maxWidth="lg" sx={{ pb: 10 }}>
+      {/* MAIN LAYOUT */}
+      <Container maxWidth="lg">
         {error ? (
           <Alert severity="error">{error}</Alert>
         ) : (
-          <Grid container spacing={4}>
-            
-            {/* CỘT TRÁI (Sticky Filter) */}
-            <Grid item xs={12} md={4} lg={3.5}>
-              <Box sx={{ position: { md: 'sticky' }, top: 20 }}>
-                <RoomFilter />
-              </Box>
-            </Grid>
+          <Box display="flex" gap={4} alignItems="flex-start">
+            {/* FILTER */}
+            <Box
+              width={320}
+              flexShrink={0}
+              sx={{ position: "sticky", top: 20 }}
+            >
+              <RoomFilter />
+            </Box>
 
-            {/* CỘT PHẢI (Room List) */}
-            <Grid item xs={12} md={8} lg={8.5}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            {/* ROOM LIST */}
+            <Box flex={1}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={3}
+              >
+                <Typography variant="h5" fontWeight={700}>
                   Phòng sẵn có ({filteredRooms.length})
                 </Typography>
-                
-                {(filter.type !== "all" || filter.amenities.length > 0 || filter.price < 10000000) && (
-                  <Button 
-                    size="small"
-                    onClick={handleResetFilter}
-                    sx={{ fontWeight: 600 }}
-                  >
+                {(filter.type !== "all" ||
+                  filter.amenities.length > 0 ||
+                  filter.price < 10000000) && (
+                  <Button size="small" onClick={resetFilter}>
                     Xóa tất cả bộ lọc
                   </Button>
                 )}
               </Stack>
-              
-              {filteredRooms.length > 0 ? (
+
+              {filteredRooms.length ? (
                 <RoomList rooms={filteredRooms} hotel={hotel} />
               ) : (
-                <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, border: '2px dashed #eee' }}>
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Không tìm thấy phòng phù hợp
-                  </Typography>
-                  <Typography variant="body2" color="text.disabled" mb={3}>
-                    Vui lòng thay đổi bộ lọc hoặc chọn ngày khác.
-                  </Typography>
-                  <Button variant="contained" onClick={handleResetFilter}>
+                <Paper sx={{ p: 6, textAlign: "center" }}>
+                  <Typography>Không có phòng phù hợp</Typography>
+                  <Button sx={{ mt: 2 }} onClick={resetFilter} variant="contained">
                     Reset bộ lọc
                   </Button>
                 </Paper>
               )}
-            </Grid>
-
-          </Grid>
+            </Box>
+          </Box>
         )}
       </Container>
     </Box>

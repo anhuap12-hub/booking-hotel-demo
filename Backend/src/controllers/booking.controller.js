@@ -22,6 +22,18 @@ export const createBooking = async (req, res) => {
       return res.status(404).json({ message: "Room or Hotel not found" });
     }
 
+    // --- LOGIC TÍNH GIÁ ĐÃ GIẢM (DISCOUNT) ---
+    const originalPrice = roomExists.price ?? roomExists.pricePerNight;
+    const discount = roomExists.discount || 0; // Lấy % giảm giá từ Database
+    
+    // Tính giá thực tế của 1 đêm sau khi giảm
+    const finalPricePerNight = discount > 0 
+      ? Math.round(originalPrice * (1 - discount / 100)) 
+      : originalPrice;
+
+    if (!finalPricePerNight) return res.status(400).json({ message: "Room price missing" });
+
+    // --- KIỂM TRA SỨC CHỨA & NGÀY THÁNG ---
     if (guestsCount > roomExists.maxPeople) {
       return res.status(400).json({ message: "Guests exceed room capacity" });
     }
@@ -35,9 +47,6 @@ export const createBooking = async (req, res) => {
     const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
     if (nights < 1) return res.status(400).json({ message: "At least 1 night required" });
 
-    const pricePerNight = roomExists.price ?? roomExists.pricePerNight;
-    if (!pricePerNight) return res.status(400).json({ message: "Room price missing" });
-
     // Kiểm tra trùng lịch
     const conflict = await Booking.findOne({
       room,
@@ -47,8 +56,8 @@ export const createBooking = async (req, res) => {
     });
     if (conflict) return res.status(400).json({ message: "Room already booked" });
 
-    // --- LOGIC TÍNH TIỀN CỌC (30%) ---
-    const totalPrice = pricePerNight * nights;
+    // --- LOGIC TÍNH TỔNG TIỀN VÀ CỌC ---
+    const totalPrice = finalPricePerNight * nights; // Tổng tiền dựa trên giá đã giảm
     const DEPOSIT_RATE = 0.3; 
     const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
     const remainingAmount = totalPrice - depositAmount;
@@ -64,27 +73,28 @@ export const createBooking = async (req, res) => {
       roomSnapshot: {
         name: roomExists.name,
         type: roomExists.type,
-        pricePerNight,
+        pricePerNight: finalPricePerNight, // Lưu lại giá đã giảm vào lịch sử đơn
+        originalPrice: originalPrice,      // Lưu thêm giá gốc để đối soát nếu cần
+        discount: discount,
         maxPeople: roomExists.maxPeople,
         cancellationPolicy: roomExists.cancellationPolicy,
       },
       nights,
       totalPrice,
-      depositAmount,    // Số tiền cần thanh toán qua SePay
-      remainingAmount,  // Số tiền thu tại quầy
+      depositAmount,    
+      remainingAmount,  
       status: "pending",
       paymentStatus: "UNPAID",
       contactStatus: "NEW",
     });
 
-    console.log("✅ BOOKING CREATED:", booking._id);
+    console.log("✅ BOOKING CREATED WITH DISCOUNT:", booking._id, "Total:", totalPrice);
     return res.status(201).json({ message: "Booking created successfully", booking });
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
     return res.status(500).json({ message: error.message });
   }
 };
-
 /**
  * ==============================
  * CANCEL BOOKING (USER / ADMIN)
@@ -191,5 +201,29 @@ export const getBookingStatus = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+};
+export const checkAvailability = async (req, res) => {
+  try {
+    // roomId lấy từ :roomId trên URL
+    const { roomId } = req.params; 
+    // checkInDate và checkOutDate lấy từ JSON body do Frontend gửi
+    const { checkInDate, checkOutDate } = req.body; 
+
+    const conflict = await Booking.findOne({
+      room: roomId,
+      status: { $nin: ["cancelled"] },
+      // Logic so sánh ngày chuẩn
+      checkInDate: { $lt: new Date(checkOutDate) },
+      checkOutDate: { $gt: new Date(checkInDate) },
+    });
+
+    return res.status(200).json({ 
+      success: true,
+      available: !conflict,
+      message: conflict ? "Phòng đã kín" : "Phòng trống"
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
