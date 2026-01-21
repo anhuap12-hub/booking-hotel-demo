@@ -20,7 +20,6 @@ router.get("/available", getAvailableRooms);
 router.get("/hotel/:hotelId", getRoomsByHotel);
 router.get("/:roomId/booked-dates", getRoomBookedDates);
 router.get("/", getAllRooms);
-router.get("/:id", getRoomById);
 router.get("/:id", getRoomDetail);
 // admin
 router.post("/by-hotel/:hotelId", protect, adminOnly, createRoom);
