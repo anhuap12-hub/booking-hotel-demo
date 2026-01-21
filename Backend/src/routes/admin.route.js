@@ -5,7 +5,7 @@ import uploadImage from "../middleware/uploadImage.js";
 
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
-import { getAdminRoomMap, updateRoomStatusg } from "../controllers/room.controller.js";
+import { getAdminRoomMap, updateRoomStatus } from "../controllers/room.controller.js";
 import {
   markBookingPaid,
   getAdminBookings,
