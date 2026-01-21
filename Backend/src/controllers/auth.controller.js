@@ -24,18 +24,16 @@ export const register = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
 
-    // 1. Nếu đã tồn tại và đã xác thực
+    // 1. Kiểm tra tồn tại
     if (existingUser && existingUser.emailVerified) {
       return res.status(400).json({ message: "Email này đã được sử dụng" });
     }
 
     let user = existingUser;
 
-    // 2. Nếu đã tồn tại nhưng chưa xác thực -> Xóa token cũ
     if (existingUser && !existingUser.emailVerified) {
       await EmailVerifyToken.deleteMany({ user: existingUser._id });
     } else {
-      // 3. Nếu chưa tồn tại -> Tạo mới
       user = await User.create({
         username,
         email,
@@ -44,22 +42,30 @@ export const register = async (req, res) => {
       });
     }
 
+    // 2. Tạo Token xác thực
     const token = crypto.randomBytes(32).toString("hex");
-
     await EmailVerifyToken.create({
       user: user._id,
       token,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 phút
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000), 
     });
 
-    const verifyLink =
-      `${process.env.SERVER_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+    const verifyLink = `${process.env.SERVER_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
 
-    await sendVerifyEmail(user.email, verifyLink);
+    // --- THAY ĐỔI QUAN TRỌNG TẠI ĐÂY ---
+    // Không dùng 'await' cho sendVerifyEmail để tránh việc gửi mail chậm/lỗi làm treo request đăng ký.
+    // Chúng ta trả về phản hồi 201 ngay lập tức cho khách hàng.
+    sendVerifyEmail(user.email, verifyLink).catch((err) => {
+      console.error("❌ SEND VERIFY EMAIL ERROR (Background):", err.message);
+      // Bạn có thể log vào hệ thống giám sát ở đây, nhưng không chặn User
+    });
 
     return res.status(201).json({
+      success: true,
       message: "Đăng ký thành công. Vui lòng kiểm tra Email để xác thực tài khoản.",
     });
+    // ----------------------------------
+
   } catch (error) {
     console.error("🔥 REGISTER ERROR:", error);
     return res.status(500).json({ message: "Lỗi hệ thống khi đăng ký" });
