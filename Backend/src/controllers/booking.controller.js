@@ -205,25 +205,33 @@ export const getBookingStatus = async (req, res) => {
 };
 export const checkAvailability = async (req, res) => {
   try {
-    // roomId lấy từ :roomId trên URL
-    const { roomId } = req.params; 
-    // checkInDate và checkOutDate lấy từ JSON body do Frontend gửi
-    const { checkInDate, checkOutDate } = req.body; 
+    const { roomId } = req.params;
+    const { checkInDate, checkOutDate } = req.body; // Đây là dữ liệu từ Frontend gửi lên
 
+    // Chuyển đổi sang Date để so sánh
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+
+    // TÌM KIẾM THEO ĐÚNG TÊN TRƯỜNG TRONG MODEL (checkIn, checkOut)
     const conflict = await Booking.findOne({
       room: roomId,
-      status: { $nin: ["cancelled"] },
-      // Logic so sánh ngày chuẩn
-      checkInDate: { $lt: new Date(checkOutDate) },
-      checkOutDate: { $gt: new Date(checkInDate) },
+      status: { $nin: ["cancelled"] }, // Bỏ qua đơn đã hủy
+      $or: [
+        {
+          // Logic: Nếu ngày Check-in hiện có TRƯỚC ngày khách định Check-out
+          // VÀ ngày Check-out hiện có SAU ngày khách định Check-in
+          checkIn: { $lt: end }, 
+          checkOut: { $gt: start }
+        }
+      ]
     });
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
-      available: !conflict,
-      message: conflict ? "Phòng đã kín" : "Phòng trống"
+      available: !conflict, // Nếu tìm thấy conflict thì available = false
+      message: conflict ? "Phòng đã có khách đặt" : "Phòng trống"
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
