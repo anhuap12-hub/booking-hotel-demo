@@ -12,6 +12,7 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import CancelIcon from "@mui/icons-material/Cancel";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { checkAvailability } from "../../api/booking.api";
@@ -21,80 +22,50 @@ export default function RoomBookingCard({ room, selectedDates }) {
   const [isBooked, setIsBooked] = useState(false);
   const [checking, setChecking] = useState(false);
 
-  // 1. Logic tính toán giá
   const price = room?.price || 0;
   const discount = room?.discount || 0;
   const finalPrice = discount > 0 ? Math.round(price * (1 - discount / 100)) : price;
 
-  // 2. Kiểm tra tính khả dụng khi ngày hoặc ID phòng thay đổi
- useEffect(() => {
+  useEffect(() => {
     const checkRoom = async () => {
       if (room?._id && selectedDates?.checkIn && selectedDates?.checkOut) {
         try {
           setChecking(true);
-          
-          // DEBUG LOG
-          console.log("--- 🔍 FRONTEND: Start Checking Room ---");
-          console.log("🆔 Room ID:", room._id);
-          console.log("📅 Dates:", selectedDates);
-
           const res = await checkAvailability(
             room._id,
             selectedDates.checkIn,
             selectedDates.checkOut
           );
-
-          // DEBUG LOG KẾT QUẢ
-          console.log("✅ SERVER RESPONSE:", res.data);
-
           if (res.data) {
-            // Lưu ý: Đảm bảo server trả về trường 'available'
             setIsBooked(!res.data.available); 
-            if(!res.data.available) {
-               console.warn("⚠️ Cảnh báo: Phòng này đã có người đặt!");
-            }
           }
         } catch (err) {
-          // DEBUG LOG LỖI
-          console.error("❌ API ERROR DETAIL:");
-          console.error("- Message:", err.message);
-          if (err.response) {
-            console.error("- Server Status:", err.response.status);
-            console.error("- Server Data:", err.response.data);
-          }
-          
           setIsBooked(false); 
         } finally {
           setChecking(false);
-          console.log("--- 🏁 End Checking ---");
         }
       }
     };
     checkRoom();
   }, [room?._id, selectedDates]);
 
-  // 3. Xử lý trạng thái hiển thị
   const currentStatus = room?.status?.toLowerCase();
   const isAvailable = currentStatus === "active" || currentStatus === "available";
   const isMaintenance = currentStatus === "maintenance";
 
   const getStatusDisplay = () => {
-    if (isMaintenance) return { text: "Đang bảo trì", color: "warning.main" };
-    if (!isAvailable) return { text: "Ngừng nhận khách", color: "error.main" };
-    if (isBooked) return { text: "Hết chỗ ngày đã chọn", color: "error.main" };
-    return { text: "Còn phòng", color: "success.main" };
+    if (isMaintenance) return { text: "Bảo trì định kỳ", color: "#ed6c02" };
+    if (!isAvailable) return { text: "Ngừng nhận khách", color: "#d32f2f" };
+    if (isBooked) return { text: "Đã hết chỗ", color: "#d32f2f" };
+    return { text: "Sẵn sàng đón khách", color: "#C2A56D" };
   };
 
   const statusInfo = getStatusDisplay();
 
-  // 4. Hàm xử lý đặt phòng
   const handleBooking = () => {
     if (room?._id && !isBooked && isAvailable) {
       navigate(`/booking-info/${room._id}`, {
-        state: {
-          room: { ...room, finalPrice },
-          ...selectedDates 
-        },
+        state: { room: { ...room, finalPrice }, ...selectedDates },
       });
     }
   };
@@ -103,53 +74,63 @@ export default function RoomBookingCard({ room, selectedDates }) {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
-        borderRadius: 3,
-        border: "1px solid #eee",
+        p: 3.5,
+        borderRadius: "24px",
+        border: "1px solid rgba(194,165,109,0.2)",
         position: "sticky",
-        top: 24,
-        boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+        top: 130, // Cách Navbar một khoảng đẹp
+        bgcolor: "#FFF",
+        boxShadow: "0 20px 50px rgba(28,27,25,0.08)",
       }}
     >
-      <Box mb={2}>
-        <Typography variant="caption" color="text.secondary" fontWeight={600}>
-          GIÁ MỖI ĐÊM
+      {/* PRICE HEADER */}
+      <Box mb={3}>
+        <Typography variant="overline" sx={{ fontWeight: 700, letterSpacing: 1.5, color: "#C2A56D" }}>
+          Giá ưu đãi hôm nay
         </Typography>
         <Stack direction="row" spacing={1} alignItems="baseline" mt={0.5}>
-          <Typography variant="h4" fontWeight={800} color="primary.main">
+          <Typography sx={{ fontSize: "2rem", fontWeight: 800, color: "#1C1B19" }}>
             {finalPrice.toLocaleString("vi-VN")}₫
           </Typography>
-          <Typography color="text.secondary" variant="body2">/đêm</Typography>
+          <Typography sx={{ color: "#72716E", fontSize: "0.9rem", fontWeight: 500 }}>/ đêm</Typography>
         </Stack>
+        
         {discount > 0 && (
-          <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
-            <Typography variant="body2" sx={{ textDecoration: "line-through", color: "text.disabled" }}>
+          <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+            <Typography variant="body2" sx={{ textDecoration: "line-through", color: "#A8A7A1" }}>
               {price.toLocaleString("vi-VN")}₫
             </Typography>
-            <Chip label={`-${discount}%`} size="small" color="error" sx={{ fontWeight: 700, height: 20 }} />
+            <Chip 
+              label={`Tiết kiệm ${discount}%`} 
+              size="small" 
+              sx={{ 
+                bgcolor: "#1C1B19", color: "#C2A56D", 
+                fontWeight: 700, borderRadius: "6px", fontSize: "0.7rem" 
+              }} 
+            />
           </Stack>
         )}
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 2.5, borderColor: "rgba(0,0,0,0.05)" }} />
 
-      {/* THÔNG BÁO LỖI NẾU TRÙNG LỊCH */}
+      {/* ERROR ALERT (IF BOOKED) */}
       {isBooked && isAvailable && !checking && (
-        <Box sx={{ bgcolor: "#FFF4F4", p: 1.5, borderRadius: 2, mb: 2, border: "1px solid #FFCDD2" }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <ErrorOutlineIcon color="error" fontSize="small" />
-            <Typography variant="body2" color="error" fontWeight={700}>
-              Phòng đã có khách đặt ngày này
+        <Box sx={{ bgcolor: "#FFF5F5", p: 2, borderRadius: "12px", mb: 2.5, border: "1px solid #FFE3E3" }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <ErrorOutlineIcon sx={{ color: "#D32F2F", fontSize: 20 }} />
+            <Typography variant="body2" sx={{ color: "#D32F2F", fontWeight: 600 }}>
+              Tiếc quá, phòng đã được đặt trong giai đoạn này.
             </Typography>
           </Stack>
         </Box>
       )}
 
-      {/* ROOM INFO */}
-      <Stack spacing={1.5} mb={3}>
-        <Row label="Số khách tối đa" value={`${room?.maxPeople || 0} người`} />
-        <Row label="Tình trạng" value={
-          <Typography variant="body2" fontWeight={700} sx={{ color: statusInfo.color }}>
+      {/* ROOM INFO ROWS */}
+      <Stack spacing={2} mb={4}>
+        <Row label="Số khách tối đa" value={`${room?.maxPeople || 0} khách`} />
+        <Row label="Trạng thái" value={
+          <Typography variant="body2" sx={{ fontWeight: 700, color: statusInfo.color }}>
             {statusInfo.text}
           </Typography>
         } />
@@ -163,24 +144,29 @@ export default function RoomBookingCard({ room, selectedDates }) {
         disabled={!isAvailable || isBooked || checking}
         onClick={handleBooking}
         sx={{
-          py: 1.8,
+          py: 2,
           fontWeight: 800,
-          borderRadius: 2.5,
+          borderRadius: "14px",
           textTransform: "none",
-          fontSize: "1rem",
-          transition: "all 0.2s ease",
-          bgcolor: isBooked ? "error.light" : "primary.main",
+          fontSize: "1.05rem",
+          bgcolor: "#1C1B19", // Màu Ebony thương hiệu
+          color: "#C2A56D",
+          transition: "0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          "&:hover": {
+            bgcolor: "#2b2a28",
+            boxShadow: "0 10px 20px rgba(0,0,0,0.2)",
+            transform: "translateY(-2px)"
+          },
           "&:disabled": {
-            bgcolor: isBooked ? "#ffebee" : "#ebebeb",
-            color: isBooked ? "error.main" : "#9e9e9e",
-            border: isBooked ? "1px solid #ffcdd2" : "none"
+            bgcolor: "#F1F0EE",
+            color: "#A8A7A1"
           }
         }}
       >
         {checking ? (
-          <CircularProgress size={24} color="inherit" />
+          <CircularProgress size={24} sx={{ color: "#C2A56D" }} />
         ) : isBooked ? (
-          "PHÒNG ĐÃ ĐẶT"
+          "HẾT PHÒNG GIAI ĐOẠN NÀY"
         ) : isAvailable ? (
           "ĐẶT PHÒNG NGAY"
         ) : (
@@ -188,33 +174,34 @@ export default function RoomBookingCard({ room, selectedDates }) {
         )}
       </Button>
 
+      {/* HELPER TEXT */}
       {(!isAvailable || isBooked) && !checking && (
-        <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" mt={1.5}>
-          <InfoOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-          <Typography variant="caption" color="text.secondary">
-            Vui lòng chọn ngày khác trên lịch
+        <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" mt={2}>
+          <InfoOutlinedIcon sx={{ fontSize: 16, color: "#72716E" }} />
+          <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 500 }}>
+            Thử thay đổi ngày trên lịch để kiểm tra lại
           </Typography>
         </Stack>
       )}
 
-      <Divider sx={{ my: 3 }} />
+      <Divider sx={{ my: 4, borderColor: "rgba(0,0,0,0.05)" }} />
 
       {/* POLICY SECTION */}
-      <Stack spacing={1.5}>
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <CancelIcon fontSize="small" sx={{ color: "text.disabled" }} />
+      <Stack spacing={2.5}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <CancelIcon sx={{ color: "#C2A56D", fontSize: 20 }} />
           <Box>
-            <Typography variant="caption" fontWeight={700} display="block">Hủy miễn phí</Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ fontWeight: 700, color: "#1C1B19", display: "block" }}>Hủy miễn phí linh hoạt</Typography>
+            <Typography variant="caption" sx={{ color: "#72716E" }}>
               Trước {room?.cancellationPolicy?.freeCancelBeforeHours || 24}h nhận phòng
             </Typography>
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <PaymentsIcon fontSize="small" sx={{ color: "text.disabled" }} />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <VerifiedUserIcon sx={{ color: "#C2A56D", fontSize: 20 }} />
           <Box>
-            <Typography variant="caption" fontWeight={700} display="block">Thanh toán an toàn</Typography>
-            <Typography variant="caption" color="text.secondary">Tự động xác nhận qua VietQR</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: "#1C1B19", display: "block" }}>Thanh toán bảo mật</Typography>
+            <Typography variant="caption" sx={{ color: "#72716E" }}>Xác nhận tức thì qua VietQR/Banking</Typography>
           </Box>
         </Box>
       </Stack>
@@ -225,9 +212,9 @@ export default function RoomBookingCard({ room, selectedDates }) {
 function Row({ label, value }) {
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center">
-      <Typography variant="body2" color="text.secondary">{label}</Typography>
+      <Typography variant="body2" sx={{ color: "#72716E", fontWeight: 500 }}>{label}</Typography>
       {typeof value === "string" ? (
-        <Typography variant="body2" fontWeight={600}>{value}</Typography>
+        <Typography variant="body2" sx={{ fontWeight: 700, color: "#1C1B19" }}>{value}</Typography>
       ) : (
         value
       )}

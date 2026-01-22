@@ -148,28 +148,34 @@ export const cancelBooking = async (req, res) => {
  */
 export const getUserBookings = async (req, res) => {
   try {
-    // Đảm bảo dùng đúng ID từ middleware protect (req.user.id hoặc req.user._id)
-    const userId = req.user.id || req.user._id;
+    const userId = req.user._id; // Giả định middleware protect gán vào _id
 
-    let bookings = await Booking.find({ user: userId })
-      .sort({ createdAt: -1 })
+    const bookings = await Booking.find({ user: userId })
       .populate("room", "name type price photos")
-      .populate("hotel", "name city address photos");
+      .populate("hotel", "name city address photos")
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // Lọc bỏ các đơn hàng mà Room hoặc Hotel đã bị xóa (tránh lỗi UI)
-    bookings = bookings.filter((b) => b.room !== null && b.hotel !== null);
+    // 1. Lọc đơn hàng hợp lệ & 2. Chuẩn hóa dữ liệu trả về
+    const formattedBookings = bookings
+      .filter((b) => b.room && b.hotel)
+      .map((b) => ({
+        ...b,
+        // Đảm bảo status luôn có giá trị mặc định nếu lỡ bị trống
+        status: b.status || "Pending",
+        // Tính toán thêm nếu cần (ví dụ: số đêm ở) để Frontend không phải tính lại
+        totalNights: Math.ceil(
+          (new Date(b.checkOut) - new Date(b.checkIn)) / (1000 * 60 * 60 * 24)
+        ) || 1
+      }));
 
-    // TRẢ VỀ CẤU TRÚC CHUẨN ĐỂ FRONTEND KHÔNG BỊ LỖI
-    return res.status(200).json({
-      success: true,
-      bookings: bookings
-    });
+    return res.status(200).json(formattedBookings);
+    
   } catch (error) {
-    console.error("❌ GET USER BOOKINGS ERROR:", error);
+    console.error("❌ GET USER BOOKINGS ERROR:", error.message);
     return res.status(500).json({ 
-      success: false, 
-      message: "Không thể lấy danh sách đơn hàng",
-      error: error.message 
+      success: false,
+      message: "Server không thể xử lý danh sách đơn hàng",
     });
   }
 };

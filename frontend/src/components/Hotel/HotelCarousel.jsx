@@ -1,15 +1,18 @@
-import { Box, Typography, IconButton } from "@mui/material";
+import { Box, Typography, IconButton, Stack } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useRef } from "react";
 import HotelCard from "./HotelCard";
-import MotionBox from "../Common/MotionBox";
+import { motion } from "framer-motion";
+
+const MotionBox = motion(Box);
 
 export default function HotelCarousel({ city, hotels = [] }) {
   const scrollRef = useRef(null);
 
-  const CARD_WIDTH = 280; 
-  const GAP = 20; 
+  // Điều chỉnh kích thước chuẩn để Card trông cân đối khi đi theo hàng ngang
+  const CARD_WIDTH = 300; 
+  const GAP = 24; 
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -19,43 +22,52 @@ export default function HotelCarousel({ city, hotels = [] }) {
     });
   };
 
-  // Nếu không có khách sạn nào, không hiển thị gì cả
   if (!hotels || hotels.length === 0) return null;
 
   const showArrow = hotels.length > 1;
 
   return (
-    <Box mb={6} sx={{ width: "100%", overflow: "visible" }}>
-      {/* HEADER */}
+    <Box mb={8} sx={{ width: "100%", overflow: "visible" }}>
+      {/* HEADER: Tên thành phố và nút điều hướng */}
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-end",
           justifyContent: "space-between",
-          mb: 2,
+          mb: 3,
           px: 0.5,
         }}
       >
-        <Typography
-          sx={{
-            fontFamily: "Playfair Display, serif",
-            fontWeight: 700,
-            fontSize: "1.5rem",
-            color: "#3a342b",
-          }}
-        >
-          {city}
-        </Typography>
+        <Box>
+          <Typography
+            sx={{
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: 800,
+              fontSize: "1.5rem",
+              color: "#1C1B19",
+              lineHeight: 1.2
+            }}
+          >
+            {city}
+          </Typography>
+          <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D", mt: 1 }} />
+        </Box>
 
         {showArrow && (
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Stack direction="row" spacing={1.5}>
             <IconButton
               size="small"
               onClick={() => scroll("left")}
+              component={motion.button}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               sx={{
-                bgcolor: "white",
-                boxShadow: 2,
-                "&:hover": { bgcolor: "#d4a373", color: "white" },
+                bgcolor: "#fff",
+                color: "#1C1B19",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                border: "1px solid #F1F0EE",
+                "&:hover": { bgcolor: "#1C1B19", color: "#C2A56D", borderColor: "#1C1B19" },
+                transition: "0.2s"
               }}
             >
               <ChevronLeftIcon fontSize="small" />
@@ -64,15 +76,21 @@ export default function HotelCarousel({ city, hotels = [] }) {
             <IconButton
               size="small"
               onClick={() => scroll("right")}
+              component={motion.button}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               sx={{
-                bgcolor: "white",
-                boxShadow: 2,
-                "&:hover": { bgcolor: "#d4a373", color: "white" },
+                bgcolor: "#fff",
+                color: "#1C1B19",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                border: "1px solid #F1F0EE",
+                "&:hover": { bgcolor: "#1C1B19", color: "#C2A56D", borderColor: "#1C1B19" },
+                transition: "0.2s"
               }}
             >
               <ChevronRightIcon fontSize="small" />
             </IconButton>
-          </Box>
+          </Stack>
         )}
       </Box>
 
@@ -85,8 +103,9 @@ export default function HotelCarousel({ city, hotels = [] }) {
           overflowX: "auto",
           overflowY: "visible",
           px: 1, 
-          py: 2, 
-          m: -1, 
+          pt: 1,
+          pb: 5, // Để khoảng trống cho Shadow không bị cắt
+          mx: -1, 
           scrollbarWidth: "none", 
           "&::-webkit-scrollbar": { display: "none" }, 
           scrollSnapType: "x mandatory",
@@ -100,18 +119,18 @@ export default function HotelCarousel({ city, hotels = [] }) {
               flex: "0 0 auto",
               width: CARD_WIDTH,
               scrollSnapAlign: "start",
-              p: 0.5, 
             }}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
             transition={{
-              delay: i * 0.05,
-              duration: 0.4,
+              delay: i * 0.1,
+              duration: 0.5,
               ease: "easeOut",
             }}
           >
-            {/* Truyền prop compact để HotelCard biết hiển thị kiểu nhỏ gọn trong slider */}
-            <HotelCard hotel={hotel} compact />
+            {/* Sử dụng HotelCard đã nâng cấp, compact=true giúp card gọn gàng hơn trong slider */}
+            <HotelCard hotel={hotel} compact={true} />
           </MotionBox>
         ))}
       </Box>

@@ -5,13 +5,14 @@ import {
   Button, 
   Paper, 
   Container, 
-  Zoom 
+  Zoom,
+  Avatar
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 // Icons
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import HomeIcon from "@mui/icons-material/Home";
+import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import LoginIcon from "@mui/icons-material/Login";
 
 export default function VerifySuccess() {
@@ -24,7 +25,9 @@ export default function VerifySuccess() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#faf9f6", // Màu nền kem nhẹ của Coffee Stay
+        bgcolor: "#F9F8F6", // Nền kem đặc trưng
+        backgroundImage: "radial-gradient(circle at 2px 2px, rgba(194, 165, 109, 0.05) 1px, transparent 0)",
+        backgroundSize: "40px 40px",
         px: 2,
       }}
     >
@@ -35,48 +38,56 @@ export default function VerifySuccess() {
             sx={{
               p: { xs: 4, md: 6 },
               textAlign: "center",
-              borderRadius: 6,
-              border: "1px solid #e7e5e4",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.04)",
+              borderRadius: "32px",
+              border: "1px solid rgba(194, 165, 109, 0.2)",
+              boxShadow: "0 20px 60px rgba(28,27,25,0.06)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              bgcolor: "#FFF"
             }}
           >
-            {/* Success Icon với hiệu ứng xanh SM hoặc Gold tùy bạn chọn */}
-            <Box
+            {/* Success Icon - Emerald & Gold mix */}
+            <Avatar
               sx={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                bgcolor: "#ecfdf5",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mb: 3,
+                width: 90,
+                height: 90,
+                bgcolor: "rgba(16, 185, 129, 0.08)", // Xanh lục cực nhạt
+                mb: 4,
+                border: "2px dashed #10b981",
               }}
             >
               <CheckCircleOutlineIcon 
                 sx={{ fontSize: 50, color: "#10b981" }} 
               />
-            </Box>
+            </Avatar>
 
             <Typography 
               variant="h4" 
-              fontWeight={800} 
-              gutterBottom
-              sx={{ color: "#1c1917", fontFamily: "Playfair Display, serif" }}
+              sx={{ 
+                color: "#1C1B19", 
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 800,
+                mb: 2,
+                letterSpacing: "-0.5px"
+              }}
             >
               Xác thực thành công!
             </Typography>
 
             <Typography 
               variant="body1" 
-              color="text.secondary" 
-              sx={{ mb: 5, maxWidth: "80%", mx: "auto", lineHeight: 1.6 }}
+              sx={{ 
+                mb: 5, 
+                maxWidth: "85%", 
+                mx: "auto", 
+                lineHeight: 1.8,
+                color: "#72716E"
+              }}
             >
-              🎉 Chúc mừng! Email của bạn đã được kích hoạt thành công. 
-              Giờ đây bạn đã có thể tận hưởng toàn bộ dịch vụ tại Coffee Stay.
+              Chúc mừng bạn! Email đã được kích hoạt thành công. 
+              Giờ đây, hành trình trải nghiệm những không gian lưu trú tinh tế tại 
+              <strong style={{ color: "#C2A56D" }}> Coffee Stay</strong> đã sẵn sàng dành cho bạn.
             </Typography>
 
             <Box 
@@ -90,16 +101,19 @@ export default function VerifySuccess() {
               <Button
                 fullWidth
                 variant="outlined"
-                startIcon={<HomeIcon />}
+                startIcon={<HomeOutlinedIcon />}
                 onClick={() => navigate("/")}
                 sx={{
-                  py: 1.5,
-                  borderRadius: 3,
+                  py: 1.8,
+                  borderRadius: "12px",
                   textTransform: "none",
                   fontWeight: 700,
-                  borderColor: "#d4a373",
-                  color: "#d4a373",
-                  "&:hover": { borderColor: "#bc8a5f", bgcolor: "#faf9f6" }
+                  borderColor: "#EFE7DD",
+                  color: "#1C1B19",
+                  "&:hover": { 
+                    borderColor: "#C2A56D",
+                    bgcolor: "rgba(194, 165, 109, 0.05)" 
+                  }
                 }}
               >
                 Về Trang chủ
@@ -111,13 +125,18 @@ export default function VerifySuccess() {
                 startIcon={<LoginIcon />}
                 onClick={() => navigate("/login")}
                 sx={{
-                  py: 1.5,
-                  borderRadius: 3,
+                  py: 1.8,
+                  borderRadius: "12px",
                   textTransform: "none",
                   fontWeight: 700,
-                  bgcolor: "#3a342b",
-                  color: "#fff",
-                  "&:hover": { bgcolor: "#2a251f" }
+                  bgcolor: "#1C1B19", // Ebony
+                  color: "#C2A56D",   // Gold
+                  boxShadow: "0 10px 20px rgba(28,27,25,0.15)",
+                  "&:hover": { 
+                    bgcolor: "#333230",
+                    transform: "translateY(-2px)" 
+                  },
+                  transition: "all 0.3s ease"
                 }}
               >
                 Đăng nhập ngay

@@ -1,17 +1,21 @@
-import { Box, Typography, Stack } from "@mui/material";
+import { Box, Typography, Stack, ButtonBase } from "@mui/material";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "../../context/SearchContext";
 import HorizontalHotelRow from "../Hotel/HorizontalHotelRow";
+import { motion } from "framer-motion";
 
 /* ================= CITY META ================= */
+// Chuyển màu sắc sang palette sang trọng hơn (Muted colors)
 const CITY_META = {
-  "Hà Nội": { desc: "Thủ đô nghìn năm văn hiến.", color: "#003580" },
-  "TP. Hồ Chí Minh": { desc: "Đô thị năng động, nhộn nhịp.", color: "#e67e22" },
-  "Đà Nẵng": { desc: "Thành phố biển đáng sống nhất.", color: "#2ecc71" },
-  "Đà Lạt": { desc: "Xứ sở sương mù thơ mộng.", color: "#9b59b6" },
-  "Phú Quốc": { desc: "Thiên đường đảo ngọc biển xanh.", color: "#3498db" },
+  "Hà Nội": { desc: "Di sản nghìn năm văn hiến", color: "#1C1B19" },
+  "TP. Hồ Chí Minh": { desc: "Nhịp sống năng động & hiện đại", color: "#C2A56D" },
+  "Đà Nẵng": { desc: "Thành phố của những cây cầu", color: "#6D8C8E" },
+  "Đà Lạt": { desc: "Xứ sở sương mù thơ mộng", color: "#8E7D6D" },
+  "Phú Quốc": { desc: "Thiên đường đảo ngọc biển xanh", color: "#5F7D95" },
 };
+
+const MotionBox = motion(Box);
 
 export default function CityHotelSections({ citiesSorted = [] }) {
   const navigate = useNavigate();
@@ -19,126 +23,116 @@ export default function CityHotelSections({ citiesSorted = [] }) {
 
   if (!citiesSorted.length) return null;
 
-  /* ================= CLICK HANDLER ================= */
   const handleViewAll = (cityName) => {
-  updateSearch({
-    city: cityName,          // ✅ field chính
-    types: [],               // reset
-    rating: null,
-    amenities: [],
-    priceRange: [0, 2_000_000], // ✅ đúng tên field
-  });
-
-  navigate("/hotels");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
+    updateSearch({
+      city: cityName,
+      types: [],
+      rating: null,
+      amenities: [],
+      priceRange: [0, 5000000], 
+    });
+    navigate("/hotels");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
-    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 5 }}>
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: { xs: 6, md: 10 } }}>
       {citiesSorted.map(([cityName, hotelList]) => {
-        const meta =
-          CITY_META[cityName] || {
-            desc: "Khám phá những điểm đến tuyệt vời.",
-            color: "#003580",
-          };
+        const meta = CITY_META[cityName] || {
+          desc: "Khám phá những điểm đến tuyệt vời.",
+          color: "#1C1B19",
+        };
 
         return (
-          <Box
-            key={cityName}
-            sx={{
-              position: "relative",
-              "&:hover .city-title": { color: meta.color },
-              "&:hover .view-all-btn": {
-                transform: "translateX(6px)",
-                color: meta.color,
-              },
-            }}
-          >
+          <Box key={cityName} component="section">
             {/* ================= HEADER ================= */}
             <Stack
               direction="row"
               justifyContent="space-between"
               alignItems="flex-end"
-              mb={2}
-              sx={{ px: 1 }}
+              mb={3}
+              sx={{ px: { xs: 1, md: 0 } }}
             >
               <Box>
                 <Typography
-                  className="city-title"
-                  variant="h5"
+                  variant="h4"
                   sx={{
-                    fontWeight: 900,
-                    fontSize: { xs: "1.2rem", md: "1.5rem" },
-                    letterSpacing: "-0.02em",
-                    transition: "all 0.3s ease",
+                    fontFamily: "'Playfair Display', serif",
+                    fontWeight: 800,
+                    fontSize: { xs: "1.75rem", md: "2.25rem" },
+                    color: "#1C1B19",
+                    mb: 0.5,
                     display: "flex",
                     alignItems: "center",
-                    gap: 1.5,
-                    color: "#1a1a1a",
+                    gap: 2
                   }}
                 >
                   {cityName}
-                  <Box
-                    sx={{
-                      width: 30,
-                      height: 4,
-                      bgcolor: meta.color,
-                      borderRadius: 1,
-                      opacity: 0.4,
-                    }}
-                  />
+                  <Box sx={{ width: 40, height: 1, bgcolor: meta.color, opacity: 0.3 }} />
                 </Typography>
 
                 <Typography
-                  variant="caption"
+                  variant="body2"
                   sx={{
-                    color: "text.secondary",
-                    fontWeight: 600,
+                    color: "#72716E",
+                    letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    fontSize: "0.65rem",
+                    fontSize: "0.75rem",
+                    fontWeight: 600
                   }}
                 >
-                  {hotelList.length} chỗ nghỉ tiêu biểu • {meta.desc}
+                  {meta.desc} — {hotelList.length} lựa chọn tinh túy
                 </Typography>
               </Box>
 
-              {/* ================= VIEW ALL ================= */}
-              <Stack
-                className="view-all-btn"
-                direction="row"
-                alignItems="center"
-                spacing={0.5}
+              {/* VIEW ALL BUTTON - Thiết kế dạng Text Button sang trọng */}
+              <ButtonBase
                 onClick={() => handleViewAll(cityName)}
                 sx={{
-                  cursor: "pointer",
-                  color: "text.disabled",
-                  transition: "all 0.3s ease-in-out",
-                  userSelect: "none",
+                  color: "#1C1B19",
+                  transition: "all 0.3s ease",
+                  pb: 0.5,
+                  borderBottom: "1px solid rgba(0,0,0,0.1)",
+                  "&:hover": {
+                    color: meta.color,
+                    borderBottomColor: meta.color,
+                    "& .arrow-icon": { transform: "translateX(4px)" }
+                  }
                 }}
               >
-                <Typography sx={{ fontSize: "0.7rem", fontWeight: 800 }}>
+                <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, mr: 1, letterSpacing: "0.1em" }}>
                   XEM TẤT CẢ
                 </Typography>
-                <ArrowForwardIosIcon sx={{ fontSize: 10 }} />
-              </Stack>
+                <ArrowForwardIosIcon className="arrow-icon" sx={{ fontSize: 10, transition: "0.3s" }} />
+              </ButtonBase>
             </Stack>
 
             {/* ================= HOTEL ROW ================= */}
-            <Box
+            <MotionBox
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
               sx={{
-                p: { xs: 1.5, md: 2 },
-                borderRadius: "20px",
-                bgcolor: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.03)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
-                background: `linear-gradient(145deg, #ffffff 90%, ${meta.color}08 100%)`,
+                borderRadius: "24px",
+                bgcolor: "#FFFFFF",
+                // Shadow cực nhẹ để tạo độ nổi khối (Elevation)
+                boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
+                border: "1px solid #F1F0EE",
+                p: { xs: 1, md: 1.5 },
+                position: "relative",
                 overflow: "hidden",
+                "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0, left: 0, width: "4px", height: "100%",
+                    bgcolor: meta.color,
+                    opacity: 0.6
+                }
               }}
             >
               <HorizontalHotelRow hotels={hotelList} />
-            </Box>
+            </MotionBox>
           </Box>
         );
       })}

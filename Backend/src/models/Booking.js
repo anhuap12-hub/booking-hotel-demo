@@ -14,8 +14,7 @@ const roomSnapshotSchema = new mongoose.Schema(
     name: String,
     type: String,
     pricePerNight: { type: Number, required: true, min: 0 },
-    originalPrice: Number, // Thêm trường này
-    discount: Number,      // Thêm trường này
+    
     maxPeople: Number,
     cancellationPolicy: {
       freeCancelBeforeHours: { type: Number, default: 0 },

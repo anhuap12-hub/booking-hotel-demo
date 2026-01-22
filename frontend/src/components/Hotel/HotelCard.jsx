@@ -12,25 +12,25 @@ import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import DiscountIcon from "@mui/icons-material/Discount";
 import { useNavigate } from "react-router-dom";
 import { memo, useMemo } from "react";
+import { motion } from "framer-motion";
+
+const MotionBox = motion(Box);
 
 function HotelCard({ hotel, compact = false }) {
   const navigate = useNavigate();
 
-  /* ================= IMAGE ================= */
+  /* ================= IMAGE LOGIC ================= */
   const image =
     hotel.photos?.[0]?.url ||
-    "https://via.placeholder.com/400x300?text=No+Image";
+    "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=600";
 
-  /* ================= PRICE (CHUẨN DEAL LOGIC) ================= */
+  /* ================= PRICE LOGIC (GIỮ NGUYÊN) ================= */
   const priceInfo = useMemo(() => {
     if (!hotel.rooms?.length) return null;
-
-    // 1️⃣ Lấy các phòng có discount
     const discountedRooms = hotel.rooms.filter(
       r => typeof r.discount === "number" && r.discount > 0
     );
 
-    // 2️⃣ Nếu có deal → chọn phòng có GIÁ SAU GIẢM THẤP NHẤT
     if (discountedRooms.length) {
       const bestRoom = discountedRooms.reduce((best, cur) => {
         const curFinal = cur.price * (1 - cur.discount / 100);
@@ -41,14 +41,11 @@ function HotelCard({ hotel, compact = false }) {
       return {
         hasDeal: true,
         price: bestRoom.price,
-        finalPrice: Math.round(
-          bestRoom.price * (1 - bestRoom.discount / 100)
-        ),
+        finalPrice: Math.round(bestRoom.price * (1 - bestRoom.discount / 100)),
         discount: bestRoom.discount,
       };
     }
 
-    // 3️⃣ Không có deal → lấy phòng rẻ nhất
     const cheapestRoom = hotel.rooms.reduce(
       (min, cur) => (cur.price < min.price ? cur : min),
       hotel.rooms[0]
@@ -63,33 +60,31 @@ function HotelCard({ hotel, compact = false }) {
   }, [hotel.rooms]);
 
   return (
-    <Box
+    <MotionBox
       onClick={() => navigate(`/hotels/${hotel._id}`)}
+      whileHover={{ y: -8 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       sx={{
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRadius: 3,
+        borderRadius: "24px", // Bo góc lớn hơn cho hiện đại
         overflow: "hidden",
         bgcolor: "#fff",
-        border: "1px solid #eee",
+        border: "1px solid #F1F0EE",
         cursor: "pointer",
-        transition: "0.25s ease",
+        boxShadow: "0 4px 20px rgba(28, 27, 25, 0.04)",
         "&:hover": {
-          transform: "translateY(-4px)",
-          boxShadow: "0 14px 28px rgba(0,0,0,.12)",
+          boxShadow: "0 20px 40px rgba(28, 27, 25, 0.08)",
+          "& .hotel-image": { transform: "scale(1.1)" },
+          "& .cta-button": { bgcolor: "#1C1B19", color: "#C2A56D" }
         },
       }}
     >
-      {/* ================= IMAGE ================= */}
-      <Box
-        sx={{
-          position: "relative",
-          aspectRatio: compact ? "16 / 9" : "4 / 3",
-          maxHeight: compact ? 200 : "none",
-        }}
-      >
+      {/* ================= IMAGE SECTION ================= */}
+      <Box sx={{ position: "relative", overflow: "hidden", aspectRatio: compact ? "16 / 10" : "4 / 3" }}>
         <Box
+          className="hotel-image"
           component="img"
           src={image}
           alt={hotel.name}
@@ -98,144 +93,130 @@ function HotelCard({ hotel, compact = false }) {
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
 
         {/* TAGS */}
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ position: "absolute", top: 10, left: 10 }}
-        >
+        <Stack direction="row" spacing={1} sx={{ position: "absolute", top: 16, left: 16 }}>
           <Chip
-            icon={<LocalFireDepartmentIcon sx={{ fontSize: 14 }} />}
-            label="Hot"
+            icon={<LocalFireDepartmentIcon sx={{ fontSize: "12px !important", color: "#fff" }} />}
+            label="Phổ biến"
             size="small"
-            color="error"
+            sx={{ bgcolor: "#1C1B19", color: "#fff", fontWeight: 700, fontSize: "10px", height: "24px" }}
           />
-
           {priceInfo?.discount > 0 && (
             <Chip
-              icon={<DiscountIcon sx={{ fontSize: 14 }} />}
-              label={`-${priceInfo.discount}%`}
+              icon={<DiscountIcon sx={{ fontSize: "12px !important" }} />}
+              label={`Giảm ${priceInfo.discount}%`}
               size="small"
-              sx={{ bgcolor: "#fef3c7", fontWeight: 700 }}
+              sx={{ bgcolor: "#C2A56D", color: "#fff", fontWeight: 700, fontSize: "10px", height: "24px" }}
             />
           )}
         </Stack>
       </Box>
 
-      {/* ================= CONTENT ================= */}
-      <Box sx={{ p: 2, display: "flex", flexDirection: "column", flexGrow: 1 }}>
-        {/* NAME */}
-        <Typography
-          fontWeight={700}
-          fontSize={compact ? "0.9rem" : "0.95rem"}
-          mb={0.5}
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            minHeight: 40,
-          }}
-        >
-          {hotel.name}
-        </Typography>
+      {/* ================= CONTENT SECTION ================= */}
+      <Box sx={{ p: 2.5, display: "flex", flexDirection: "column", flexGrow: 1 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
+          <Typography
+            sx={{
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: 800,
+              fontSize: compact ? "1rem" : "1.15rem",
+              lineHeight: 1.3,
+              color: "#1C1B19",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              minHeight: 42,
+            }}
+          >
+            {hotel.name}
+          </Typography>
+        </Stack>
 
-        {/* CITY + RATING */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={0.5}
-        >
+        <Stack direction="row" spacing={2} mb={2}>
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <LocationOnIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-            <Typography fontSize="0.75rem" color="text.secondary">
+            <LocationOnIcon sx={{ fontSize: 14, color: "#C2A56D" }} />
+            <Typography fontSize="0.8rem" color="#72716E" fontWeight={500}>
               {hotel.city}
             </Typography>
           </Stack>
-
           {typeof hotel.rating === "number" && (
-            <Stack direction="row" spacing={0.25} alignItems="center">
-              <StarIcon sx={{ fontSize: 14, color: "#facc15" }} />
-              <Typography fontSize="0.75rem" fontWeight={600}>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <StarIcon sx={{ fontSize: 14, color: "#C2A56D" }} />
+              <Typography fontSize="0.8rem" fontWeight={700} color="#1C1B19">
                 {hotel.rating}/10
               </Typography>
             </Stack>
           )}
         </Stack>
 
-        {/* DESC */}
         {!compact && (
           <Typography
-            fontSize="0.8rem"
-            color="text.secondary"
+            variant="body2"
             sx={{
+              color: "#72716E",
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
-              minHeight: 36,
+              fontSize: "0.85rem",
+              lineHeight: 1.6,
+              mb: 2
             }}
           >
-            {hotel.desc || "Khách sạn chất lượng, vị trí thuận tiện."}
+            {hotel.desc || "Khám phá không gian lưu trú sang trọng tại tâm điểm thành phố."}
           </Typography>
         )}
 
-        <Divider sx={{ my: 1.2 }} />
-
-        {/* PRICE + CTA */}
-        <Stack direction="row" justifyContent="space-between" alignItems="end">
-          {priceInfo ? (
-            <Stack spacing={0.25}>
-              <Typography fontSize="0.7rem" color="text.secondary">
-                Giá từ
+        <Box sx={{ mt: "auto" }}>
+          <Divider sx={{ mb: 2, borderColor: "#F1F0EE" }} />
+          
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography fontSize="0.7rem" color="#72716E" fontWeight={600} sx={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Giá mỗi đêm
               </Typography>
-
-              <Typography fontWeight={800} fontSize="1rem" color="error">
-                {priceInfo.finalPrice.toLocaleString()}đ
-              </Typography>
-
-              {priceInfo.discount > 0 && (
-                <Typography
-                  fontSize="0.7rem"
-                  sx={{
-                    textDecoration: "line-through",
-                    color: "text.secondary",
-                  }}
-                >
-                  {priceInfo.price.toLocaleString()}đ
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography fontWeight={900} fontSize="1.1rem" color="#1C1B19">
+                  {priceInfo?.finalPrice.toLocaleString()}đ
                 </Typography>
-              )}
-            </Stack>
-          ) : (
-            <Typography fontWeight={700}>Liên hệ</Typography>
-          )}
+                {priceInfo?.discount > 0 && (
+                  <Typography
+                    fontSize="0.8rem"
+                    sx={{ textDecoration: "line-through", color: "#A8A7A1", fontWeight: 500 }}
+                  >
+                    {priceInfo.price.toLocaleString()}đ
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
 
-          <Button
-            size="small"
-            variant="contained"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/hotels/${hotel._id}`);
-            }}
-            sx={{
-              borderRadius: 999,
-              bgcolor: "#8B6F4E",
-              px: 2,
-              py: 0.6,
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              "&:hover": { bgcolor: "#7a5f41" },
-            }}
-          >
-            Xem Thông Tin
-          </Button>
-        </Stack>
+            <Button
+              className="cta-button"
+              variant="outlined"
+              sx={{
+                borderRadius: "12px",
+                borderColor: "#F1F0EE",
+                color: "#1C1B19",
+                fontSize: "0.75rem",
+                fontWeight: 800,
+                px: 2,
+                py: 1,
+                textTransform: "none",
+                transition: "0.3s",
+                "&:hover": { borderColor: "#1C1B19" }
+              }}
+            >
+              Chi tiết
+            </Button>
+          </Stack>
+        </Box>
       </Box>
-    </Box>
+    </MotionBox>
   );
 }
 

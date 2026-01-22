@@ -1,19 +1,17 @@
-import { Box, Typography, IconButton } from "@mui/material";
+import { Box, Typography, IconButton, Stack } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useRef } from "react";
-
 import HotelCard from "./HotelCard";
-import MotionBox from "../Common/MotionBox";
+import { motion } from "framer-motion";
+
+const MotionBox = motion(Box);
 
 export default function HorizontalHotelRow({ city, hotels = [] }) {
   const scrollRef = useRef(null);
 
-  if (!Array.isArray(hotels) || hotels.length === 0) {
-    return null;
-  }
+  if (!Array.isArray(hotels) || hotels.length === 0) return null;
 
-  // 1. TĂNG KÍCH THƯỚC: 320px là chuẩn để hiện đủ info như trong ảnh bạn gửi
   const CARD_WIDTH = 320; 
   const GAP = 24;
 
@@ -28,55 +26,54 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
   const showArrow = hotels.length > 1;
 
   return (
-    <Box sx={{ width: "100%", overflow: "visible" }}>
-      {/* ===== HEADER (Chỉ hiện nếu có tên thành phố) ===== */}
+    <Box sx={{ width: "100%", overflow: "visible", position: "relative" }}>
+      {/* ===== HEADER ===== */}
       {city && (
         <Box
           sx={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end", // Căn dòng theo chân chữ để sang trọng hơn
             justifyContent: "space-between",
-            mb: 2,
+            mb: 3,
             px: 0.5,
           }}
         >
-          <Typography
-            sx={{
-              fontFamily: "Playfair Display, serif",
-              fontWeight: 600,
-              fontSize: "1.25rem",
-            }}
-          >
-            {city}
-          </Typography>
+          <Box>
+            <Typography
+              sx={{
+                fontFamily: "'Playfair Display', serif",
+                fontWeight: 800,
+                fontSize: "1.5rem",
+                color: "#1C1B19",
+              }}
+            >
+              {city}
+            </Typography>
+            <Box sx={{ width: 30, height: 2, bgcolor: "#C2A56D", mt: 0.5 }} />
+          </Box>
 
           {showArrow && (
-            <Box sx={{ display: "flex", gap: 1 }}>
-              {/* Nút điều hướng giữ nguyên */}
-              <IconButton size="small" onClick={() => scroll("left")} sx={{ bgcolor: "background.paper", boxShadow: 1 }}>
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" onClick={() => scroll("right")} sx={{ bgcolor: "background.paper", boxShadow: 1 }}>
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            <Stack direction="row" spacing={1.5}>
+              <NavButton icon={<ChevronLeftIcon />} onClick={() => scroll("left")} />
+              <NavButton icon={<ChevronRightIcon />} onClick={() => scroll("right")} />
+            </Stack>
           )}
         </Box>
       )}
 
-      {/* ===== SCROLL ROW - FIX HIỂN THỊ INFO ===== */}
+      {/* ===== SCROLL ROW ===== */}
       <Box
         ref={scrollRef}
         sx={{
           display: "flex",
           gap: `${GAP}px`,
           overflowX: "auto",
-          overflowY: "visible", // Quan trọng: Để không bị cắt shadow phía dưới
+          overflowY: "visible",
           
-          // Thêm padding dưới để tránh cắt mất phần giá tiền/nút bấm của Card
+          // Padding rộng ra để lộ shadow của HotelCard
           px: 1,
           pt: 1,
-          pb: 4, 
+          pb: 6, 
           mx: -1,
 
           scrollbarWidth: "none",
@@ -92,18 +89,39 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
               flex: "0 0 auto",
               width: CARD_WIDTH,
               scrollSnapAlign: "start",
-              // Loại bỏ bớt padding nội bộ để card rộng rãi hơn
-              p: 0.2, 
             }}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05, duration: 0.4 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ delay: index * 0.08, duration: 0.5 }}
           >
-            {/* 2. BỎ COMPACT: Để HotelCard hiển thị đầy đủ thông tin gốc */}
             <HotelCard hotel={hotel} /> 
           </MotionBox>
         ))}
       </Box>
     </Box>
+  );
+}
+
+// Nút điều hướng custom
+function NavButton({ icon, onClick }) {
+  return (
+    <IconButton 
+      size="small" 
+      onClick={onClick} 
+      component={motion.button}
+      whileHover={{ scale: 1.1, backgroundColor: "#1C1B19", color: "#fff" }}
+      whileTap={{ scale: 0.9 }}
+      sx={{ 
+        bgcolor: "#fff", 
+        color: "#1C1B19",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        border: "1px solid #F1F0EE",
+        p: 1,
+        transition: "0.2s"
+      }}
+    >
+      {icon}
+    </IconButton>
   );
 }

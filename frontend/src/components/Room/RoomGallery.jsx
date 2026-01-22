@@ -1,65 +1,69 @@
-import { Grid, Paper, Box, Stack, Button } from "@mui/material";
-import CollectionsIcon from "@mui/icons-material/Collections";
-import Typography from "@mui/material/Typography";
+import { Grid, Paper, Box, Stack, Button, Typography } from "@mui/material";
+import CollectionsOutlinedIcon from "@mui/icons-material/CollectionsOutlined";
 
 export default function RoomGallery({ photos = [] }) {
-  // 1. Chiều cao cố định cho Gallery (Giảm xuống để không quá to)
-  const GALLERY_HEIGHT = 360; 
+  // 1. Giữ nguyên logic chiều cao nhưng sử dụng height cụ thể để tránh lỗi render
+  const GALLERY_HEIGHT = { xs: "300px", sm: "400px", md: "450px" }; 
 
   if (!photos || photos.length === 0) {
     return (
       <Paper 
         sx={{ 
           height: GALLERY_HEIGHT, 
-          bgcolor: "#f5f5f5", 
+          bgcolor: "#F9F8F6", 
           display: "flex", 
+          flexDirection: "column",
           alignItems: "center", 
           justifyContent: "center",
-          borderRadius: 4,
-          border: "1px dashed #ccc"
+          borderRadius: "24px",
+          border: "1px dashed #D6C9B8",
+          gap: 1,
+          mb: 4
         }}
       >
-        <Typography color="text.secondary">Hình ảnh đang được cập nhật</Typography>
+        <CollectionsOutlinedIcon sx={{ color: "#C2A56D", fontSize: 40, opacity: 0.5 }} />
+        <Typography sx={{ color: "#A8A7A1", fontWeight: 500 }}>Hình ảnh đang được cập nhật</Typography>
       </Paper>
     );
   }
 
+  // Giữ nguyên logic lấy URL
   const getImgUrl = (img) => (typeof img === "string" ? img : img?.url);
 
   return (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        borderRadius: 4, 
-        overflow: "hidden", 
-        position: "relative",
-        mb: 3,
-        bgcolor: "transparent"
-      }}
-    >
-      <Grid container spacing={1.5}> {/* Tăng spacing nhẹ */}
-        {/* ẢNH CHÍNH */}
+    <Box sx={{ position: "relative", mb: 4 }}>
+      <Grid container spacing={1.5}>
+        {/* ẢNH CHÍNH (Bên trái) */}
         <Grid item xs={12} sm={photos.length === 1 ? 12 : 8}>
-          <Box sx={{ overflow: "hidden", height: GALLERY_HEIGHT, borderRadius: 2 }}>
-            <img
+          <Box 
+            sx={{ 
+              overflow: "hidden", 
+              height: GALLERY_HEIGHT, 
+              // Bo góc thông minh: Mobile bo đều, Desktop chỉ bo trái
+              borderRadius: { xs: "16px", sm: "24px 0 0 24px" },
+              position: "relative",
+              bgcolor: "#f0f0f0" 
+            }}
+          >
+            <Box
+              component="img"
               src={getImgUrl(photos[0])}
               alt="room-main"
-              style={{ 
+              sx={{ 
                 width: "100%", 
                 height: "100%", 
                 objectFit: "cover",
                 display: "block",
-                transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": { transform: "scale(1.05)" }
               }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.03)"}
-              onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
             />
           </Box>
         </Grid>
 
-        {/* CỘT ẢNH PHỤ */}
+        {/* CỘT ẢNH PHỤ (Bên phải) */}
         {photos.length > 1 && (
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={4} sx={{ display: { xs: "none", sm: "block" } }}>
             <Stack spacing={1.5} sx={{ height: GALLERY_HEIGHT }}>
               {photos.slice(1, 3).map((img, idx) => (
                 <Box 
@@ -68,39 +72,42 @@ export default function RoomGallery({ photos = [] }) {
                     flex: 1, 
                     overflow: "hidden",
                     position: "relative",
-                    borderRadius: 2 // Bo góc ảnh con
+                    // Chỉ bo góc phải (trên và dưới)
+                    borderRadius: idx === 0 ? "0 24px 0 0" : "0 0 24px 0",
+                    bgcolor: "#f0f0f0"
                   }}
                 >
-                  <img
+                  <Box
+                    component="img"
                     src={getImgUrl(img)}
                     alt={`sub-${idx}`}
-                    style={{ 
+                    sx={{ 
                       width: "100%", 
                       height: "100%", 
                       objectFit: "cover",
                       display: "block",
-                      transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)"
+                      transition: "transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+                      "&:hover": { transform: "scale(1.1)" }
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                   />
                   
-                  {/* Lớp phủ số lượng ảnh */}
+                  {/* Giữ nguyên logic Overlay */}
                   {idx === 1 && photos.length > 3 && (
                     <Box
                       sx={{
                         position: "absolute",
                         top: 0, left: 0, right: 0, bottom: 0,
-                        bgcolor: "rgba(0,0,0,0.4)",
-                        backdropFilter: "blur(2px)", // Thêm hiệu ứng mờ nhẹ
+                        bgcolor: "rgba(28,27,25,0.6)", 
+                        backdropFilter: "blur(3px)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        pointerEvents: "none"
+                        pointerEvents: "none",
+                        zIndex: 2
                       }}
                     >
-                      <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem" }}>
-                        +{photos.length - 3} ảnh nữa
+                      <Typography sx={{ color: "#C2A56D", fontWeight: 700, fontSize: "1.1rem" }}>
+                        +{photos.length - 3} Tuyệt tác khác
                       </Typography>
                     </Box>
                   )}
@@ -114,26 +121,29 @@ export default function RoomGallery({ photos = [] }) {
       {/* NÚT XEM TẤT CẢ */}
       <Button
         variant="contained"
-        startIcon={<CollectionsIcon sx={{ fontSize: "1.2rem !important" }} />}
+        startIcon={<CollectionsOutlinedIcon />}
         sx={{
           position: "absolute",
-          bottom: 20,
-          right: 20,
-          bgcolor: "rgba(255, 255, 255, 0.9)",
-          backdropFilter: "blur(4px)",
-          color: "#000",
-          px: 2,
-          py: 0.8,
-          borderRadius: 2,
+          bottom: { xs: 16, sm: 24 },
+          right: { xs: 16, sm: 24 },
+          bgcolor: "#FFF",
+          color: "#1C1B19",
+          px: 3,
+          py: 1,
+          borderRadius: "12px",
           textTransform: "none",
           fontWeight: 700,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          "&:hover": { bgcolor: "#fff", transform: "translateY(-2px)" },
-          transition: "all 0.2s ease"
+          boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+          border: "1px solid #EFE7DD",
+          zIndex: 10, // Đảm bảo luôn nằm trên ảnh
+          "&:hover": { 
+            bgcolor: "#1C1B19", 
+            color: "#C2A56D",
+          },
         }}
       >
-        Tất cả ảnh
+        Khám phá tất cả ảnh
       </Button>
-    </Paper>
+    </Box>
   );
 }

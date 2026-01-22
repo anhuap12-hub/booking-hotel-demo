@@ -12,52 +12,60 @@ export default function CheckEmail() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        // Nền gradient tinh tế tạo cảm giác chuyên nghiệp
-        background: "linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)",
+        // Nền màu kem nhạt sang trọng thay vì gradient lòe loẹt
+        bgcolor: "#F9F8F6",
         p: 2,
       }}
     >
       <Container maxWidth="sm">
         <Paper
-          elevation={10}
+          elevation={0}
           sx={{
             p: { xs: 4, md: 6 },
-            borderRadius: 8,
+            borderRadius: "32px", // Bo góc cực lớn hiện đại
             textAlign: "center",
-            bgcolor: "rgba(255, 255, 255, 0.9)",
-            backdropFilter: "blur(10px)", // Hiệu ứng kính mờ
-            boxShadow: "0 20px 50px rgba(0,0,0,0.1)",
+            bgcolor: "#FFF",
+            border: "1px solid rgba(194, 165, 109, 0.2)", // Viền Gold siêu mảnh
+            boxShadow: "0 20px 40px rgba(28,27,25,0.05)",
           }}
         >
           {/* Vùng Icon trung tâm */}
           <Avatar
             sx={{
-              bgcolor: "rgba(212, 163, 115, 0.15)", 
-              color: "#d4a373",
+              bgcolor: "rgba(194, 165, 109, 0.1)", // Gold nhạt
+              color: "#C2A56D", // Gold thương hiệu
               width: 100,
               height: 100,
               margin: "0 auto 32px",
-              border: "2px dashed #d4a373",
+              border: "1px solid #EFE7DD",
             }}
           >
-            <MarkEmailReadOutlinedIcon sx={{ fontSize: 50 }} />
+            <MarkEmailReadOutlinedIcon sx={{ fontSize: 45 }} />
           </Avatar>
 
           <Typography 
             variant="h4" 
-            fontWeight="800" 
-            gutterBottom 
-            sx={{ color: "#44403c", letterSpacing: "-0.5px" }}
+            sx={{ 
+              fontFamily: "'Playfair Display', serif", // Font tiêu đề sang trọng
+              fontWeight: 800, 
+              color: "#1C1B19", // Ebony
+              mb: 2,
+              letterSpacing: "-0.5px" 
+            }}
           >
             Xác thực email
           </Typography>
 
           <Typography 
             variant="body1" 
-            color="text.secondary" 
-            sx={{ mb: 4, lineHeight: 1.7, fontSize: "1.1rem" }}
+            sx={{ 
+              mb: 4, 
+              lineHeight: 1.8, 
+              fontSize: "1rem",
+              color: "#72716E",
+            }}
           >
-            Cảm ơn bạn đã tin tưởng <strong>Coffee Stay</strong>. <br />
+            Cảm ơn bạn đã tin tưởng <strong style={{ color: "#1C1B19" }}>Coffee Stay</strong>. <br />
             Chúng tôi đã gửi một liên kết xác thực đến địa chỉ email của bạn. 
             Vui lòng kiểm tra hộp thư (và cả thư rác) để hoàn tất.
           </Typography>
@@ -70,16 +78,15 @@ export default function CheckEmail() {
               startIcon={<ArrowBackIcon />}
               fullWidth
               sx={{ 
-                borderRadius: 4,
-                py: 1.8,
+                borderRadius: "12px",
+                py: 2,
                 textTransform: "none",
-                fontSize: "1.05rem",
+                fontSize: "0.95rem",
                 fontWeight: "700",
-                bgcolor: "#d4a373", // Màu vàng đồng thương hiệu
-                boxShadow: "0 8px 20px rgba(212, 163, 115, 0.3)",
+                bgcolor: "#1C1B19", // Nền đen Ebony
+                color: "#C2A56D",   // Chữ vàng Gold
                 "&:hover": {
-                  bgcolor: "#b38a5f",
-                  boxShadow: "0 10px 25px rgba(212, 163, 115, 0.4)",
+                  bgcolor: "#333230",
                   transform: "translateY(-2px)",
                 },
                 transition: "all 0.3s ease",
@@ -88,8 +95,19 @@ export default function CheckEmail() {
               Quay về đăng nhập
             </Button>
 
-            <Typography variant="body2" color="text.disabled">
-              Bạn gặp sự cố? <Link to="/contact" style={{ color: "#d4a373", textDecoration: "none", fontWeight: "600" }}>Liên hệ hỗ trợ</Link>
+            <Typography variant="body2" sx={{ color: "#A8A7A1" }}>
+              Bạn gặp sự cố?{" "}
+              <Link 
+                to="/contact" 
+                style={{ 
+                  color: "#C2A56D", 
+                  textDecoration: "none", 
+                  fontWeight: "700",
+                  borderBottom: "1px solid #C2A56D"
+                }}
+              >
+                Liên hệ hỗ trợ
+              </Link>
             </Typography>
           </Box>
         </Paper>

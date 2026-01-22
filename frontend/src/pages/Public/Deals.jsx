@@ -1,17 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  Box,
-  Typography,
-  CircularProgress,
-  Paper,
-  Stack,
-  Divider,
-  Chip,
-  Button,
-  useTheme,
+  Box, Typography, CircularProgress, Paper, Stack, Divider, 
+  Chip, Button,  Fade, IconButton
 } from "@mui/material";
 
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
 import HotelIcon from "@mui/icons-material/Hotel";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
@@ -19,6 +12,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import BedIcon from "@mui/icons-material/Bed";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import StarIcon from "@mui/icons-material/Star";
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 
 import { motion, AnimatePresence } from "framer-motion";
 import { getAllHotels } from "../../api/hotel.api";
@@ -26,10 +20,10 @@ import { useNavigate } from "react-router-dom";
 
 const MotionBox = motion(Box);
 
-/* ================= COMPONENT: DEAL CARD (HORIZONTAL) ================= */
+/* ================= COMPONENT: DEAL CARD (PREMIUM ROW) ================= */
 const DealHotelRow = ({ hotel }) => {
   const navigate = useNavigate();
-  const theme = useTheme();
+ 
   
   const priceDisplay = useMemo(() => {
     const discountedRooms = hotel.rooms.filter(r => r.discount > 0);
@@ -51,59 +45,96 @@ const DealHotelRow = ({ hotel }) => {
     <Paper
       elevation={0}
       sx={{
-        p: 2.5,
-        mb: 3,
+        p: 0, // Đưa padding vào trong để ảnh tràn viền nhẹ
+        mb: 4,
         display: "flex",
         flexDirection: { xs: "column", sm: "row" },
-        gap: 3,
-        transition: "0.3s",
-        border: `1px solid ${theme.palette.divider}`,
+        overflow: "hidden",
+        borderRadius: "24px",
+        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+        border: `1px solid rgba(194, 165, 109, 0.2)`,
+        bgcolor: "#fff",
+        cursor: "pointer",
         "&:hover": {
-          boxShadow: theme.shadows[4],
-          transform: "translateX(8px)",
-          borderColor: theme.palette.primary.main,
+          boxShadow: "0 20px 40px rgba(28, 27, 25, 0.08)",
+          transform: "translateY(-4px)",
+          borderColor: "#C2A56D",
+          "& .hotel-img": { transform: "scale(1.08)" },
+          "& .btn-view": { bgcolor: "#1C1B19", color: "#C2A56D" }
         },
       }}
       onClick={() => navigate(`/hotels/${hotel._id}`)}
     >
-      {/* IMAGE */}
-      <Box sx={{ width: { xs: "100%", sm: 260 }, height: 180, borderRadius: 3, overflow: "hidden", position: "relative", flexShrink: 0 }}>
-        <Box component="img" src={hotel.photos?.[0]?.url} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <Box sx={{ position: "absolute", top: 12, left: 12, bgcolor: theme.palette.error.main, color: "#fff", px: 1.5, py: 0.5, borderRadius: 2, fontWeight: 800, fontSize: "0.75rem" }}>
-          -{priceDisplay.discount}% OFF
+      {/* IMAGE SECTION */}
+      <Box sx={{ width: { xs: "100%", sm: 300 }, height: { xs: 200, sm: "auto" }, overflow: "hidden", position: "relative" }}>
+        <Box 
+          className="hotel-img"
+          component="img" 
+          src={hotel.photos?.[0]?.url} 
+          sx={{ 
+            width: "100%", height: "100%", objectFit: "cover",
+            transition: "transform 0.6s ease"
+          }} 
+        />
+        <Box sx={{ 
+          position: "absolute", top: 16, left: 16, 
+          bgcolor: "#1C1B19", color: "#C2A56D", 
+          px: 2, py: 0.8, borderRadius: "10px", 
+          fontWeight: 800, fontSize: "0.7rem",
+          display: 'flex', alignItems: 'center', gap: 0.5,
+          border: '1px solid #C2A56D'
+        }}>
+          <FlashOnIcon sx={{ fontSize: 14 }} /> {priceDisplay.discount}% GIẢM GIÁ
         </Box>
       </Box>
 
-      {/* INFO */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Box>
-          {/* Dùng h6 để kích hoạt Playfair Display */}
-          <Typography variant="h6" sx={{ color: theme.palette.text.primary, mb: 0.5, lineHeight: 1.3 }}>
-            {hotel.name}
-          </Typography>
-          <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
-            <StarIcon sx={{ fontSize: 16, color: "#fbbf24" }} />
-            <Typography variant="body2" fontWeight={700}>{hotel.rating}/10</Typography>
-            <Typography variant="body2" color="text.secondary">• {hotel.city}</Typography>
-          </Stack>
-        </Box>
+      {/* CONTENT SECTION */}
+      <Box sx={{ flex: 1, p: 4, display: "flex", flexDirection: "column" }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+          <Box>
+            <Typography variant="h5" sx={{ 
+              color: "#1C1B19", mb: 1, 
+              fontFamily: "'Playfair Display', serif", fontWeight: 800 
+            }}>
+              {hotel.name}
+            </Typography>
+            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <StarIcon sx={{ fontSize: 18, color: "#C2A56D" }} />
+                <Typography variant="body2" fontWeight={800}>{hotel.rating}</Typography>
+              </Stack>
+              <Typography variant="body2" color="#A8A7A1" fontWeight={500}>
+                • {hotel.city}
+              </Typography>
+            </Stack>
+          </Box>
+        </Stack>
 
-        <Typography variant="body2" color="text.secondary" sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", mb: 2 }}>
-          {hotel.desc || `Tận hưởng ưu đãi tuyệt vời cho hạng phòng ${priceDisplay.roomName} tại ${hotel.city}.`}
+        <Typography variant="body2" sx={{ color: "#72716E", lineHeight: 1.7, mb: 3 }}>
+          {hotel.desc?.substring(0, 120)}...
         </Typography>
 
         <Box sx={{ mt: "auto", display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <Box>
-            <Typography variant="caption" sx={{ textDecoration: "line-through", color: "text.secondary", display: "block" }}>
-              {priceDisplay.original.toLocaleString()}đ
+            <Typography variant="caption" sx={{ textDecoration: "line-through", color: "#A8A7A1", display: "block", mb: 0.5 }}>
+              {priceDisplay.original.toLocaleString()}₫
             </Typography>
-            <Typography variant="h5" sx={{ color: theme.palette.error.main, fontWeight: 700 }}>
-              {priceDisplay.final.toLocaleString()}đ
-              <Box component="span" sx={{ fontSize: "0.75rem", color: "text.secondary", fontWeight: 400, ml: 0.5 }}>/đêm</Box>
+            <Typography variant="h4" sx={{ color: "#1C1B19", fontWeight: 900, display: 'flex', alignItems: 'baseline' }}>
+              {priceDisplay.final.toLocaleString()}₫
+              <Typography component="span" sx={{ fontSize: "0.8rem", color: "#72716E", fontWeight: 500, ml: 1 }}>/ đêm</Typography>
             </Typography>
           </Box>
-          <Button variant="contained" endIcon={<ArrowForwardIcon />} sx={{ borderRadius: 2, fontWeight: 700 }}>
-            Xem chi tiết
+          <Button 
+            className="btn-view"
+            variant="outlined" 
+            endIcon={<ArrowForwardIcon />} 
+            sx={{ 
+              borderRadius: "12px", px: 3, py: 1.2,
+              borderColor: "#1C1B19", color: "#1C1B19",
+              transition: "0.3s"
+            }}
+          >
+            Trải nghiệm ngay
           </Button>
         </Box>
       </Box>
@@ -111,12 +142,12 @@ const DealHotelRow = ({ hotel }) => {
   );
 };
 
-/* ================= MAIN PAGE ================= */
+/* ================= MAIN PAGE: DEALS ================= */
 export default function Deals() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const theme = useTheme();
+  
 
   useEffect(() => {
     getAllHotels()
@@ -140,89 +171,110 @@ export default function Deals() {
   const visibleDeals = useMemo(() => (showAll ? deals : deals.slice(0, 5)), [deals, showAll]);
 
   return (
-    <Box sx={{ bgcolor: theme.palette.background.default, minHeight: "100vh", px: { xs: 2, md: 8 }, py: 8 }}>
+    <Box sx={{ bgcolor: "#F9F8F6", minHeight: "100vh", px: { xs: 2, md: 8 }, py: 10 }}>
       
       {/* HEADER SECTION */}
-      <Box mb={8}>
-        <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-          <LocalOfferIcon sx={{ color: theme.palette.error.main, fontSize: 32 }} />
-          {/* Dùng h2 cho Font Playfair Display */}
-          <Typography variant="h2" sx={{ fontSize: { xs: "2rem", md: "3rem" } }}>
-            Ưu đãi Đặc quyền
-          </Typography>
-        </Stack>
-        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600 }}>
-          Săn ngay những deal khách sạn giá tốt nhất. Số lượng có hạn, dành riêng cho thành viên Coffee Stay.
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 360px" }, gap: 8 }}>
-        
-        {/* LEFT: DEAL LIST */}
-        <Box>
-          {loading ? (
-            <Box textAlign="center" py={10}><CircularProgress color="primary" /></Box>
-          ) : deals.length > 0 ? (
-            <>
-              <AnimatePresence>
-                {visibleDeals.map((hotel, i) => (
-                  <MotionBox key={hotel._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                    <DealHotelRow hotel={hotel} />
-                  </MotionBox>
-                ))}
-              </AnimatePresence>
-
-              {deals.length > 5 && (
-                <Button fullWidth onClick={() => setShowAll(!showAll)} sx={{ py: 2, mt: 2, color: theme.palette.primary.main, fontWeight: 700 }}>
-                  {showAll ? "Thu gọn danh sách" : `Khám phá thêm ${deals.length - 5} ưu đãi khác`}
-                </Button>
-              )}
-            </>
-          ) : (
-            <Paper sx={{ p: 8, textAlign: "center", border: `2px dashed ${theme.palette.divider}`, bgcolor: "transparent" }}>
-              <HotelIcon sx={{ fontSize: 64, color: theme.palette.divider, mb: 2 }} />
-              <Typography variant="h5">Chưa có ưu đãi mới</Typography>
-              <Typography variant="body2" color="text.secondary">Chúng tôi đang cập nhật deal mới, hãy quay lại sau nhé.</Typography>
-            </Paper>
-          )}
-        </Box>
-
-        {/* RIGHT: SIDEBAR */}
-        <Box sx={{ display: { xs: "none", lg: "block" } }}>
-          <Stack spacing={4} sx={{ position: "sticky", top: 120 }}>
-            
-            {/* Quote Card */}
-            <Paper sx={{ p: 4, bgcolor: theme.palette.primary.main, color: "#fff", position: "relative" }}>
-              <FormatQuoteIcon sx={{ position: "absolute", top: 10, right: 10, fontSize: 48, opacity: 0.2 }} />
-              <Typography variant="h5" sx={{ color: "#fff", mb: 2, fontStyle: "italic" }}>
-                "Kỳ nghỉ lý tưởng không nhất thiết phải đắt nhất, mà phải là nơi khiến bạn thấy thuộc về nhất."
+      <Container maxWidth="xl">
+        <Box mb={10} textAlign="center">
+          <MotionBox initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center" mb={2}>
+              <LocalOfferOutlinedIcon sx={{ color: "#C2A56D", fontSize: 40 }} />
+              <Typography variant="h2" sx={{ 
+                fontFamily: "'Playfair Display', serif", 
+                fontWeight: 900, color: "#1C1B19" 
+              }}>
+                Tuyệt Phẩm Ưu Đãi
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.8, fontWeight: 700 }}>— COFFEE STAY TEAM</Typography>
-            </Paper>
-
-            {/* Why choose us card */}
-            <Paper sx={{ p: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3 }}>Vì sao chọn Coffee Stay?</Typography>
-              <Stack spacing={3}>
-                {[
-                  { icon: <CheckCircleIcon sx={{ color: theme.palette.success.main }} />, title: "Giá tốt nhất", desc: "Cam kết giá thấp hơn 15% so với đại lý." },
-                  { icon: <BedIcon sx={{ color: theme.palette.primary.main }} />, title: "Chất lượng kiểm định", desc: "Mọi phòng đều được đội ngũ chúng tôi khảo sát." },
-                  { icon: <AccessTimeIcon sx={{ color: theme.palette.warning.main }} />, title: "Hỗ trợ tận tâm", desc: "Luôn có mặt 24/7 giải quyết mọi vấn đề." }
-                ].map((item, idx) => (
-                  <Stack key={idx} direction="row" spacing={2}>
-                    {item.icon}
-                    <Box>
-                      <Typography variant="body2" fontWeight={800}>{item.title}</Typography>
-                      <Typography variant="caption" color="text.secondary">{item.desc}</Typography>
-                    </Box>
-                  </Stack>
-                ))}
-              </Stack>
-            </Paper>
-
-          </Stack>
+            </Stack>
+            <Typography variant="h6" sx={{ color: "#72716E", fontWeight: 400, maxWidth: 700, mx: "auto" }}>
+              Những hành trình xa hoa giờ đây nằm trong tầm tay bạn với các đặc quyền giới hạn dành riêng cho giới tinh hoa.
+            </Typography>
+          </MotionBox>
         </Box>
-      </Box>
+
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 380px" }, gap: 10 }}>
+          
+          {/* LEFT: DEAL LIST */}
+          <Box>
+            {loading ? (
+              <Box textAlign="center" py={10}><CircularProgress sx={{ color: '#C2A56D' }} /></Box>
+            ) : deals.length > 0 ? (
+              <>
+                <AnimatePresence>
+                  {visibleDeals.map((hotel, i) => (
+                    <MotionBox key={hotel._id} initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}>
+                      <DealHotelRow hotel={hotel} />
+                    </MotionBox>
+                  ))}
+                </AnimatePresence>
+
+                {deals.length > 5 && (
+                  <Button 
+                    fullWidth 
+                    onClick={() => setShowAll(!showAll)} 
+                    sx={{ 
+                      py: 2.5, mt: 2, color: "#1C1B19", fontWeight: 800, 
+                      border: '1px solid rgba(28, 27, 25, 0.1)', borderRadius: '16px',
+                      '&:hover': { bgcolor: 'rgba(194, 165, 109, 0.05)' }
+                    }}
+                  >
+                    {showAll ? "THU GỌN DANH SÁCH" : `XEM THÊM ${deals.length - 5} ƯU ĐÃI TUYỆT VỜI KHÁC`}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Paper sx={{ p: 10, textAlign: "center", borderRadius: "32px", border: `2px dashed rgba(194, 165, 109, 0.3)`, bgcolor: "transparent" }}>
+                <HotelIcon sx={{ fontSize: 80, color: "rgba(194, 165, 109, 0.2)", mb: 3 }} />
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Sớm ra mắt ưu đãi mới</Typography>
+                <Typography variant="body1" color="#A8A7A1">Các đặc quyền mới đang được đội ngũ quản gia chuẩn bị.</Typography>
+              </Paper>
+            )}
+          </Box>
+
+          {/* RIGHT: SIDEBAR */}
+          <Box sx={{ display: { xs: "none", lg: "block" } }}>
+            <Stack spacing={5} sx={{ position: "sticky", top: 120 }}>
+              
+              {/* Premium Quote Card */}
+              <Paper sx={{ 
+                p: 5, bgcolor: "#1C1B19", color: "#C2A56D", 
+                borderRadius: "32px", position: "relative",
+                overflow: 'hidden',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+              }}>
+                <FormatQuoteIcon sx={{ position: "absolute", top: -10, right: -10, fontSize: 120, opacity: 0.1, color: "#C2A56D" }} />
+                <Typography variant="h5" sx={{ mb: 3, fontStyle: "italic", lineHeight: 1.6, position: 'relative', zIndex: 1 }}>
+                  "Sự sang trọng thực sự không nằm ở mức giá, mà ở cảm giác bạn được trân trọng trong từng khoảnh khắc."
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#A8A7A1", fontWeight: 800, letterSpacing: 2 }}>— COFFEE STAY ELITE</Typography>
+              </Paper>
+
+              {/* Service Commitments */}
+              <Box>
+                <Typography variant="h6" sx={{ mb: 4, fontWeight: 800, color: "#1C1B19" }}>Đặc Quyền Của Bạn</Typography>
+                <Stack spacing={4}>
+                  {[
+                    { icon: <CheckCircleIcon sx={{ color: "#10b981" }} />, title: "Giá Tốt Nhất Hệ Thống", desc: "Cam kết mức giá ưu đãi nhất so với bất kỳ đại lý nào." },
+                    { icon: <BedIcon sx={{ color: "#C2A56D" }} />, title: "Kiểm Định Tận Nơi", desc: "Đội ngũ chuyên gia luôn trực tiếp khảo sát từng căn phòng." },
+                    { icon: <AccessTimeIcon sx={{ color: "#1C1B19" }} />, title: "Hỗ Trợ Ưu Tiên 24/7", desc: "Đường dây nóng riêng dành cho các giao dịch đặc quyền." }
+                  ].map((item, idx) => (
+                    <Stack key={idx} direction="row" spacing={3} alignItems="flex-start">
+                      <Avatar sx={{ bgcolor: 'rgba(194, 165, 109, 0.1)', color: '#C2A56D' }}>
+                        {item.icon}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body1" fontWeight={800} color="#1C1B19">{item.title}</Typography>
+                        <Typography variant="body2" color="#72716E" sx={{ mt: 0.5 }}>{item.desc}</Typography>
+                      </Box>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
+
+            </Stack>
+          </Box>
+        </Box>
+      </Container>
     </Box>
   );
 }

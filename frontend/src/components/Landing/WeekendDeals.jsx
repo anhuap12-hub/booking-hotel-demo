@@ -6,17 +6,19 @@ import {
   Paper,
   Box,
   Stack,
+  Chip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+
+const MotionPaper = motion(Paper);
 
 export default function WeekendDeals({ hotels = [] }) {
   const navigate = useNavigate();
 
-  // ================= PRICE LOGIC (CHUẨN DEAL) =================
   const getBestPrice = (rooms) => {
     if (!Array.isArray(rooms) || rooms.length === 0) return null;
-
-    // 1️⃣ Phòng có discount
     const discountedRooms = rooms.filter(
       (r) => typeof r.discount === "number" && r.discount > 0
     );
@@ -30,14 +32,11 @@ export default function WeekendDeals({ hotels = [] }) {
 
       return {
         price: bestRoom.price,
-        finalPrice: Math.round(
-          bestRoom.price * (1 - bestRoom.discount / 100)
-        ),
+        finalPrice: Math.round(bestRoom.price * (1 - bestRoom.discount / 100)),
         discount: bestRoom.discount,
       };
     }
 
-    // 2️⃣ Không có discount → lấy phòng rẻ nhất
     const cheapestRoom = rooms.reduce((min, cur) =>
       cur.price < min.price ? cur : min
     , rooms[0]);
@@ -50,133 +49,131 @@ export default function WeekendDeals({ hotels = [] }) {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mb: 10 }}>
-      <Box mb={3}>
-        <Typography
-          sx={{
-            fontFamily: "Playfair Display, serif",
-            fontSize: 24,
-            fontWeight: 600,
-            color: "#2b2a28",
-          }}
+    <Container maxWidth="lg" sx={{ mb: 12 }}>
+      {/* HEADER */}
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 4 }}>
+        <Box>
+          <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+             <LocalFireDepartmentIcon sx={{ color: "#C2A56D" }} />
+             <Typography variant="overline" sx={{ fontWeight: 700, letterSpacing: 2, color: "#C2A56D" }}>
+                Limited Offers
+             </Typography>
+          </Stack>
+          <Typography
+            sx={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: { xs: 28, md: 36 },
+              fontWeight: 800,
+              color: "#1C1B19",
+            }}
+          >
+            Ưu đãi cuối tuần
+          </Typography>
+        </Box>
+        <Button 
+          onClick={() => navigate('/hotels')}
+          sx={{ color: "#72716E", textTransform: "none", fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
         >
-          Ưu đãi cuối tuần
-        </Typography>
-        <Typography sx={{ fontSize: 14, color: "rgba(0,0,0,0.55)" }}>
-          Nghỉ dưỡng ngắn ngày với phong cách tinh tế
-        </Typography>
-      </Box>
+          Xem tất cả khách sạn
+        </Button>
+      </Stack>
 
-      <Grid container spacing={4}>
-        {hotels.map((h) => {
+      <Grid container spacing={3}>
+        {hotels.slice(0, 4).map((h, idx) => {
           const priceInfo = getBestPrice(h.rooms);
 
           return (
             <Grid item xs={12} sm={6} md={3} key={h._id}>
-              <Paper
-                elevation={0}
+              <MotionPaper
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                viewport={{ once: true }}
                 sx={{
-                  borderRadius: 3,
+                  borderRadius: "20px",
                   overflow: "hidden",
-                  bgcolor: "#f5f4f2",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-                  transition: "all .35s ease",
+                  bgcolor: "#FFF",
+                  border: "1px solid #F1F0EE",
+                  transition: "0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&:hover": {
-                    transform: "translateY(-6px)",
-                    boxShadow: "0 20px 45px rgba(0,0,0,0.25)",
+                    transform: "translateY(-10px)",
+                    boxShadow: "0 30px 60px rgba(28,27,25,0.12)",
                   },
                 }}
               >
-                {/* IMAGE */}
-                <Box sx={{ width: "100%", height: 220, overflow: "hidden" }}>
-                  <img
-                    src={
-                      h.photos?.[0]?.url ||
-                      "https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg"
-                    }
+                {/* IMAGE BOX */}
+                <Box sx={{ position: "relative", height: 240, overflow: "hidden" }}>
+                  <Box
+                    component="img"
+                    src={h.photos?.[0]?.url || "https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg"}
                     alt={h.name}
-                    style={{
+                    sx={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
-                      filter: "brightness(0.9)",
-                      transition: "transform .6s ease",
+                      transition: "0.6s",
                     }}
                   />
+                  {priceInfo?.discount > 0 && (
+                    <Chip 
+                      label={`-${priceInfo.discount}%`}
+                      sx={{
+                        position: "absolute", top: 16, right: 16,
+                        bgcolor: "#1C1B19", color: "#C2A56D",
+                        fontWeight: 800, borderRadius: "8px",
+                        fontSize: "0.75rem"
+                      }}
+                    />
+                  )}
                 </Box>
 
                 {/* CONTENT */}
-                <Box sx={{ p: 2 }}>
+                <Box sx={{ p: 2.5 }}>
+                  <Typography variant="caption" sx={{ color: "#C2A56D", fontWeight: 700, textTransform: "uppercase" }}>
+                    {h.city}
+                  </Typography>
                   <Typography
                     noWrap
                     sx={{
-                      fontFamily: "Playfair Display, serif",
-                      fontSize: 16,
-                      fontWeight: 600,
-                      color: "#1f1f1f",
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: "1.1rem",
+                      fontWeight: 700,
+                      color: "#1C1B19",
+                      mt: 0.5, mb: 2
                     }}
                   >
                     {h.name}
                   </Typography>
 
-                  <Typography
-                    sx={{
-                      fontSize: 13,
-                      color: "rgba(0,0,0,0.55)",
-                      mb: 0.5,
-                    }}
-                  >
-                    {h.city}
-                  </Typography>
-
-                  {/* PRICE */}
-                  {priceInfo ? (
-                    <Stack direction="row" spacing={1} alignItems="baseline">
-                      <Typography
-                        sx={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: priceInfo.discount ? "#b91c1c" : "#5a3e2b",
-                        }}
-                      >
-                        {`Từ ${priceInfo.finalPrice.toLocaleString("vi-VN")} ₫`}
-                      </Typography>
-
-                      {priceInfo.discount > 0 && (
-                        <Typography
-                          sx={{
-                            fontSize: 12,
-                            textDecoration: "line-through",
-                            color: "rgba(0,0,0,0.5)",
-                          }}
-                        >
-                          {priceInfo.price.toLocaleString("vi-VN")} ₫
-                        </Typography>
-                      )}
-                    </Stack>
-                  ) : (
-                    <Typography>Liên hệ</Typography>
-                  )}
-
-                  <Button
-                    fullWidth
-                    onClick={() => navigate(`/hotels/${h._id}`)}
-                    sx={{
-                      mt: 1.5,
-                      bgcolor: "#2b2a28",
-                      color: "#f5f4f2",
-                      fontSize: 13,
-                      borderRadius: 2,
-                      textTransform: "none",
-                      "&:hover": {
-                        bgcolor: "#1f1f1f",
-                      },
-                    }}
-                  >
-                    Xem ưu đãi
-                  </Button>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                       <Typography sx={{ fontSize: "0.75rem", color: "#72716E" }}>Giá từ</Typography>
+                       <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.05rem" }}>
+                             {priceInfo?.finalPrice.toLocaleString("vi-VN")}₫
+                          </Typography>
+                          {priceInfo?.discount > 0 && (
+                            <Typography sx={{ fontSize: "0.8rem", textDecoration: "line-through", color: "#A8A7A1" }}>
+                               {priceInfo.price.toLocaleString("vi-VN")}
+                            </Typography>
+                          )}
+                       </Stack>
+                    </Box>
+                    
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate(`/hotels/${h._id}`)}
+                      sx={{
+                        minWidth: 45, width: 45, height: 45, borderRadius: "12px",
+                        bgcolor: "#1C1B19", color: "#C2A56D",
+                        "&:hover": { bgcolor: "#C2A56D", color: "#1C1B19" }
+                      }}
+                    >
+                      →
+                    </Button>
+                  </Stack>
                 </Box>
-              </Paper>
+              </MotionPaper>
             </Grid>
           );
         })}

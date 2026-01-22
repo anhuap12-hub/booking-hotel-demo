@@ -3,107 +3,148 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
+import { motion } from "framer-motion";
+
+const MotionBox = motion(Box);
 
 const REASONS = [
   {
     icon: <LocalOfferIcon fontSize="small" />,
     title: "Giá tốt mỗi ngày",
     desc: "Cập nhật mức giá cạnh tranh nhất.",
-    iconBg: "#fef3c7",
-    iconColor: "#92400e",
+    iconBg: "#F9F5F0", // Tông Sand nhẹ
+    iconColor: "#C2A56D", // Vàng đồng thương hiệu
   },
   {
     icon: <VisibilityOffIcon fontSize="small" />,
     title: "Không phí ẩn",
     desc: "Minh bạch trong từng chi tiết.",
-    iconBg: "#fff7ed",
-    iconColor: "#9a3412",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
   },
   {
     icon: <SupportAgentIcon fontSize="small" />,
     title: "Hỗ trợ 24/7",
     desc: "Tận tâm đồng hành cùng bạn.",
-    iconBg: "#fefce8",
-    iconColor: "#854d0e",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
   },
   {
     icon: <AutorenewIcon fontSize="small" />,
     title: "Hoàn huỷ linh hoạt",
     desc: "Dễ dàng thay đổi kế hoạch.",
-    iconBg: "#faf5ff",
-    iconColor: "#6b21a8",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
   },
 ];
 
 export default function WhyBook() {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
   return (
     <Container maxWidth="lg">
-      <Box sx={{ mt: 8, mb: 6, textAlign: "center" }}>
-        {/* HEADER: Thu nhỏ font size và margin */}
-        <Stack alignItems="center" spacing={0.5} sx={{ mb: 4 }}>
-          <Typography
-            sx={{
-              fontSize: "1.25rem",
-              fontWeight: 800,
-              color: "#3a342b",
-            }}
-          >
-            Vì sao chọn Coffee Stay?
-          </Typography>
-          <Box sx={{ width: 40, height: 3, bgcolor: "#d4a373", borderRadius: 2, mt: 1 }} />
-        </Stack>
+      <Box sx={{ mt: 10, mb: 10 }}>
+        {/* HEADER */}
+        <MotionBox
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          sx={{ mb: 6, textAlign: "center" }}
+        >
+          <Stack alignItems="center" spacing={1}>
+            <Typography
+              sx={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "1.75rem",
+                fontWeight: 800,
+                color: "#1C1B19",
+              }}
+            >
+              Trải nghiệm khác biệt
+            </Typography>
+            <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D" }} />
+          </Stack>
+        </MotionBox>
 
-        {/* GRID: Card nhỏ hơn */}
-        <Box
+        {/* GRID VỚI MOTION */}
+        <MotionBox
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
           sx={{
             display: "grid",
             gridTemplateColumns: {
-              xs: "1fr 1fr", // Mobile hiện 2 cột cho gọn
+              xs: "repeat(2, 1fr)",
               md: "repeat(4, 1fr)",
             },
-            gap: 2,
+            gap: { xs: 2, md: 4 },
           }}
         >
           {REASONS.map((item) => (
             <ReasonItem key={item.title} {...item} />
           ))}
-        </Box>
+        </MotionBox>
       </Box>
     </Container>
   );
 }
 
 function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
+  const itemVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: { 
+      opacity: 1, 
+      scale: 1, 
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" }
+    },
+  };
+
   return (
-    <Box
+    <MotionBox
+      variants={itemVariants}
+      whileHover={{ 
+        y: -8,
+        transition: { duration: 0.3 }
+      }}
       sx={{
         bgcolor: "#fff",
-        p: 2,
-        borderRadius: 3,
-        border: "1px solid #f0efed",
+        p: { xs: 2.5, md: 4 },
+        borderRadius: "24px",
+        border: "1px solid #F1F0EE",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        transition: "0.3s",
+        transition: "border-color 0.3s ease",
         "&:hover": {
-          transform: "translateY(-5px)",
-          borderColor: "#d4a373",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+          borderColor: "#C2A56D",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.04)"
         },
       }}
     >
       <Box
         sx={{
-          width: 44,
-          height: 44,
-          borderRadius: "12px",
+          width: 50,
+          height: 50,
+          borderRadius: "16px",
           bgcolor: iconBg,
           color: iconColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          mb: 1.5,
+          mb: 2,
+          transition: "0.3s ease",
         }}
       >
         {icon}
@@ -111,10 +152,11 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
 
       <Typography
         sx={{
-          fontWeight: 700,
-          fontSize: "0.9rem",
-          color: "#3a342b",
-          mb: 0.5,
+          fontWeight: 800,
+          fontSize: "1rem",
+          color: "#1C1B19",
+          mb: 1,
+          letterSpacing: "-0.01em"
         }}
       >
         {title}
@@ -122,13 +164,14 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
 
       <Typography
         sx={{
-          fontSize: "0.75rem",
-          color: "#7c6f64",
-          lineHeight: 1.4,
+          fontSize: "0.85rem",
+          color: "#72716E",
+          lineHeight: 1.6,
+          fontWeight: 500
         }}
       >
         {desc}
       </Typography>
-    </Box>
+    </MotionBox>
   );
 }

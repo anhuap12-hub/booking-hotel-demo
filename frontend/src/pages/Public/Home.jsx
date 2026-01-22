@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, CircularProgress, Container } from "@mui/material";
+import { Box, CircularProgress, Container, Stack, Fade } from "@mui/material";
 
 import HeroBanner from "../../components/Home/HeroBanner";
 import QuickStats from "../../components/Home/QuickStats";
@@ -21,7 +21,6 @@ export default function Home() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ================= FETCH HOTELS (CHỈ DÙNG ĐỂ SHOW UI) ================= */
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -34,11 +33,9 @@ export default function Home() {
         setLoading(false);
       }
     };
-
     loadData();
   }, []);
 
-  /* ================= DATA PHỤC VỤ HOME UI ================= */
   const { cities, amenities, citiesSorted } = useMemo(() => {
     const allCities = [...new Set(hotels.map(h => h.city).filter(Boolean))];
     const allAmenities = [...new Set(hotels.flatMap(h => h.amenities || []))];
@@ -61,71 +58,96 @@ export default function Home() {
     };
   }, [hotels]);
 
-  /* ================= FILTER HANDLER (CHỈ SET CONTEXT + REDIRECT) ================= */
   const handleFilterChange = (payload) => {
-    updateSearch(prev => ({
-      ...prev,
-      ...payload,
-    }));
-
+    updateSearch(prev => ({ ...prev, ...payload }));
     navigate("/hotels");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <>
+    <Box sx={{ bgcolor: "#F9F8F6", minHeight: "100vh" }}>
+      {/* 1. HERO BANNER - Điểm chạm xa hoa đầu tiên */}
       <HeroBanner />
 
-      <Container maxWidth="xl">
+      <Container maxWidth="xl" sx={{ mt: -8, position: 'relative', zIndex: 10 }}>
         <Box
           sx={{
             display: "flex",
-            py: 5,
-            gap: 4,
+            pb: 10,
+            gap: { xs: 0, lg: 6 },
+            flexDirection: { xs: "column", lg: "row" },
             alignItems: "flex-start",
           }}
         >
-          {/* ================= FILTER (CHỈ CHỌN – KHÔNG FILTER Ở HOME) ================= */}
+          {/* 2. FILTER SIDEBAR - Ebony Style */}
           <Box
             component="aside"
             sx={{
-              width: 300,
+              width: { xs: "100%", lg: 320 },
               flexShrink: 0,
-              position: "sticky",
+              position: { xs: "static", lg: "sticky" },
               top: 100,
+              mb: { xs: 4, lg: 0 }
             }}
           >
-            <FilterSidebar
-              filters={{}}               // ❗ Home KHÔNG dùng state filter
-              setFilters={handleFilterChange}
-              cities={cities}
-              amenities={amenities}
-              showPrice={false}          // ❗ Ẩn filter giá ở Home
-            />
+            <Fade in timeout={1000}>
+              <Box sx={{ 
+                p: 1, 
+                bgcolor: 'white', 
+                borderRadius: '24px', 
+                boxShadow: '0 20px 40px rgba(28, 27, 25, 0.05)',
+                border: '1px solid rgba(194, 165, 109, 0.15)' 
+              }}>
+                <FilterSidebar
+                  filters={{}}
+                  setFilters={handleFilterChange}
+                  cities={cities}
+                  amenities={amenities}
+                  showPrice={false}
+                />
+              </Box>
+            </Fade>
           </Box>
 
-          {/* ================= MAIN CONTENT ================= */}
+          {/* 3. MAIN CONTENT */}
           <Box component="main" sx={{ flex: 1, minWidth: 0 }}>
             {loading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-                <CircularProgress />
-              </Box>
+              <Stack alignItems="center" py={20}>
+                <CircularProgress sx={{ color: '#C2A56D' }} thickness={2} size={50} />
+              </Stack>
             ) : (
-              <>
-                <QuickStats hotels={hotels} cities={cities} />
+              <Fade in timeout={1200}>
+                <Box>
+                  {/* Stats - Dashboard cảm hứng thượng lưu */}
+                  <QuickStats hotels={hotels} cities={cities} />
 
-                <Box sx={{ mt: 4 }}>
-                  <HotelSuggestion hotels={hotels} />
+                  {/* Suggestion - Những bộ sưu tập giới hạn */}
+                  <Box sx={{ 
+                    mt: 8, 
+                    p: 4, 
+                    bgcolor: '#1C1B19', 
+                    borderRadius: '32px',
+                    color: '#fff',
+                    boxShadow: '0 30px 60px rgba(0,0,0,0.15)'
+                  }}>
+                    <HotelSuggestion hotels={hotels} />
+                  </Box>
+
+                  {/* City Sections - Hành trình qua các thành phố */}
+                  <Box sx={{ mt: 10 }}>
+                    <CityHotelSections citiesSorted={citiesSorted} />
+                  </Box>
                 </Box>
-
-                <CityHotelSections citiesSorted={citiesSorted} />
-              </>
+              </Fade>
             )}
           </Box>
         </Box>
       </Container>
 
-      <WhyBook />
-    </>
+      {/* 4. WHY BOOK - Cam kết chất lượng */}
+      <Box sx={{ bgcolor: "#fff", borderTop: '1px solid rgba(194, 165, 109, 0.1)' }}>
+        <WhyBook />
+      </Box>
+    </Box>
   );
 }

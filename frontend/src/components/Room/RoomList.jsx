@@ -1,71 +1,93 @@
-import { Grid, Typography, Box, Skeleton } from "@mui/material";
+import { Grid, Typography, Box, Skeleton, Fade } from "@mui/material";
 import { useState } from "react";
 import RoomCard from "./RoomCard";
 import BookingDialog from "../Booking/BookingDialog";
+import SearchOffOutlinedIcon from '@mui/icons-material/SearchOffOutlined';
 
 export default function RoomList({ rooms, hotel, loading }) {
   const [open, setOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
 
-  // Hiển thị Skeleton khi đang tải (Trông chuyên nghiệp hơn là text "Đang tải")
+  /* ================= SKELETON LOADING ================= */
   if (loading) {
     return (
-      <Grid container spacing={2.5}>
+      <Grid container spacing={3}>
         {[1, 2, 3].map((i) => (
           <Grid item xs={12} key={i}>
-            <Skeleton variant="rounded" height={220} sx={{ borderRadius: 4 }} />
+            <Skeleton 
+              variant="rounded" 
+              height={260} 
+              sx={{ 
+                borderRadius: "20px", 
+                bgcolor: "rgba(0,0,0,0.04)",
+                transform: "scale(1, 0.98)" 
+              }} 
+            />
           </Grid>
         ))}
       </Grid>
     );
   }
 
-  // Trường hợp không có dữ liệu
+  /* ================= EMPTY STATE ================= */
   if (!rooms?.length) {
     return (
-      <Box
-        sx={{
-          p: 8,
-          textAlign: "center",
-          border: "2px dashed #e0e0e0",
-          borderRadius: 4,
-          bgcolor: "#fafafa",
-        }}
-      >
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          Không tìm thấy phòng phù hợp
-        </Typography>
-        <Typography variant="body2" color="text.disabled">
-          Vui lòng thay đổi bộ lọc hoặc chọn ngày khác.
-        </Typography>
-      </Box>
+      <Fade in={true} timeout={800}>
+        <Box
+          sx={{
+            p: 10,
+            textAlign: "center",
+            border: "1px dashed #D6C9B8", // Viền màu be/vàng nhạt
+            borderRadius: "24px",
+            bgcolor: "#F9F8F6",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2
+          }}
+        >
+          <SearchOffOutlinedIcon sx={{ fontSize: 60, color: "#C2A56D", mb: 1 }} />
+          <Typography 
+            variant="h6" 
+            sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, color: "#1C1B19" }}
+          >
+            Chưa tìm thấy phòng phù hợp
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#72716E", maxWidth: "300px", lineHeight: 1.6 }}>
+            Bạn hãy thử điều chỉnh lại bộ lọc hoặc chọn ngày nhận/trả phòng khác để tìm kiếm nhé.
+          </Typography>
+        </Box>
+      </Fade>
     );
   }
 
   return (
     <>
-      <Grid container spacing={2.5}>
-        {rooms.map((room) => (
-          <Grid item xs={12} key={room._id}>
-            <RoomCard
-              room={room}
-              onBook={(r) => {
-                // Đảm bảo thông tin hotel luôn đi kèm với room
-                setSelectedRoom({ ...r, hotel: hotel });
-                setOpen(true);
-              }}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      <Fade in={true} timeout={600}>
+        <Grid container spacing={3}>
+          {rooms.map((room) => (
+            <Grid item xs={12} key={room._id}>
+              <RoomCard
+                room={room}
+                onBook={(r) => {
+                  // Giữ nguyên logic thêm thông tin hotel vào selectedRoom
+                  setSelectedRoom({ ...r, hotel: hotel });
+                  setOpen(true);
+                }}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </Fade>
 
-      {/* Render Dialog - Sử dụng kỹ thuật conditional rendering để tránh lỗi undefined */}
+      {/* RENDER DIALOG */}
       {selectedRoom && (
         <BookingDialog
           open={open}
           onClose={() => {
             setOpen(false);
-            // Optional: setSelectedRoom(null) sau khi modal đóng hẳn để clear bộ nhớ
+            // Delay dọn dẹp selectedRoom một chút để modal kịp đóng mượt mà
+            setTimeout(() => setSelectedRoom(null), 300);
           }}
           room={selectedRoom}
         />
