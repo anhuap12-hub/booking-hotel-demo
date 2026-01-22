@@ -2,16 +2,15 @@ import { Box, Container, Typography, Button } from "@mui/material";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import HomeIcon from '@mui/icons-material/Home';
-import CoffeeIcon from '@mui/icons-material/LocalCoffee';
+import CoffeeIcon from '@mui/icons-material/LocalCafe'; // 👈 Sửa từ LocalCoffee thành LocalCafe
 
 const MotionBox = motion(Box);
 
-// Cấu hình chuyển động nhảy cho Icon
+// Cấu hình chuyển động nhẹ nhàng, sang trọng
 const jumpAnimation = {
-  y: [0, -20, 0],
-  rotate: [0, -10, 10, 0],
+  y: [0, -15, 0],
   transition: {
-    duration: 2,
+    duration: 3,
     repeat: Infinity,
     ease: "easeInOut"
   }
@@ -22,17 +21,17 @@ export default function HeroSection() {
     <MotionBox
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 1 }}
+      transition={{ duration: 1.2 }}
       sx={{
         position: "relative",
-        height: { xs: 450, md: 550 },
+        height: { xs: 500, md: 650 }, // Tăng chiều cao một chút cho thoáng
         display: "flex",
         alignItems: "center",
         overflow: "hidden",
-        bgcolor: "#1c1b19", // Nền tối để nổi bật icon
+        bgcolor: "#1c1b19", 
       }}
     >
-      {/* BACKGROUND IMAGE WITH OVERLAY */}
+      {/* BACKGROUND IMAGE WITH PREMIUM OVERLAY */}
       <Box
         sx={{
           position: "absolute",
@@ -40,101 +39,113 @@ export default function HeroSection() {
           backgroundImage: "url('https://images.pexels.com/photos/2067628/pexels-photo-2067628.jpeg?auto=compress&cs=tinysrgb&w=1600')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          opacity: 0.6,
+          "&::after": { // Lớp phủ gradient tạo chiều sâu
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to right, rgba(28,27,25,0.9) 20%, rgba(28,27,25,0.3) 100%)",
+          }
         }}
       />
 
-      {/* --- CARTOON ELEMENTS --- */}
-      {/* Ngôi nhà nhảy ở góc phải trên */}
+      {/* --- FLOATING ELEMENTS (LUXURY STYLE) --- */}
       <MotionBox
         animate={jumpAnimation}
         sx={{
           position: "absolute",
-          right: "15%",
-          top: "20%",
+          right: "12%",
+          top: "25%",
           zIndex: 2,
-          color: "#c2a56d",
+          color: "rgba(194,165,109,0.3)", // Làm mờ để tạo nét tinh tế
           display: { xs: "none", md: "block" }
         }}
       >
-        <HomeIcon sx={{ fontSize: 80, filter: "drop-shadow(0 10px 15px rgba(0,0,0,0.5))" }} />
+        <HomeIcon sx={{ fontSize: 120 }} />
       </MotionBox>
 
-      {/* Tách cà phê nhảy ở góc phải dưới */}
       <MotionBox
         animate={{
-          y: [0, -15, 0],
-          scale: [1, 1.1, 1],
-          transition: { duration: 2.5, repeat: Infinity, delay: 0.5 }
+          y: [0, 10, 0],
+          opacity: [0.4, 0.7, 0.4],
+          transition: { duration: 4, repeat: Infinity }
         }}
         sx={{
           position: "absolute",
-          right: "10%",
-          bottom: "20%",
+          right: "20%",
+          bottom: "15%",
           zIndex: 2,
-          color: "#fff",
+          color: "rgba(194,165,109,0.2)",
           display: { xs: "none", md: "block" }
         }}
       >
-        <CoffeeIcon sx={{ fontSize: 60, opacity: 0.8 }} />
+        <CoffeeIcon sx={{ fontSize: 80 }} />
       </MotionBox>
-      {/* ------------------------- */}
 
+      {/* --- MAIN CONTENT --- */}
       <Container maxWidth="xl" sx={{ position: "relative", zIndex: 3 }}>
-        <Box maxWidth={640}>
+        <Box maxWidth={700}>
           <motion.div
-            initial={{ x: -50, opacity: 0 }}
+            initial={{ x: -60, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
+            transition={{ delay: 0.4, duration: 1 }}
           >
             <Typography
               sx={{
                 fontFamily: `"Playfair Display", serif`,
-                fontSize: { xs: 40, md: 60 },
-                fontWeight: 800,
+                fontSize: { xs: 42, md: 72 }, // Font lớn hơn cho đẳng cấp
+                fontWeight: 900,
                 color: "#ffffff",
                 mb: 2,
                 lineHeight: 1.1,
-                textShadow: "2px 4px 10px rgba(0,0,0,0.5)",
               }}
             >
               Nơi bình yên <br /> 
-              <span style={{ color: "#c2a56d" }}>gọi tên bạn</span>
+              <span style={{ 
+                color: "#c2a56d",
+                textShadow: "0 0 20px rgba(194,165,109,0.3)" 
+              }}>gọi tên bạn</span>
             </Typography>
 
             <Typography
               sx={{
-                fontSize: 18,
-                color: "rgba(255,255,255,0.9)",
-                mb: 4,
-                maxWidth: 480,
-                lineHeight: 1.6,
+                fontSize: { xs: 16, md: 20 },
+                color: "rgba(255,255,255,0.7)",
+                mb: 5,
+                maxWidth: 520,
+                lineHeight: 1.8,
+                letterSpacing: "0.5px"
               }}
             >
-              Khám phá những không gian lưu trú mang phong vị riêng, 
-              đầy cảm hứng tại <b>Coffee Stay</b>.
+              Trải nghiệm những không gian lưu trú tinh tuyển, nơi mỗi tách cà phê 
+              và mỗi góc nhỏ đều mang đậm phong vị thượng lưu tại <b>Coffee Stay</b>.
             </Typography>
 
-            <Button
-              component={Link}
-              to="/home"
-              variant="contained"
-              sx={{
-                px: 5,
-                py: 2,
-                borderRadius: 999,
-                textTransform: "none",
-                fontSize: 16,
-                fontWeight: 700,
-                bgcolor: "#c2a56d",
-                color: "#1c1b19",
-                boxShadow: "0 10px 20px rgba(194,165,109,0.4)",
-                "&:hover": { bgcolor: "#d3b57a", transform: "scale(1.05)" },
-                transition: "all 0.3s"
-              }}
-            >
-              Bắt đầu hành trình
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button
+                component={Link}
+                to="/hotels"
+                variant="contained"
+                sx={{
+                  px: 6,
+                  py: 2,
+                  borderRadius: "12px", // Bo góc vuông vắn hơn một chút
+                  textTransform: "uppercase",
+                  fontSize: 14,
+                  letterSpacing: "2px",
+                  fontWeight: 800,
+                  bgcolor: "#c2a56d",
+                  color: "#1c1b19",
+                  "&:hover": { 
+                    bgcolor: "#fff", 
+                    color: "#1c1b19",
+                    transform: "translateY(-3px)" 
+                  },
+                  transition: "all 0.4s"
+                }}
+              >
+                Khám phá ngay
+              </Button>
+            </Stack>
           </motion.div>
         </Box>
       </Container>
