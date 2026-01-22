@@ -8,42 +8,54 @@ import Room from "../models/Room.js";
  */
 export const createBooking = async (req, res) => {
   try {
-    console.log("📥 CREATE BOOKING BODY:", req.body);
+    console.log("📥 CREATE BOOKING REQUEST:", req.body);
     const { room, checkIn, checkOut, guest, guestsCount } = req.body;
 
+    // 1. Kiểm tra xác thực
     if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
 
+    // 2. Kiểm tra dữ liệu đầu vào
     if (!room || !checkIn || !checkOut || !guest || !guestsCount) {
-      return res.status(400).json({ message: "Missing booking data" });
+      return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin đặt phòng" });
     }
 
+    // 3. Kiểm tra sự tồn tại của phòng và khách sạn
     const roomExists = await Room.findById(room).populate("hotel");
     if (!roomExists || !roomExists.hotel?._id) {
-      return res.status(404).json({ message: "Room or Hotel not found" });
+      return res.status(404).json({ message: "Không tìm thấy thông tin phòng hoặc khách sạn" });
     }
 
-    // --- LOGIC TÍNH GIÁ ĐÃ GIẢM ---
+    // 4. Chuẩn hóa ngày để tính số đêm chính xác (về 12h trưa để tránh sai lệch múi giờ/giờ lẻ)
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    
+    const dIn = new Date(checkInDate).setHours(12, 0, 0, 0);
+    const dOut = new Date(checkOutDate).setHours(12, 0, 0, 0);
+    
+    if (dIn >= dOut) {
+      return res.status(400).json({ message: "Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày" });
+    }
+
+    const nights = Math.round((dOut - dIn) / (24 * 60 * 60 * 1000));
+
+    // 5. Tính toán giá tiền tại Backend (Bảo mật: Không dùng giá từ Frontend gửi lên)
     const originalPrice = roomExists.price ?? roomExists.pricePerNight;
     const discount = roomExists.discount || 0;
     const finalPricePerNight = discount > 0 
       ? Math.round(originalPrice * (1 - discount / 100)) 
       : originalPrice;
 
-    if (!finalPricePerNight) return res.status(400).json({ message: "Room price missing" });
+    if (!finalPricePerNight) return res.status(400).json({ message: "Dữ liệu giá phòng không hợp lệ" });
 
-    // --- KIỂM TRA SỨC CHỨA & NGÀY THÁNG ---
-    const checkInDate = new Date(checkIn);
-    const checkOutDate = new Date(checkOut);
-    if (checkInDate >= checkOutDate) {
-      return res.status(400).json({ message: "Invalid date range" });
-    }
+    const totalPrice = finalPricePerNight * nights;
+    const DEPOSIT_RATE = 0.3; // Đặt cọc 30%
+    const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
+    const remainingAmount = totalPrice - depositAmount;
 
-    // ✅ ĐÃ SỬA: Chia cho (24 giờ * 60 phút * 60 giây * 1000 ms) để ra số ĐÊM
-    const nights = Math.ceil((checkOutDate - checkInDate) / (24 * 60 * 60 * 1000));
-
-    // --- KIỂM TRA TRÙNG LỊCH ---
+    // 6. Kiểm tra trùng lịch (Chỉ tính các đơn đã xác nhận hoặc đã thanh toán)
     const conflict = await Booking.findOne({
       room,
+      status: { $ne: "cancelled" }, // Bỏ qua các đơn đã hủy
       $or: [
         { status: "confirmed" },
         { paymentStatus: { $in: ["PAID", "DEPOSITED"] } }
@@ -51,16 +63,15 @@ export const createBooking = async (req, res) => {
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
-    if (conflict) return res.status(400).json({ message: "Room already booked by someone else" });
+    
+    if (conflict) {
+      return res.status(400).json({ message: "Phòng này đã có người khác đặt trong khoảng thời gian này" });
+    }
 
-    const totalPrice = finalPricePerNight * nights;
-    const DEPOSIT_RATE = 0.3; 
-    const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
-    const remainingAmount = totalPrice - depositAmount;
-
-    // --- THIẾT LẬP THỜI GIAN HẾT HẠN (30 PHÚT) ---
+    // 7. Thiết lập thời gian hết hạn thanh toán (30 phút)
     const expiryTime = new Date(Date.now() + 30 * 60 * 1000);
 
+    // 8. Tạo đơn hàng
     const booking = await Booking.create({
       user: req.user.id,
       hotel: roomExists.hotel._id,
@@ -86,13 +97,24 @@ export const createBooking = async (req, res) => {
       paymentStatus: "UNPAID",
       contactStatus: "NEW",
       expireAt: expiryTime,
+      paymentLogs: [{
+        at: new Date(),
+        action: "CREATED",
+        note: `Đơn hàng được tạo. Tổng: ${totalPrice.toLocaleString()}đ cho ${nights} đêm. Tiền cọc 30%: ${depositAmount.toLocaleString()}đ`
+      }]
     });
 
-    console.log("✅ BOOKING CREATED. Nights:", nights, "Total:", totalPrice);
-    return res.status(201).json({ message: "Booking created successfully", booking });
+    console.log(`✅ BOOKING CREATED: ${booking._id} | Nights: ${nights} | Deposit: ${depositAmount}`);
+    
+    return res.status(201).json({ 
+      success: true,
+      message: "Tạo đơn hàng thành công. Vui lòng thanh toán đặt cọc trong vòng 30 phút.", 
+      booking 
+    });
+
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 /**
