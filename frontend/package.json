@@ -29,6 +29,7 @@
     "react-parallax": "^3.5.2",
     "react-router-dom": "^7.11.0",
     "slugify": "^1.6.6",
+    "sweetalert2": "^11.26.17",
     "swiper": "^12.0.3"
   },
   "devDependencies": {
