@@ -15,7 +15,7 @@ export const getAllHotels = (params = {}) => {
 };
 export const getHotelById = (id) =>
   instance.get(`/hotels/${id}`);
-
+export const getHotelDetail = (id) => instance.get(`/hotels/${id}`);
 // ================= ADMIN HOTELS =================
 export const createHotel = (data) =>
   instance.post("/admin/hotels", data);

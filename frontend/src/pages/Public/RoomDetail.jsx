@@ -1,85 +1,75 @@
-import { useEffect, useState, lazy, Suspense } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { 
-  Container, 
-  Grid, 
-  Divider, 
-  Skeleton, 
   Box, 
-  Alert, 
-  Fade, 
+  Container, 
   Typography, 
+  Stack, 
+  Grid, 
+  CircularProgress, 
+  Button, 
+  Divider, 
   Breadcrumbs, 
-  Link 
-} from "@mui/material";
-import { NavigateNext } from "@mui/icons-material";
-import { getRoomDetail } from "../../api/room.api";
+  Link,
+  Alert 
+} from "@mui/material"; // Soát lỗi: Đã thêm Typography và các component thiếu vào đây
+import { NavigateNext, LocationOn, Star, ArrowBack } from "@mui/icons-material";
 
-/* ===== LAZY COMPONENTS (GIỮ NGUYÊN ĐƯỜNG DẪN) ===== */
-const RoomGallery = lazy(() => import("../../components/Room/RoomGallery"));
-const RoomHeaderSummary = lazy(() => import("../../components/Room/RoomHeaderSummary"));
-const RoomDescription = lazy(() => import("../../components/Room/RoomDescription"));
-const RoomAmenities = lazy(() => import("../../components/Room/RoomAmenities"));
-const RoomBookingCard = lazy(() => import("../../components/Room/RoomBookingCard"));
+import { getHotelDetail } from "../../api/hotel.api";
+import RoomListSection from "../../components/Hotel/RoomListSection";
+import HotelImages from "../../components/Hotel/HotelImages";
+import WhyBook from "../../components/Home/WhyBook";
 
-export default function RoomDetail() {
+export default function HotelDetail() {
   const { id } = useParams();
-  const [room, setRoom] = useState(null);
+  const navigate = useNavigate();
+  const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Khởi tạo ngày check-in mặc định là hôm nay, check-out ngày mai
-  const [selectedDates, setSelectedDates] = useState({
-    checkIn: new Date().toISOString().split('T')[0], 
-    checkOut: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], 
-  });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!id) return;
-    const fetchRoom = async () => {
+    const fetchDetail = async () => {
       try {
         setLoading(true);
-        const res = await getRoomDetail(id);
-        const roomData = res.data?.data || res.data;
-        setRoom(roomData);
+        setError(null);
+        const res = await getHotelDetail(id);
+        
+        // Kiểm tra dữ liệu trả về để tránh lỗi 404 hoặc dữ liệu rỗng
+        if (res.data?.data) {
+          setHotel(res.data.data);
+        } else {
+          setError("Không tìm thấy thông tin khách sạn.");
+        }
       } catch (err) {
-        console.error("❌ Get room failed:", err);
+        console.error("Fetch hotel detail error:", err);
+        setError("Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.");
       } finally {
         setLoading(false);
       }
     };
-    fetchRoom();
-    window.scrollTo(0, 0); 
+
+    if (id) fetchDetail();
+    window.scrollTo(0, 0);
   }, [id]);
 
-  const handleDateChange = (newDates) => {
-    setSelectedDates(newDates);
-  };
-
-  /* ================= LOADING STATE ================= */
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Skeleton variant="text" width="40%" height={30} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px", mb: 4 }} />
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={8}>
-            <Skeleton height={60} width="80%" />
-            <Skeleton height={200} sx={{ mt: 2 }} />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Skeleton variant="rectangular" height={400} sx={{ borderRadius: "24px" }} />
-          </Grid>
-        </Grid>
-      </Container>
+      <Stack alignItems="center" justifyContent="center" sx={{ minHeight: "60vh" }}>
+        <CircularProgress sx={{ color: "#C2A56D" }} />
+      </Stack>
     );
   }
 
-  /* ================= ERROR STATE ================= */
-  if (!room) {
+  // Xử lý lỗi 404 hoặc lỗi API để không bị văng app
+  if (error || !hotel) {
     return (
       <Container sx={{ py: 10 }}>
-        <Alert severity="error" sx={{ borderRadius: "12px", fontFamily: "inherit" }}>
-          Rất tiếc, Coffee Stay không tìm thấy thông tin phòng này.
+        <Alert severity="warning" action={
+          <Button color="inherit" size="small" onClick={() => navigate("/hotels")}>
+            Quay lại danh sách
+          </Button>
+        }>
+          {error || "Khách sạn không tồn tại."}
         </Alert>
       </Container>
     );
@@ -87,99 +77,85 @@ export default function RoomDetail() {
 
   return (
     <Box sx={{ bgcolor: "#FDFCFB", minHeight: "100vh" }}>
-      <Container maxWidth="lg" sx={{ pt: { xs: 2, md: 4 }, pb: 10 }}>
+      <Container maxWidth="xl" sx={{ pt: 3, pb: 10 }}>
         
-        {/* 1. BREADCRUMBS */}
-        <Breadcrumbs 
-          separator={<NavigateNext fontSize="small" />} 
-          sx={{ mb: 3, "& .MuiTypography-root": { fontSize: "0.85rem", fontWeight: 500 } }}
-        >
-          <Link underline="hover" color="inherit" href="/" sx={{ color: "#72716E" }}>Trang chủ</Link>
-          <Link underline="hover" color="inherit" href="/hotels" sx={{ color: "#72716E" }}>Danh sách</Link>
-          <Typography color="primary.main" sx={{ fontWeight: 700 }}>{room.name || "Chi tiết phòng"}</Typography>
+        {/* 1. Breadcrumbs */}
+        <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 3 }}>
+          <Link underline="hover" color="inherit" href="/" sx={{ fontSize: '0.9rem' }}>Trang chủ</Link>
+          <Link underline="hover" color="inherit" href="/hotels" sx={{ fontSize: '0.9rem' }}>Khách sạn</Link>
+          <Typography color="text.primary" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>{hotel.name}</Typography>
         </Breadcrumbs>
 
-        {/* 2. GALLERY SECTION */}
+        {/* 2. Header Summary */}
         <Box sx={{ mb: 4 }}>
-          <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
-            <RoomGallery photos={room.photos || []} />
-          </Suspense>
+          <Typography variant="h3" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, mb: 1.5 }}>
+            {hotel.name}
+          </Typography>
+          <Stack direction="row" spacing={3} alignItems="center">
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Star sx={{ color: "#C2A56D", fontSize: 20 }} />
+              <Typography fontWeight={700}>{hotel.rating || 5.0}</Typography>
+            </Stack>
+            <Typography sx={{ display: 'flex', alignItems: 'center', color: "#72716E" }}>
+              <LocationOn sx={{ fontSize: 18, mr: 0.5 }} /> {hotel.city}
+            </Typography>
+          </Stack>
         </Box>
 
-        <Grid container spacing={{ xs: 3, md: 6 }}>
-          {/* 3. LEFT CONTENT */}
+        {/* 3. Gallery */}
+        <Box sx={{ mb: 6 }}>
+          <HotelImages photos={hotel.photos || []} />
+        </Box>
+
+        <Grid container spacing={6}>
+          {/* Cột trái: Thông tin */}
           <Grid item xs={12} md={8}>
-            <Fade in timeout={800}>
+            <Box>
+              <Typography variant="h5" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 2 }}>
+                Giới thiệu về Coffee Stay {hotel.name}
+              </Typography>
+              <Typography sx={{ color: "#4A4947", lineHeight: 1.8, whiteSpace: 'pre-line' }}>
+                {hotel.desc}
+              </Typography>
+
+              <Divider sx={{ my: 6 }} />
+
+              {/* Danh sách phòng */}
               <Box>
-                <Suspense fallback={<Skeleton height={100} />}>
-                  <RoomHeaderSummary room={room} />
-                </Suspense>
-
-                <Divider sx={{ my: 4, borderColor: "rgba(194, 165, 109, 0.2)" }} />
-
-                {/* Mô tả phòng */}
-                <Box sx={{ mb: 5 }}>
-                  <Typography variant="h6" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 2, color: "#1C1B19" }}>
-                    Về không gian nghỉ dưỡng
-                  </Typography>
-                  <Suspense fallback={<Skeleton height={140} />}>
-                    <RoomDescription room={room} />
-                  </Suspense>
-                </Box>
-
-                <Divider sx={{ my: 4, borderColor: "rgba(194, 165, 109, 0.1)" }} />
-
-                {/* Tiện nghi */}
-                <Box>
-                  <Typography variant="h6" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 3, color: "#1C1B19" }}>
-                    Tiện ích Coffee Stay Elite
-                  </Typography>
-                  <Suspense fallback={<Skeleton height={160} />}>
-                    <RoomAmenities amenities={room.amenities || []} />
-                  </Suspense>
-                </Box>
+                <Typography variant="h5" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 4 }}>
+                  Các hạng phòng thượng lưu
+                </Typography>
+                <RoomListSection hotelId={id} rooms={hotel.rooms || []} />
               </Box>
-            </Fade>
+            </Box>
           </Grid>
 
-          {/* 4. RIGHT CONTENT: CARD ĐẶT PHÒNG (STICKY) */}
+          {/* Cột phải: Thông tin thêm/Tiện ích */}
           <Grid item xs={12} md={4}>
-            <Box sx={{ 
-              position: { xs: "static", md: "sticky" }, 
-              top: 100,
-              mb: { xs: 4, md: 0 } 
-            }}>
-              <Suspense fallback={<Skeleton height={450} sx={{ borderRadius: "24px" }} />}>
-                <Box sx={{ 
-                  boxShadow: "0 30px 60px rgba(28, 27, 25, 0.1)", 
-                  borderRadius: "24px",
-                  border: "1px solid rgba(194, 165, 109, 0.2)",
-                  bgcolor: "#fff",
-                  overflow: "hidden"
-                }}>
-                  <RoomBookingCard 
-                    room={room} 
-                    selectedDates={selectedDates} 
-                    onDateChange={handleDateChange} 
-                  />
-                </Box>
-              </Suspense>
-
-              <Box sx={{ 
-                mt: 3, p: 2, 
-                textAlign: "center", 
-                bgcolor: "rgba(194, 165, 109, 0.08)", 
-                borderRadius: "16px",
-                border: "1px solid rgba(194, 165, 109, 0.1)"
-              }}>
-                <Typography variant="caption" sx={{ color: "#1C1B19", fontWeight: 600 }}>
-                  Đảm bảo giá ưu đãi tốt nhất tại Coffee Stay.
+            <Box sx={{ position: 'sticky', top: 100 }}>
+              <Box sx={{ p: 4, bgcolor: "#1C1B19", color: "#fff", borderRadius: "24px" }}>
+                <Typography variant="h6" sx={{ color: "#C2A56D", mb: 2, fontWeight: 800 }}>
+                  Thông tin Coffee Stay
                 </Typography>
+                <Typography variant="body2" sx={{ mb: 3, opacity: 0.8 }}>
+                  Nhận phòng sớm và trả phòng muộn tùy theo tình trạng phòng trống khi đặt trực tiếp tại hệ thống Coffee Stay.
+                </Typography>
+                <Button 
+                  fullWidth 
+                  variant="contained" 
+                  sx={{ bgcolor: "#C2A56D", color: "#1C1B19", fontWeight: 800 }}
+                  onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}
+                >
+                  Chọn phòng ngay
+                </Button>
               </Box>
             </Box>
           </Grid>
         </Grid>
 
+        <Box sx={{ mt: 10 }}>
+          <WhyBook />
+        </Box>
       </Container>
     </Box>
   );
