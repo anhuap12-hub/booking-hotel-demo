@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { 
-  Container, Grid, Divider, Skeleton, Box, Fade, Stack 
+  Container, Grid, Divider, Skeleton, Box, Fade, Stack , Typography
 } from "@mui/material";
 import { getHotelById } from "../../api/hotel.api";
 
