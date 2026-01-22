@@ -14,6 +14,8 @@ const roomSnapshotSchema = new mongoose.Schema(
     name: String,
     type: String,
     pricePerNight: { type: Number, required: true, min: 0 },
+    originalPrice: Number, // Thêm trường này
+    discount: Number,      // Thêm trường này
     maxPeople: Number,
     cancellationPolicy: {
       freeCancelBeforeHours: { type: Number, default: 0 },
@@ -81,7 +83,7 @@ const bookingSchema = new mongoose.Schema(
       {
         at: { type: Date, default: Date.now },
         by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        action: { type: String, enum: ["DEPOSITED", "PAID", "REFUNDED"] },
+        action: { type: String, enum: ["CREATED","DEPOSITED", "PAID", "REFUNDED","CANCELLED"] },
         note: String,
       },
     ],

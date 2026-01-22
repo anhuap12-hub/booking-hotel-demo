@@ -69,7 +69,7 @@ export const createBooking = async (req, res) => {
     }
 
     // 7. Thiết lập thời gian hết hạn thanh toán (30 phút)
-    const expiryTime = new Date(Date.now() + 30 * 60 * 1000);
+    const expiryTime = new Date(Date.now() + 60 * 60 * 1000);
 
     // 8. Tạo đơn hàng
     const booking = await Booking.create({
