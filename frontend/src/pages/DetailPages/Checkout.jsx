@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom'; // Thêm useNavigate
 import { Container, Grid, Paper, Typography, Box, CircularProgress, Stack, Divider } from '@mui/material';
-import { createBooking, getBookingDetail } from '../../api/booking.api'; // Đảm bảo bạn có hàm getBookingDetail
+import { createBooking, getBookingStatus } from '../../api/booking.api'; // Đảm bảo bạn có hàm getBookingDetail
 import Swal from 'sweetalert2'; // Nên cài: npm install sweetalert2
 
 export default function Checkout() {
@@ -46,7 +46,7 @@ export default function Checkout() {
       interval = setInterval(async () => {
         try {
           // Gọi API lấy chi tiết đơn hàng hiện tại
-          const res = await getBookingDetail(booking._id); 
+          const res = await getBookingStatus(booking._id); 
           const currentBooking = res.data.booking;
 
           if (currentBooking.paymentStatus === 'PAID') {
