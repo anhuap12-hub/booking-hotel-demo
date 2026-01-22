@@ -34,3 +34,5 @@ export const checkAvailability = (roomId, checkInDate, checkOutDate) => {
 
   return instance.post(url, data);
 };
+export const getBookingById = (id) => 
+  instance.get(`/bookings/${id}`);

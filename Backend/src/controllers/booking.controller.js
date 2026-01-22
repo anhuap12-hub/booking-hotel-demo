@@ -238,7 +238,7 @@ export const checkAvailability = async (req, res) => {
 };
 
 // 3. Hàm lấy chi tiết đầy đủ (Dùng cho trang My Bookings / chi tiết đơn)
-export const getBookingDetail = async (req, res) => {
+export const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate("room"); // Lấy thêm thông tin chi tiết phòng nếu cần
