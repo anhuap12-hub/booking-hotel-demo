@@ -5,13 +5,10 @@ import {
   InputAdornment,
   Paper,
   Typography,
-  IconButton,
   Stack,
-  Fade,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import HistoryIcon from "@mui/icons-material/History";
-import CloseIcon from "@mui/icons-material/Close";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -87,28 +84,34 @@ export default function SearchForm({ placeholder = "Tìm khách sạn hoặc th�
         maxWidth: 860,
         mx: "auto",
         zIndex: 1000,
+        // Loại bỏ hoàn toàn padding/margin thừa gây ra khối màu trắng
+        p: 0, 
+        background: "transparent", 
       }}
     >
-      {/* MAIN SEARCH BAR */}
+      {/* MAIN SEARCH BAR: Tinh chỉnh bo góc và độ trong suốt */}
       <Box
         sx={{
           display: "flex",
           borderRadius: "100px",
-          p: 0.8,
-          background: "rgba(28, 27, 25, 0.7)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(194, 165, 109, 0.2)",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+          p: 0.6, // Giảm padding để thanh search gọn gàng hơn
+          background: "rgba(28, 27, 25, 0.75)", // Ebony với độ trong suốt
+          backdropFilter: "blur(20px)", // Hiệu ứng kính mờ
+          border: "1px solid rgba(194, 165, 109, 0.3)", // Viền Gold mờ
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
           flexDirection: { xs: "column", sm: "row" },
-          transition: "0.3s ease",
+          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           "&:focus-within": {
             borderColor: "#C2A56D",
-            boxShadow: "0 20px 50px rgba(194, 165, 109, 0.15)",
+            background: "rgba(28, 27, 25, 0.9)", // Đậm lên khi focus
+            boxShadow: "0 20px 60px rgba(194, 165, 109, 0.2)",
+            transform: "translateY(-2px)"
           }
         }}
       >
         <TextField
           fullWidth
+          variant="standard" // Dùng standard để dễ custom
           placeholder={placeholder}
           value={value}
           onFocus={() => setOpen(true)}
@@ -125,20 +128,20 @@ export default function SearchForm({ placeholder = "Tìm khách sạn hoặc th�
             if (e.key === "ArrowUp") setActiveIndex(p => Math.max(p - 1, 0));
           }}
           InputProps={{
+            disableUnderline: true, // Tắt đường gạch chân mặc định của MUI
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: "#C2A56D", ml: 2, fontSize: 22 }} />
+                <SearchIcon sx={{ color: "#C2A56D", ml: 3, fontSize: 24 }} />
               </InputAdornment>
             ),
           }}
           sx={{
-            "& .MuiOutlinedInput-root": { "& fieldset": { border: "none" } },
             "& input": {
-              py: 2,
+              py: 2.2,
               fontSize: 16,
               color: "#F1F0EE",
               ml: 1,
-              "&::placeholder": { color: "rgba(241, 240, 238, 0.4)", opacity: 1 }
+              "&::placeholder": { color: "rgba(241, 240, 238, 0.5)", opacity: 1 }
             },
           }}
         />
@@ -147,52 +150,58 @@ export default function SearchForm({ placeholder = "Tìm khách sạn hoặc th�
           onClick={() => handleSearch()}
           sx={{
             px: 6,
-            minWidth: 180,
+            minWidth: 160,
             bgcolor: "#C2A56D",
             color: "#1C1B19",
             borderRadius: "100px",
             fontWeight: 800,
             fontSize: 15,
-            textTransform: "none",
-            "&:hover": { bgcolor: "#D4BC8E", transform: "scale(1.02)" },
-            transition: "0.2s"
+            textTransform: "uppercase", // Chuyển sang uppercase cho vibe luxury
+            letterSpacing: "0.1em",
+            "&:hover": { 
+              bgcolor: "#D4BC8E",
+              boxShadow: "0 0 20px rgba(194, 165, 109, 0.4)" 
+            },
+            transition: "0.3s",
+            m: 0.4 // Khoảng cách nhỏ với viền ngoài
           }}
         >
           Tìm kiếm
         </Button>
       </Box>
 
-      {/* DROPDOWN HISTORY */}
+      {/* DROPDOWN HISTORY: Tinh chỉnh lại đổ bóng và vị trí */}
       <AnimatePresence>
         {open && history.length > 0 && (
           <MotionPaper
-            initial={{ opacity: 0, y: 15, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
             sx={{
               position: "absolute",
-              top: "calc(100% + 12px)",
-              width: "100%",
-              borderRadius: "24px",
-              bgcolor: "rgba(28, 27, 25, 0.95)",
-              backdropFilter: "blur(20px)",
+              top: "calc(100% + 15px)",
+              left: 0,
+              right: 0,
+              borderRadius: "28px",
+              bgcolor: "rgba(28, 27, 25, 0.98)",
+              backdropFilter: "blur(25px)",
               zIndex: 2000,
-              border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 30px 60px rgba(0,0,0,0.5)",
+              border: "1px solid rgba(194, 165, 109, 0.15)",
+              boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
               overflow: "hidden",
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 3, py: 2, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <Typography variant="caption" sx={{ color: "#C2A56D", fontWeight: 800, letterSpacing: "0.15em" }}>
+            {/* ... giữ nguyên phần nội dung history bên trong ... */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 3, py: 2.5, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+              <Typography variant="caption" sx={{ color: "#C2A56D", fontWeight: 800, letterSpacing: "0.2em" }}>
                 GẦN ĐÂY
               </Typography>
               <Button 
                 size="small" 
                 onClick={() => { clearRecentSearches(); setHistory([]); }}
-                sx={{ color: "rgba(255,255,255,0.3)", fontSize: 11, "&:hover": { color: "#ff4d4f" } }}
+                sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textTransform: "none" }}
               >
-                Xóa tất cả
+                Xóa lịch sử
               </Button>
             </Stack>
 
@@ -204,11 +213,11 @@ export default function SearchForm({ placeholder = "Tìm khách sạn hoặc th�
                   onClick={() => handlePickHistory(item)}
                   sx={{
                     px: 3,
-                    py: 1.8,
+                    py: 2,
                     display: "flex",
                     alignItems: "center",
                     cursor: "pointer",
-                    bgcolor: idx === activeIndex ? "rgba(194, 165, 109, 0.1)" : "transparent",
+                    bgcolor: idx === activeIndex ? "rgba(194, 165, 109, 0.12)" : "transparent",
                     transition: "0.2s",
                   }}
                 >
@@ -217,7 +226,7 @@ export default function SearchForm({ placeholder = "Tìm khách sạn hoặc th�
                   ) : (
                     <HistoryIcon sx={{ fontSize: 20, color: "rgba(255,255,255,0.3)", mr: 2 }} />
                   )}
-                  <Typography sx={{ color: idx === activeIndex ? "#F1F0EE" : "rgba(241, 240, 238, 0.8)", fontSize: 15, fontWeight: idx === activeIndex ? 600 : 400 }}>
+                  <Typography sx={{ color: idx === activeIndex ? "#F1F0EE" : "rgba(241, 240, 238, 0.8)", fontSize: 15 }}>
                     {item.keyword || item.city}
                   </Typography>
                 </Box>

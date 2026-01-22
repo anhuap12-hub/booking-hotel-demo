@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, Typography, Alert, Box, Divider, Stack, IconButton, InputAdornment
+  Button, TextField, Typography, Alert, Box, Stack, IconButton, InputAdornment
 } from "@mui/material";
 import { 
   Close as CloseIcon, 
   CalendarMonth as CalendarIcon, 
   PersonOutline as PersonIcon,
-  PhoneIphone as PhoneIcon
+  PhoneIphone as PhoneIcon,
+  Groups as GroupsIcon
 } from '@mui/icons-material';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -26,20 +27,21 @@ export default function BookingDialog({ open, onClose, room }) {
   const [guestPhone, setGuestPhone] = useState("");
   const [error, setError] = useState("");
 
+  // FIX LỖI RENDER: Chỉ set giá trị khi Dialog thực sự MỞ và guestName còn trống
   useEffect(() => {
-    if (open) {
-      if (user) setGuestName(user.name || "");
-    } else {
-      setCheckIn(""); setCheckOut(""); setGuestsCount(1);
-      setGuestName(""); setGuestPhone(""); setError("");
+    if (open && user && !guestName) {
+      setGuestName(user.name || "");
     }
-  }, [open, user]);
+    if (!open) {
+      setError(""); // Reset lỗi khi đóng
+    }
+  }, [open, user, guestName]);
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    const diff = (end - start) / 86400000;
+    const diff = Math.ceil((end - start) / 86400000);
     return diff > 0 ? diff : 0;
   }, [checkIn, checkOut]);
 
@@ -65,97 +67,98 @@ export default function BookingDialog({ open, onClose, room }) {
       maxWidth="sm"
       PaperProps={{
         sx: { 
-          borderRadius: { xs: 0, sm: 6 }, // Mobile để vuông cho tối ưu diện tích, PC bo tròn
+          borderRadius: { xs: "20px 20px 0 0", sm: "28px" },
           backgroundImage: 'none',
+          position: { xs: 'fixed', sm: 'relative' },
+          bottom: { xs: 0, sm: 'auto' },
           m: { xs: 0, sm: 2 },
-          maxHeight: { xs: '100%', sm: '90vh' }
+          overflow: 'hidden'
         }
       }}
-      // Hiệu ứng Fade mượt
-      transitionDuration={400}
     >
-      {/* HEADER TỐI GIẢN */}
-      <DialogTitle sx={{ p: 3, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <DialogTitle sx={{ p: 3, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: '1.75rem', color: '#1c1b19', lineHeight: 1.1 }}>
-            Đặt chỗ
+          <Typography sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: '1.5rem', color: '#1c1b19' }}>
+            Xác nhận đặt chỗ
           </Typography>
-          <Typography variant="body2" sx={{ color: '#c2a56d', fontWeight: 700, mt: 0.5, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-            {room.hotel?.name}
+          <Typography variant="caption" sx={{ color: '#c2a56d', fontWeight: 800, letterSpacing: 1 }}>
+            {room.name.toUpperCase()}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ bgcolor: '#f8f8f8', '&:hover': { bgcolor: '#eee' } }}>
+        <IconButton onClick={onClose} sx={{ bgcolor: '#F5F5F3' }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: { xs: 2, sm: 4 }, py: 0 }}>
+      <DialogContent sx={{ px: { xs: 2.5, sm: 4 }, py: 2 }}>
         <AnimatePresence>
           {error && (
-            <MotionBox initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-              <Alert severity="error" variant="filled" sx={{ mb: 3, borderRadius: 3, bgcolor: '#ff5a5f' }}>{error}</Alert>
+            <MotionBox initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <Alert severity="error" sx={{ mb: 2, borderRadius: "12px", fontSize: '0.85rem' }}>{error}</Alert>
             </MotionBox>
           )}
         </AnimatePresence>
 
-        <Stack spacing={4} sx={{ mt: 2 }}>
-          {/* SECTION 1: DATES */}
-          <Box>
-            <Stack direction="row" spacing={2}>
+        <Stack spacing={3}>
+          {/* DATES SELECTOR */}
+          <Stack direction="row" spacing={2}>
+            <TextField
+              label="Check-in" type="date" fullWidth InputLabelProps={{ shrink: true }}
+              value={checkIn} onChange={(e) => setCheckIn(e.target.value)}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: '#F9F9F8' } }}
+            />
+            <TextField
+              label="Check-out" type="date" fullWidth InputLabelProps={{ shrink: true }}
+              value={checkOut} onChange={(e) => setCheckOut(e.target.value)}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", bgcolor: '#F9F9F8' } }}
+            />
+          </Stack>
+
+          {/* GUEST INFO */}
+          <Box sx={{ p: 2.5, borderRadius: "16px", border: '1px solid #EEE' }}>
+            <Typography variant="caption" sx={{ color: '#999', fontWeight: 700, mb: 2, display: 'block' }}>THÔNG TIN KHÁCH HÀNG</Typography>
+            <Stack spacing={2}>
               <TextField
-                label="Nhận phòng" type="date" fullWidth InputLabelProps={{ shrink: true }}
-                value={checkIn} onChange={(e) => setCheckIn(e.target.value)}
-                InputProps={{ startAdornment: <InputAdornment position="start"><CalendarIcon sx={{ fontSize: 18 }} /></InputAdornment> }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 4, bgcolor: '#fafafa' } }}
+                placeholder="Tên người đại diện" fullWidth variant="standard"
+                value={guestName} onChange={(e) => setGuestName(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: '#C2A56D' }} /></InputAdornment> }}
               />
-              <TextField
-                label="Trả phòng" type="date" fullWidth InputLabelProps={{ shrink: true }}
-                value={checkOut} onChange={(e) => setCheckOut(e.target.value)}
-                InputProps={{ startAdornment: <InputAdornment position="start"><CalendarIcon sx={{ fontSize: 18 }} /></InputAdornment> }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 4, bgcolor: '#fafafa' } }}
-              />
+              <Stack direction="row" spacing={2}>
+                <TextField
+                  placeholder="Số điện thoại" fullWidth variant="standard"
+                  value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)}
+                  InputProps={{ startAdornment: <InputAdornment position="start"><PhoneIcon sx={{ color: '#C2A56D' }} /></InputAdornment> }}
+                />
+                <TextField
+                  type="number" variant="standard"
+                  value={guestsCount} onChange={(e) => setGuestsCount(e.target.value)}
+                  InputProps={{ startAdornment: <InputAdornment position="start"><GroupsIcon sx={{ color: '#C2A56D' }} /></InputAdornment> }}
+                  sx={{ width: 100 }}
+                />
+              </Stack>
             </Stack>
           </Box>
 
-          {/* SECTION 2: GUEST INFO */}
-          <Stack spacing={2.5}>
-            <TextField
-              label="Tên người đại diện" fullWidth variant="standard"
-              value={guestName} onChange={(e) => setGuestName(e.target.value)}
-              InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon sx={{ fontSize: 20 }} /></InputAdornment> }}
-              sx={{ "& .MuiInput-root": { py: 1 } }}
-            />
-            <Stack direction="row" spacing={3}>
-              <TextField
-                label="Số điện thoại" fullWidth variant="standard"
-                value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)}
-                InputProps={{ startAdornment: <InputAdornment position="start"><PhoneIcon sx={{ fontSize: 20 }} /></InputAdornment> }}
-                sx={{ "& .MuiInput-root": { py: 1 } }}
-              />
-              <TextField
-                label="Khách" type="number" variant="standard"
-                value={guestsCount} onChange={(e) => setGuestsCount(e.target.value)}
-                sx={{ width: 80, "& .MuiInput-root": { py: 1 } }}
-              />
-            </Stack>
-          </Stack>
-
-          {/* SECTION 3: BILL SUMMARY */}
+          {/* BILLING SUMMARY */}
           <AnimatePresence>
             {nights > 0 && (
-              <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ p: 3, borderRadius: 5, bgcolor: '#1c1b19', color: '#fff' }}>
+              <MotionBox 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }}
+                sx={{ p: 3, borderRadius: "20px", bgcolor: '#1C1B19', color: '#FFF', boxShadow: '0 15px 30px rgba(0,0,0,0.2)' }}
+              >
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>
-                      Tổng cộng cho {nights} đêm
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block' }}>
+                      CHI PHÍ TẠM TÍNH ({nights} ĐÊM)
                     </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#c2a56d' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#C2A56D' }}>
                       {totalPrice.toLocaleString()}₫
                     </Typography>
                   </Box>
-                  <Box textAlign="right">
-                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', display: 'block' }}>Tiền cọc 30%</Typography>
-                     <Typography sx={{ fontWeight: 700 }}>{(totalPrice * 0.3).toLocaleString()}₫</Typography>
+                  <Box sx={{ textAlign: 'right', borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 3 }}>
+                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block' }}>CỌC TRƯỚC (30%)</Typography>
+                     <Typography variant="h6" sx={{ fontWeight: 700 }}>{(totalPrice * 0.3).toLocaleString()}₫</Typography>
                   </Box>
                 </Stack>
               </MotionBox>
@@ -164,16 +167,17 @@ export default function BookingDialog({ open, onClose, room }) {
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 4, pt: 3 }}>
+      <DialogActions sx={{ p: 4, pt: 1 }}>
         <Button 
-          fullWidth variant="contained" size="large" onClick={handleSubmit}
+          fullWidth variant="contained" 
+          onClick={handleSubmit}
           sx={{ 
-            bgcolor: "#c2a56d", borderRadius: 4, py: 2, fontWeight: 800, fontSize: '1rem',
-            textTransform: 'none', boxShadow: '0 10px 20px rgba(194, 165, 109, 0.2)',
-            "&:hover": { bgcolor: "#b0945d" }
+            bgcolor: "#C2A56D", borderRadius: "14px", py: 2, fontWeight: 800,
+            textTransform: 'uppercase', letterSpacing: 1,
+            "&:hover": { bgcolor: "#1C1B19", color: '#C2A56D' }
           }}
         >
-          Tiếp tục đặt phòng
+          Tiến hành đặt phòng
         </Button>
       </DialogActions>
     </Dialog>

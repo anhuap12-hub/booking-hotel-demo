@@ -1,12 +1,10 @@
-import { Box, Typography, Stack, ButtonBase } from "@mui/material";
+import { Box, Typography, Stack, ButtonBase, Container } from "@mui/material";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "../../context/SearchContext";
 import HorizontalHotelRow from "../Hotel/HorizontalHotelRow";
 import { motion } from "framer-motion";
 
-/* ================= CITY META ================= */
-// Chuyển màu sắc sang palette sang trọng hơn (Muted colors)
 const CITY_META = {
   "Hà Nội": { desc: "Di sản nghìn năm văn hiến", color: "#1C1B19" },
   "TP. Hồ Chí Minh": { desc: "Nhịp sống năng động & hiện đại", color: "#C2A56D" },
@@ -14,8 +12,6 @@ const CITY_META = {
   "Đà Lạt": { desc: "Xứ sở sương mù thơ mộng", color: "#8E7D6D" },
   "Phú Quốc": { desc: "Thiên đường đảo ngọc biển xanh", color: "#5F7D95" },
 };
-
-const MotionBox = motion(Box);
 
 export default function CityHotelSections({ citiesSorted = [] }) {
   const navigate = useNavigate();
@@ -29,14 +25,15 @@ export default function CityHotelSections({ citiesSorted = [] }) {
       types: [],
       rating: null,
       amenities: [],
-      priceRange: [0, 5000000], 
+      priceRange: [0, 10000000], 
     });
     navigate("/hotels");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: { xs: 6, md: 10 } }}>
+    // Giảm gap từ 10 xuống 8 để nội dung cô đọng hơn
+    <Stack spacing={{ xs: 6, md: 8 }} sx={{ width: "100%", py: 4 }}>
       {citiesSorted.map(([cityName, hotelList]) => {
         const meta = CITY_META[cityName] || {
           desc: "Khám phá những điểm đến tuyệt vời.",
@@ -44,98 +41,93 @@ export default function CityHotelSections({ citiesSorted = [] }) {
         };
 
         return (
-          <Box key={cityName} component="section">
-            {/* ================= HEADER ================= */}
+          <Box 
+            key={cityName} 
+            component={motion.section}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            {/* ================= HEADER SECTION ================= */}
             <Stack
               direction="row"
               justifyContent="space-between"
               alignItems="flex-end"
-              mb={3}
-              sx={{ px: { xs: 1, md: 0 } }}
+              sx={{ 
+                mb: 3, 
+                px: { xs: 2, md: 0 },
+                borderLeft: { md: `4px solid ${meta.color}` },
+                pl: { md: 3 }
+              }}
             >
               <Box>
                 <Typography
                   variant="h4"
                   sx={{
                     fontFamily: "'Playfair Display', serif",
-                    fontWeight: 800,
-                    fontSize: { xs: "1.75rem", md: "2.25rem" },
+                    fontWeight: 900,
+                    fontSize: { xs: "1.8rem", md: "2.4rem" },
                     color: "#1C1B19",
-                    mb: 0.5,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2
+                    lineHeight: 1,
+                    mb: 1
                   }}
                 >
                   {cityName}
-                  <Box sx={{ width: 40, height: 1, bgcolor: meta.color, opacity: 0.3 }} />
                 </Typography>
 
                 <Typography
-                  variant="body2"
                   sx={{
-                    color: "#72716E",
-                    letterSpacing: "0.1em",
+                    color: "#A8A7A1",
+                    letterSpacing: "0.15em",
                     textTransform: "uppercase",
-                    fontSize: "0.75rem",
-                    fontWeight: 600
+                    fontSize: { xs: "0.65rem", md: "0.75rem" },
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5
                   }}
                 >
-                  {meta.desc} — {hotelList.length} lựa chọn tinh túy
+                  {meta.desc} 
+                  <Box component="span" sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: meta.color }} />
+                  {hotelList.length} điểm đến
                 </Typography>
               </Box>
 
-              {/* VIEW ALL BUTTON - Thiết kế dạng Text Button sang trọng */}
               <ButtonBase
                 onClick={() => handleViewAll(cityName)}
                 sx={{
-                  color: "#1C1B19",
-                  transition: "all 0.3s ease",
+                  color: "#C2A56D",
                   pb: 0.5,
-                  borderBottom: "1px solid rgba(0,0,0,0.1)",
                   "&:hover": {
-                    color: meta.color,
-                    borderBottomColor: meta.color,
-                    "& .arrow-icon": { transform: "translateX(4px)" }
+                    "& .arrow": { transform: "translateX(6px)" },
+                    "& .text": { color: "#1C1B19" }
                   }
                 }}
               >
-                <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, mr: 1, letterSpacing: "0.1em" }}>
-                  XEM TẤT CẢ
+                <Typography className="text" sx={{ fontSize: "0.7rem", fontWeight: 800, mr: 1, letterSpacing: "0.1em", transition: "0.3s" }}>
+                  KHÁM PHÁ THÊM
                 </Typography>
-                <ArrowForwardIosIcon className="arrow-icon" sx={{ fontSize: 10, transition: "0.3s" }} />
+                <ArrowForwardIosIcon className="arrow" sx={{ fontSize: 10, transition: "0.3s" }} />
               </ButtonBase>
             </Stack>
 
-            {/* ================= HOTEL ROW ================= */}
-            <MotionBox
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+            {/* ================= HOTEL LIST ================= */}
+            <Box
               sx={{
-                borderRadius: "24px",
-                bgcolor: "#FFFFFF",
-                // Shadow cực nhẹ để tạo độ nổi khối (Elevation)
-                boxShadow: "0 10px 40px rgba(0,0,0,0.03)",
-                border: "1px solid #F1F0EE",
-                p: { xs: 1, md: 1.5 },
                 position: "relative",
-                overflow: "hidden",
-                "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    top: 0, left: 0, width: "4px", height: "100%",
-                    bgcolor: meta.color,
-                    opacity: 0.6
+                // Loại bỏ border rườm rà, dùng âm hưởng của Luxury Resort: sạch và thoáng
+                "& .MuiPaper-root": { 
+                  boxShadow: "none", 
+                  bgcolor: "transparent" 
                 }
               }}
             >
+              {/* Chỉ giữ lại Row, loại bỏ bọc viền nếu HorizontalHotelRow đã có style riêng */}
               <HorizontalHotelRow hotels={hotelList} />
-            </MotionBox>
+            </Box>
           </Box>
         );
       })}
-    </Box>
+    </Stack>
   );
 }

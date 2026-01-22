@@ -15,7 +15,7 @@ import {
 import { NavigateNext } from "@mui/icons-material";
 import { getRoomDetail } from "../../api/room.api";
 
-/* ===== LAZY COMPONENTS (GIỮ NGUYÊN) ===== */
+/* ===== LAZY COMPONENTS (GIỮ NGUYÊN ĐƯỜNG DẪN) ===== */
 const RoomGallery = lazy(() => import("../../components/Room/RoomGallery"));
 const RoomHeaderSummary = lazy(() => import("../../components/Room/RoomHeaderSummary"));
 const RoomDescription = lazy(() => import("../../components/Room/RoomDescription"));
@@ -27,6 +27,7 @@ export default function RoomDetail() {
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Khởi tạo ngày check-in mặc định là hôm nay, check-out ngày mai
   const [selectedDates, setSelectedDates] = useState({
     checkIn: new Date().toISOString().split('T')[0], 
     checkOut: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], 
@@ -47,7 +48,7 @@ export default function RoomDetail() {
       }
     };
     fetchRoom();
-    window.scrollTo(0, 0); // Đảm bảo cuộn lên đầu trang khi vào chi tiết
+    window.scrollTo(0, 0); 
   }, [id]);
 
   const handleDateChange = (newDates) => {
@@ -78,35 +79,35 @@ export default function RoomDetail() {
     return (
       <Container sx={{ py: 10 }}>
         <Alert severity="error" sx={{ borderRadius: "12px", fontFamily: "inherit" }}>
-          Rất tiếc, Ebony & Gold không tìm thấy thông tin phòng này.
+          Rất tiếc, Coffee Stay không tìm thấy thông tin phòng này.
         </Alert>
       </Container>
     );
   }
 
   return (
-    <Box sx={{ bgcolor: "#FDFDFD", minHeight: "100vh" }}>
-      <Container maxWidth="lg" sx={{ pt: 4, pb: 10 }}>
+    <Box sx={{ bgcolor: "#FDFCFB", minHeight: "100vh" }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 2, md: 4 }, pb: 10 }}>
         
-        {/* 1. BREADCRUMBS - Dẫn hướng tinh tế */}
+        {/* 1. BREADCRUMBS */}
         <Breadcrumbs 
           separator={<NavigateNext fontSize="small" />} 
           sx={{ mb: 3, "& .MuiTypography-root": { fontSize: "0.85rem", fontWeight: 500 } }}
         >
           <Link underline="hover" color="inherit" href="/" sx={{ color: "#72716E" }}>Trang chủ</Link>
-          <Link underline="hover" color="inherit" href="/hotels" sx={{ color: "#72716E" }}>Khách sạn</Link>
-          <Typography color="primary.main" sx={{ fontWeight: 700 }}>Chi tiết phòng</Typography>
+          <Link underline="hover" color="inherit" href="/hotels" sx={{ color: "#72716E" }}>Danh sách</Link>
+          <Typography color="primary.main" sx={{ fontWeight: 700 }}>{room.name || "Chi tiết phòng"}</Typography>
         </Breadcrumbs>
 
-        {/* 2. GALLERY SECTION - Trình diễn hình ảnh */}
+        {/* 2. GALLERY SECTION */}
         <Box sx={{ mb: 4 }}>
           <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
             <RoomGallery photos={room.photos || []} />
           </Suspense>
         </Box>
 
-        <Grid container spacing={5}>
-          {/* 3. LEFT CONTENT: THÔNG TIN CHI TIẾT */}
+        <Grid container spacing={{ xs: 3, md: 6 }}>
+          {/* 3. LEFT CONTENT */}
           <Grid item xs={12} md={8}>
             <Fade in timeout={800}>
               <Box>
@@ -119,7 +120,7 @@ export default function RoomDetail() {
                 {/* Mô tả phòng */}
                 <Box sx={{ mb: 5 }}>
                   <Typography variant="h6" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 2, color: "#1C1B19" }}>
-                    Về không gian này
+                    Về không gian nghỉ dưỡng
                   </Typography>
                   <Suspense fallback={<Skeleton height={140} />}>
                     <RoomDescription room={room} />
@@ -131,7 +132,7 @@ export default function RoomDetail() {
                 {/* Tiện nghi */}
                 <Box>
                   <Typography variant="h6" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, mb: 3, color: "#1C1B19" }}>
-                    Tiện ích thượng lưu
+                    Tiện ích Coffee Stay Elite
                   </Typography>
                   <Suspense fallback={<Skeleton height={160} />}>
                     <RoomAmenities amenities={room.amenities || []} />
@@ -143,12 +144,17 @@ export default function RoomDetail() {
 
           {/* 4. RIGHT CONTENT: CARD ĐẶT PHÒNG (STICKY) */}
           <Grid item xs={12} md={4}>
-            <Box sx={{ position: "sticky", top: 100 }}>
+            <Box sx={{ 
+              position: { xs: "static", md: "sticky" }, 
+              top: 100,
+              mb: { xs: 4, md: 0 } 
+            }}>
               <Suspense fallback={<Skeleton height={450} sx={{ borderRadius: "24px" }} />}>
                 <Box sx={{ 
-                  boxShadow: "0 20px 50px rgba(28, 27, 25, 0.08)", 
+                  boxShadow: "0 30px 60px rgba(28, 27, 25, 0.1)", 
                   borderRadius: "24px",
-                  border: "1px solid rgba(194, 165, 109, 0.15)",
+                  border: "1px solid rgba(194, 165, 109, 0.2)",
+                  bgcolor: "#fff",
                   overflow: "hidden"
                 }}>
                   <RoomBookingCard 
@@ -159,10 +165,15 @@ export default function RoomDetail() {
                 </Box>
               </Suspense>
 
-              {/* Thông tin hỗ trợ nhanh */}
-              <Box sx={{ mt: 3, p: 2, textAlign: "center", bgcolor: "rgba(194, 165, 109, 0.05)", borderRadius: "16px" }}>
-                <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 500 }}>
-                  Đảm bảo giá tốt nhất khi đặt trực tiếp tại Ebony & Gold.
+              <Box sx={{ 
+                mt: 3, p: 2, 
+                textAlign: "center", 
+                bgcolor: "rgba(194, 165, 109, 0.08)", 
+                borderRadius: "16px",
+                border: "1px solid rgba(194, 165, 109, 0.1)"
+              }}>
+                <Typography variant="caption" sx={{ color: "#1C1B19", fontWeight: 600 }}>
+                  Đảm bảo giá ưu đãi tốt nhất tại Coffee Stay.
                 </Typography>
               </Box>
             </Box>

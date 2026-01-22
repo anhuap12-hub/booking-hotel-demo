@@ -1,6 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, CircularProgress, Container, Stack, Fade } from "@mui/material";
+import { 
+  Box, 
+  CircularProgress, 
+  Container, 
+  Stack, 
+  Fade, 
+  Typography 
+} from "@mui/material";
 
 import HeroBanner from "../../components/Home/HeroBanner";
 import QuickStats from "../../components/Home/QuickStats";
@@ -65,33 +72,32 @@ export default function Home() {
   };
 
   return (
-    <Box sx={{ bgcolor: "#F9F8F6", minHeight: "100vh" }}>
-      {/* 1. HERO BANNER - Điểm chạm xa hoa đầu tiên */}
+    <Box sx={{ bgcolor: "#F9F8F6", minHeight: "100vh", overflowX: "hidden" }}>
+      {/* 1. HERO BANNER */}
       <HeroBanner />
 
-      <Container maxWidth="xl" sx={{ mt: -8, position: 'relative', zIndex: 10 }}>
+      <Container maxWidth="xl" sx={{ mt: { xs: 4, lg: -8 }, position: 'relative', zIndex: 10 }}>
+        {/* RESPONSIVE GRID SYSTEM */}
         <Box
           sx={{
-            display: "flex",
+            display: "grid",
+            // xs: 1 cột (mobile), lg: 2 cột (desktop)
+            gridTemplateColumns: { xs: "1fr", lg: "280px 1fr" }, 
+            gap: { xs: 4, md: 6 },
             pb: 10,
-            gap: { xs: 0, lg: 6 },
-            flexDirection: { xs: "column", lg: "row" },
-            alignItems: "flex-start",
           }}
         >
-          {/* 2. FILTER SIDEBAR - Ebony Style */}
-          <Box
-            component="aside"
-            sx={{
-              width: { xs: "100%", lg: 320 },
-              flexShrink: 0,
-              position: { xs: "static", lg: "sticky" },
-              top: 100,
-              mb: { xs: 4, lg: 0 }
+          {/* 2. SIDEBAR - Ẩn trên Mobile, hiện từ màn hình lớn (Desktop) */}
+          <Box 
+            component="aside" 
+            sx={{ 
+              display: { xs: "none", lg: "block" }, // Quan trọng để ko lỗi mobile
             }}
           >
-            <Fade in timeout={1000}>
+            <Fade in={!loading} timeout={1000}>
               <Box sx={{ 
+                position: "sticky", 
+                top: 100,
                 p: 1, 
                 bgcolor: 'white', 
                 borderRadius: '24px', 
@@ -110,42 +116,68 @@ export default function Home() {
           </Box>
 
           {/* 3. MAIN CONTENT */}
-          <Box component="main" sx={{ flex: 1, minWidth: 0 }}>
+          <Box component="main" sx={{ minWidth: 0, width: "100%" }}>
             {loading ? (
               <Stack alignItems="center" py={20}>
                 <CircularProgress sx={{ color: '#C2A56D' }} thickness={2} size={50} />
               </Stack>
             ) : (
               <Fade in timeout={1200}>
-                <Box>
-                  {/* Stats - Dashboard cảm hứng thượng lưu */}
+                <Stack spacing={{ xs: 6, md: 10 }}>
+                  
+                  {/* Stats - Co giãn theo Container */}
                   <QuickStats hotels={hotels} cities={cities} />
 
-                  {/* Suggestion - Những bộ sưu tập giới hạn */}
+                  {/* Suggestions - Khối Ebony */}
                   <Box sx={{ 
-                    mt: 8, 
-                    p: 4, 
+                    p: { xs: 3, md: 5 }, 
                     bgcolor: '#1C1B19', 
-                    borderRadius: '32px',
+                    borderRadius: { xs: '24px', md: '40px' },
                     color: '#fff',
-                    boxShadow: '0 30px 60px rgba(0,0,0,0.15)'
+                    boxShadow: '0 30px 60px rgba(0,0,0,0.15)',
+                    mx: { xs: -1, sm: 0 } // Mobile bung lụa hơn một chút
                   }}>
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        mb: 4, 
+                        fontFamily: "'Playfair Display', serif", 
+                        color: '#C2A56D', 
+                        fontWeight: 700,
+                        fontSize: { xs: '1.2rem', md: '1.5rem' } 
+                      }}
+                    >
+                      Tuyển tập không gian thượng lưu
+                    </Typography>
                     <HotelSuggestion hotels={hotels} />
                   </Box>
 
-                  {/* City Sections - Hành trình qua các thành phố */}
-                  <Box sx={{ mt: 10 }}>
+                  {/* City Sections - Hiển thị Khách sạn theo Thành phố */}
+                  <Box sx={{ width: "100%" }}>
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        mb: 5, 
+                        fontFamily: "'Playfair Display', serif", 
+                        fontWeight: 900,
+                        fontSize: { xs: '1.8rem', md: '2.5rem' },
+                        textAlign: { xs: 'center', md: 'left' }
+                      }}
+                    >
+                      Khám phá các điểm đến
+                    </Typography>
                     <CityHotelSections citiesSorted={citiesSorted} />
                   </Box>
-                </Box>
+
+                </Stack>
               </Fade>
             )}
           </Box>
         </Box>
       </Container>
 
-      {/* 4. WHY BOOK - Cam kết chất lượng */}
-      <Box sx={{ bgcolor: "#fff", borderTop: '1px solid rgba(194, 165, 109, 0.1)' }}>
+      {/* 4. WHY BOOK */}
+      <Box sx={{ bgcolor: "#fff", py: { xs: 6, md: 10 }, borderTop: '1px solid rgba(194, 165, 109, 0.1)' }}>
         <WhyBook />
       </Box>
     </Box>

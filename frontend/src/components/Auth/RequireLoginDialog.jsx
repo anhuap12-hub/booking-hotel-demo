@@ -1,3 +1,4 @@
+import React, { forwardRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,31 +7,29 @@ import {
   Button,
   Stack,
   Box,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
+import CoffeeIcon from '@mui/icons-material/LocalCafe';
 
-// Tạo các bản Motion của MUI Components để dùng xuyên suốt
-const MotionBox = motion(Box);
-const MotionStack = motion(Stack);
-
-// Component bọc Paper của Dialog để xử lý hiệu ứng nảy (Spring)
-const MotionPaper = (props) => (
-  <MotionBox
-    initial={{ opacity: 0, scale: 0.9, y: 30 }}
+// Tối ưu Motion Paper để tránh lỗi Ref và Render
+const MotionPaper = forwardRef((props, ref) => (
+  <Box
+    ref={ref}
+    component={motion.div}
+    initial={{ opacity: 0, scale: 0.95, y: 20 }}
     animate={{ opacity: 1, scale: 1, y: 0 }}
-    exit={{ opacity: 0, scale: 0.9, y: 30 }}
-    transition={{ 
-      type: "spring", 
-      stiffness: 260, 
-      damping: 20 
-    }}
-    sx={{ display: "flex", justifyContent: "center", width: '100%' }}
-  >
-    <Box {...props} />
-  </MotionBox>
-);
+    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+    transition={{ type: "spring", damping: 25, stiffness: 300 }}
+    {...props}
+  />
+));
 
 export default function RequireLoginDialog({ open, onClose, onLogin }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <AnimatePresence>
       {open && (
@@ -38,104 +37,103 @@ export default function RequireLoginDialog({ open, onClose, onLogin }) {
           open={open}
           onClose={onClose}
           maxWidth="xs"
-          fullWidth
-          // Làm mờ nền phía sau (Glassmorphism)
+          scroll="body"
+          // Chống hiện tượng "giật" màn hình khi mở dialog
+          disableScrollLock={false}
           BackdropProps={{
             sx: {
-              backdropFilter: "blur(12px)",
-              backgroundColor: "rgba(28, 27, 25, 0.6)",
+              backdropFilter: "blur(8px)",
+              backgroundColor: "rgba(28, 27, 25, 0.7)",
             },
           }}
           PaperComponent={MotionPaper}
           PaperProps={{
             sx: {
-              borderRadius: 8, // Bo góc lớn kiểu Modern App
+              borderRadius: isMobile ? "24px" : "32px",
               bgcolor: "#fff",
               backgroundImage: "none",
               overflow: "hidden",
-              boxShadow: "0 32px 64px -12px rgba(0, 0, 0, 0.2)",
-              mx: 2 // Đảm bảo không dính mép trên mobile
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              m: 2, // Đảm bảo an toàn trên mobile
             },
           }}
         >
-          <DialogContent sx={{ pt: 6, pb: 3 }}>
-            <MotionStack spacing={4} alignItems="center" textAlign="center">
+          <DialogContent sx={{ pt: 5, pb: 2, px: { xs: 3, md: 5 } }}>
+            <Stack spacing={3} alignItems="center" textAlign="center">
               
-              {/* ICON CAFE NHẢY TỰ ĐỘNG */}
-              <MotionBox
+              {/* ICON CAFE SANG TRỌNG */}
+              <Box
+                component={motion.div}
                 animate={{ 
-                  y: [0, -12, 0],
-                  rotate: [0, 5, -5, 0]
+                  y: [0, -8, 0],
                 }}
                 transition={{ 
-                  duration: 4, 
+                  duration: 3, 
                   repeat: Infinity, 
                   ease: "easeInOut" 
                 }}
                 sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "28px",
+                  width: 70,
+                  height: 70,
+                  borderRadius: "20px",
                   bgcolor: "#F9F7F2",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 36,
-                  border: "1px solid #F1EDE7",
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.04)",
+                  border: "1px solid rgba(194, 165, 109, 0.3)",
+                  color: "#C2A56D",
+                  boxShadow: "0 10px 20px rgba(194, 165, 109, 0.1)",
                 }}
               >
-                ☕
-              </MotionBox>
+                <CoffeeIcon sx={{ fontSize: 32 }} />
+              </Box>
 
               <Box>
                 <Typography
                   sx={{
                     fontFamily: "'Playfair Display', serif",
-                    fontSize: { xs: "1.5rem", md: "1.75rem" },
+                    fontSize: { xs: "1.4rem", md: "1.6rem" },
                     fontWeight: 800,
                     color: "#1C1B19",
-                    mb: 1.5,
-                    lineHeight: 1.2
+                    mb: 1,
+                    lineHeight: 1.3
                   }}
                 >
-                  Đã đến lúc <br /> nghỉ ngơi
+                  Lời mời từ <br /> Coffee Stay
                 </Typography>
                 <Typography
                   variant="body2"
                   sx={{
                     color: "#72716E",
-                    lineHeight: 1.7,
-                    maxWidth: "280px",
-                    mx: "auto",
-                    fontSize: "0.9rem"
+                    lineHeight: 1.6,
+                    fontSize: "0.9rem",
+                    px: 1
                   }}
                 >
-                  Hãy đăng nhập để lưu lại những chỗ nghỉ tuyệt vời và nhận ưu đãi riêng cho bạn.
+                  Đăng nhập để nhận đặc quyền thành viên và lưu giữ những hành trình đầy cảm hứng của riêng bạn.
                 </Typography>
               </Box>
-            </MotionStack>
+            </Stack>
           </DialogContent>
 
-          <DialogActions sx={{ flexDirection: "column", gap: 1, px: 4, pb: 6, pt: 1 }}>
+          <DialogActions sx={{ flexDirection: "column", gap: 1.5, px: { xs: 3, md: 5 }, pb: 5 }}>
             <Button
               fullWidth
               variant="contained"
               onClick={onLogin}
               sx={{
-                borderRadius: 4,
-                bgcolor: "#C2A56D",
-                color: "#fff",
+                borderRadius: "14px",
+                bgcolor: "#1C1B19",
+                color: "#C2A56D",
                 fontWeight: 700,
                 py: 1.8,
-                fontSize: "0.95rem",
+                fontSize: "0.9rem",
                 textTransform: "none",
-                boxShadow: "0 8px 24px rgba(194, 165, 109, 0.25)",
                 "&:hover": {
-                  bgcolor: "#B0945D",
-                  boxShadow: "0 12px 32px rgba(194, 165, 109, 0.35)",
+                  bgcolor: "#C2A56D",
+                  color: "#1C1B19",
                 },
-                transition: "all 0.2s ease-in-out",
+                transition: "0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               Đăng nhập ngay
@@ -145,17 +143,18 @@ export default function RequireLoginDialog({ open, onClose, onLogin }) {
               fullWidth
               onClick={onClose}
               sx={{
-                color: "#9A9996",
+                color: "#A8A7A1",
                 textTransform: "none",
                 fontWeight: 600,
-                fontSize: "0.85rem",
+                fontSize: "0.8rem",
                 "&:hover": {
                   color: "#1C1B19",
                   bgcolor: "transparent",
+                  textDecoration: "underline"
                 },
               }}
             >
-              Để sau, tôi muốn xem thêm
+              Khám phá thêm một lát nữa
             </Button>
           </DialogActions>
         </Dialog>

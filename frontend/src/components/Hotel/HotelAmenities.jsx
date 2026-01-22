@@ -3,53 +3,69 @@ import {
   Typography,
   Grid,
   Button,
+  Collapse
 } from "@mui/material";
-import CheckIcon from "@mui/icons-material/Check";
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function HotelAmenities({ amenities = [] }) {
   const [showAll, setShowAll] = useState(false);
   if (!amenities.length) return null;
 
+  // Hiển thị 6 cái đầu tiên khi thu gọn
   const visibleAmenities = showAll ? amenities : amenities.slice(0, 6);
 
   return (
-    <Box>
+    <Box sx={{ py: 2 }}>
       <Typography
         sx={{
-          fontFamily: "Playfair Display, serif",
-          fontSize: "1.4rem",
-          fontWeight: 500,
-          color: "text.primary",
-          mb: 2,
+          fontFamily: "'Playfair Display', serif",
+          fontSize: "1.6rem",
+          fontWeight: 800,
+          color: "#1C1B19",
+          mb: 3,
+          letterSpacing: "-0.01em"
         }}
       >
-        Tiện nghi nổi bật
+        Tiện ích & Dịch vụ
       </Typography>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2.5}>
         {visibleAmenities.map((a, i) => (
           <Grid item xs={12} sm={6} key={i}>
             <Box
+              component={motion.div}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 1,
-                color: "text.secondary",
+                gap: 2,
+                p: 1.5,
+                borderRadius: "12px",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "#FAF9F7",
+                  transform: "translateX(5px)"
+                }
               }}
             >
-              <CheckIcon
+              {/* Icon thay thế cho CheckIcon truyền thống */}
+              <FiberManualRecordIcon
                 sx={{
-                  fontSize: 18,
-                  color: "primary.main",
-                  opacity: 0.85,
+                  fontSize: 8,
+                  color: "#C2A56D",
                 }}
               />
               <Typography
                 sx={{
-                  fontSize: 14.5,
-                  lineHeight: 1.6,
-                  color: "text.secondary",
+                  fontSize: "0.95rem",
+                  fontWeight: 500,
+                  color: "#4A4947",
                 }}
               >
                 {a}
@@ -61,23 +77,29 @@ export default function HotelAmenities({ amenities = [] }) {
 
       {amenities.length > 6 && (
         <Button
-          size="small"
+          disableRipple
           onClick={() => setShowAll(!showAll)}
+          endIcon={showAll ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           sx={{
-            mt: 2.5,
-            px: 2.5,
-            py: 0.8,
-            borderRadius: 999,
-            fontSize: 13.5,
-            fontWeight: 500,
-            color: "primary.main",
-            bgcolor: "rgba(139,111,78,0.08)",
+            mt: 4,
+            px: 0,
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            color: "#1C1B19",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            borderBottom: "1px solid #C2A56D",
+            borderRadius: 0,
+            minWidth: "auto",
             "&:hover": {
-              bgcolor: "rgba(139,111,78,0.14)",
+              bgcolor: "transparent",
+              color: "#C2A56D",
+              borderBottomColor: "#1C1B19",
             },
+            transition: "all 0.3s ease"
           }}
         >
-          {showAll ? "Ẩn bớt" : "Xem tất cả tiện nghi"}
+          {showAll ? "Thu gọn" : `Khám phá tất cả (${amenities.length})`}
         </Button>
       )}
     </Box>

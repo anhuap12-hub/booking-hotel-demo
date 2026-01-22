@@ -10,9 +10,9 @@ const MotionBox = motion(Box);
 export default function HotelCarousel({ city, hotels = [] }) {
   const scrollRef = useRef(null);
 
-  // Điều chỉnh kích thước chuẩn để Card trông cân đối khi đi theo hàng ngang
+  // CARD_WIDTH 300px là tỷ lệ vàng cho các hàng ngang (Carousel)
   const CARD_WIDTH = 300; 
-  const GAP = 24; 
+  const GAP = 28; 
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -27,14 +27,14 @@ export default function HotelCarousel({ city, hotels = [] }) {
   const showArrow = hotels.length > 1;
 
   return (
-    <Box mb={8} sx={{ width: "100%", overflow: "visible" }}>
+    <Box mb={10} sx={{ width: "100%", overflow: "visible" }}>
       {/* HEADER: Tên thành phố và nút điều hướng */}
       <Box
         sx={{
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "space-between",
-          mb: 3,
+          mb: 4,
           px: 0.5,
         }}
       >
@@ -42,54 +42,30 @@ export default function HotelCarousel({ city, hotels = [] }) {
           <Typography
             sx={{
               fontFamily: "'Playfair Display', serif",
-              fontWeight: 800,
-              fontSize: "1.5rem",
+              fontWeight: 900,
+              fontSize: { xs: "1.4rem", md: "1.8rem" },
               color: "#1C1B19",
-              lineHeight: 1.2
+              lineHeight: 1,
+              letterSpacing: "-0.01em"
             }}
           >
             {city}
           </Typography>
-          <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D", mt: 1 }} />
+          <Box 
+            sx={{ 
+              width: 32, 
+              height: 3, 
+              bgcolor: "#C2A56D", 
+              mt: 1.5,
+              borderRadius: "2px" 
+            }} 
+          />
         </Box>
 
         {showArrow && (
-          <Stack direction="row" spacing={1.5}>
-            <IconButton
-              size="small"
-              onClick={() => scroll("left")}
-              component={motion.button}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              sx={{
-                bgcolor: "#fff",
-                color: "#1C1B19",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                border: "1px solid #F1F0EE",
-                "&:hover": { bgcolor: "#1C1B19", color: "#C2A56D", borderColor: "#1C1B19" },
-                transition: "0.2s"
-              }}
-            >
-              <ChevronLeftIcon fontSize="small" />
-            </IconButton>
-
-            <IconButton
-              size="small"
-              onClick={() => scroll("right")}
-              component={motion.button}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              sx={{
-                bgcolor: "#fff",
-                color: "#1C1B19",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                border: "1px solid #F1F0EE",
-                "&:hover": { bgcolor: "#1C1B19", color: "#C2A56D", borderColor: "#1C1B19" },
-                transition: "0.2s"
-              }}
-            >
-              <ChevronRightIcon fontSize="small" />
-            </IconButton>
+          <Stack direction="row" spacing={1}>
+            <NavButton icon={<ChevronLeftIcon fontSize="small" />} onClick={() => scroll("left")} />
+            <NavButton icon={<ChevronRightIcon fontSize="small" />} onClick={() => scroll("right")} />
           </Stack>
         )}
       </Box>
@@ -104,7 +80,7 @@ export default function HotelCarousel({ city, hotels = [] }) {
           overflowY: "visible",
           px: 1, 
           pt: 1,
-          pb: 5, // Để khoảng trống cho Shadow không bị cắt
+          pb: 6, // Tăng nhẹ để shadow của HotelCard bay bổng hơn
           mx: -1, 
           scrollbarWidth: "none", 
           "&::-webkit-scrollbar": { display: "none" }, 
@@ -120,20 +96,45 @@ export default function HotelCarousel({ city, hotels = [] }) {
               width: CARD_WIDTH,
               scrollSnapAlign: "start",
             }}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-20px" }}
             transition={{
-              delay: i * 0.1,
-              duration: 0.5,
-              ease: "easeOut",
+              delay: i * 0.08,
+              duration: 0.7,
+              ease: [0.22, 1, 0.36, 1], // Cubic-bezier mượt hơn
             }}
           >
-            {/* Sử dụng HotelCard đã nâng cấp, compact=true giúp card gọn gàng hơn trong slider */}
+            {/* Truyền compact={true} để Card tối giản, phù hợp hàng ngang */}
             <HotelCard hotel={hotel} compact={true} />
           </MotionBox>
         ))}
       </Box>
     </Box>
+  );
+}
+
+// Tách riêng NavButton để code sạch hơn và dễ quản lý style Ebony & Gold
+function NavButton({ icon, onClick }) {
+  return (
+    <IconButton
+      size="small"
+      onClick={onClick}
+      component={motion.button}
+      whileHover={{ scale: 1.05, backgroundColor: "#1C1B19", color: "#C2A56D" }}
+      whileTap={{ scale: 0.95 }}
+      sx={{
+        bgcolor: "transparent",
+        color: "#1C1B19",
+        border: "1px solid #EAE8E4",
+        p: 1.2,
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        "&:hover": {
+           borderColor: "#1C1B19"
+        }
+      }}
+    >
+      {icon}
+    </IconButton>
   );
 }

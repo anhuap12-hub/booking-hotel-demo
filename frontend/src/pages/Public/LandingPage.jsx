@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { Box, Container, Stack, Fade} from "@mui/material";
+import { Box, Container, Stack, Fade, CircularProgress } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
 
+// Soát lỗi Import: Đảm bảo đúng đường dẫn các Component Landing
 import HeroSection from "../../components/Landing/HeroSection";
 import DealsSection from "../../components/Landing/DealsSection";
 import TrendingDestinations from "../../components/Landing/TrendingDestinations";
@@ -10,6 +11,7 @@ import WeekendDeals from "../../components/Landing/WeekendDeals";
 import ContactCTA from "../../components/Landing/ContactCTA";
 import GeniusModal from "../../components/Common/GeniusModal";
 import SearchForm from "../../components/Landing/SearchForm";
+
 import { getAllHotels } from "../../api/hotel.api";
 
 export default function LandingPage() {
@@ -18,7 +20,7 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  /* ================= FETCH DATA ================= */
+  /* ================= FETCH DATA (Giữ nguyên logic) ================= */
   useEffect(() => {
     const fetchHotels = async () => {
       try {
@@ -35,7 +37,7 @@ export default function LandingPage() {
     fetchHotels();
   }, []);
 
-  /* ================= MODAL LOGIC ================= */
+  /* ================= MODAL LOGIC (Giữ nguyên logic) ================= */
   useEffect(() => {
     if (user) return;
     if (sessionStorage.getItem("geniusShown")) return;
@@ -48,7 +50,7 @@ export default function LandingPage() {
     return () => clearTimeout(timer);
   }, [user]);
 
-  /* ================= DATA TRANSFORMATION ================= */
+  /* ================= DATA TRANSFORMATION (Giữ nguyên logic) ================= */
   const cityData = useMemo(() => {
     return [...new Set(hotels.map((h) => h.city))].map((city) => ({
       name: city,
@@ -73,47 +75,65 @@ export default function LandingPage() {
   }, [hotels]);
 
   return (
-    <Box sx={{ bgcolor: "#F9F8F6", minHeight: "100vh", overflowX: "hidden" }}>
-      {/* 1. HERO & SEARCH - Đè lớp tinh tế */}
+    <Box sx={{ bgcolor: "#FDFCFB", minHeight: "100vh", overflowX: "hidden" }}>
+      
+      {/* 1. HERO & SEARCH - Tối ưu Responsive lớp đè */}
       <Box sx={{ position: "relative" }}>
         <HeroSection />
-        <Container maxWidth="lg" sx={{ mt: { xs: -5, md: -8 }, position: "relative", zIndex: 10 }}>
+        <Container 
+          maxWidth="lg" 
+          sx={{ 
+            mt: { xs: -4, md: -10 }, // Đẩy Form tìm kiếm lên đè Hero tinh tế hơn
+            position: "relative", 
+            zIndex: 10,
+            px: { xs: 2, md: 0 }
+          }}
+        >
           <Box sx={{ 
-            p: 1, 
+            p: { xs: 1, md: 1.5 }, 
             bgcolor: "white", 
-            borderRadius: "20px", 
-            boxShadow: "0 25px 50px rgba(28, 27, 25, 0.1)",
-            border: "1px solid rgba(194, 165, 109, 0.2)"
+            borderRadius: { xs: "16px", md: "24px" }, 
+            boxShadow: "0 30px 60px rgba(28, 27, 25, 0.12)",
+            border: "1px solid rgba(194, 165, 109, 0.15)"
           }}>
             <SearchForm />
           </Box>
         </Container>
       </Box>
 
-      {/* 2. NỘI DUNG CHÍNH - Phân cấp rõ ràng bằng Stack */}
-      <Container maxWidth="xl" sx={{ py: 8 }}>
-        <Stack spacing={12}>
+      {/* 2. MAIN CONTENT - Phân cấp Spacing theo thiết bị */}
+      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 12 } }}>
+        <Stack spacing={{ xs: 8, md: 15 }}>
           
-          <Fade in={!loading} timeout={1000}>
-            <Box>
-              <DealsSection />
-            </Box>
-          </Fade>
+          {loading ? (
+            <Stack alignItems="center"><CircularProgress sx={{ color: "#C2A56D" }} /></Stack>
+          ) : (
+            <Fade in timeout={1000}>
+              <Box>
+                {/* Khối Ưu Đãi */}
+                <DealsSection />
+              </Box>
+            </Fade>
+          )}
 
+          {/* Điểm đến Xu hướng */}
           <Box sx={{ position: "relative" }}>
             <TrendingDestinations cities={cityData} />
           </Box>
 
+          {/* Loại hình chỗ nghỉ - Khối Ebony sang trọng */}
           <Box sx={{ 
-            py: 10, 
-            px: { xs: 2, md: 6 }, 
+            py: { xs: 6, md: 10 }, 
+            px: { xs: 2, md: 8 }, 
             bgcolor: "#1C1B19", 
-            borderRadius: "40px", 
-            color: "white" 
+            borderRadius: { xs: "32px", md: "50px" }, 
+            color: "white",
+            mx: { xs: -1, sm: 0 } // Mobile bung rộng hơn một chút
           }}>
             <PropertiesByType properties={propertyTypes} />
           </Box>
 
+          {/* Ưu đãi cuối tuần */}
           <Box>
             <WeekendDeals hotels={weekendHotels} />
           </Box>
@@ -121,8 +141,8 @@ export default function LandingPage() {
         </Stack>
       </Container>
 
-      {/* 3. CTA & FOOTER AREA */}
-      <Box sx={{ mt: 10, bgcolor: "white", borderTop: "1px solid rgba(194, 165, 109, 0.1)" }}>
+      {/* 3. CTA AREA */}
+      <Box sx={{ mt: 5, bgcolor: "white" }}>
         <ContactCTA />
       </Box>
 

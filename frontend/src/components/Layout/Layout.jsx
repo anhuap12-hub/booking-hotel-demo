@@ -15,33 +15,47 @@ export default function Layout() {
         display: "flex",
         flexDirection: "column",
         overflowX: "hidden",
-
-        // 🌥 trắng mây – dịu mắt
-        bgcolor: "background.default",
+        // Chuyển sang màu nền trung tính hơn hoặc để các Section tự quyết định màu
+        bgcolor: isHome ? "#fff" : "background.default", 
       }}
     >
       <Navbar />
 
-      {/* Spacer đẩy content xuống dưới Navbar */}
-      <Box sx={{ height: `${NAVBAR_HEIGHT}px` }} />
+      {/* CHỈNH SỬA: Spacer 
+         Ở trang Home, nếu bạn muốn Hero Image nằm dưới Navbar (Transparent), 
+         hãy bỏ Spacer này hoặc set nó về 0.
+      */}
+      {!isHome && <Box sx={{ height: `${NAVBAR_HEIGHT}px` }} />}
 
       {/* Breadcrumb (không hiện ở Home) */}
       {!isHome && <AppBreadcrumbs />}
 
-      {/* MAIN */}
-      <Box component="main" sx={{ flex: 1, width: "100%" }}>
+      {/* MAIN CONTENT */}
+      <Box 
+        component="main" 
+        sx={{ 
+          flex: 1, 
+          width: "100%",
+          // Loại bỏ mọi padding mặc định có thể gây ra dải trắng quanh thanh Search
+          p: 0, 
+        }}
+      >
         {isHome ? (
-          /* HOME: full width */
-          <Outlet />
+          /* HOME: Không bọc trong Container nào cả 
+             Các Section (Deals, Trending, Search) sẽ tự quản lý Container của riêng chúng
+          */
+          <Box sx={{ width: "100%" }}>
+            <Outlet />
+          </Box>
         ) : (
-          /* OTHER PAGES: gọn gàng */
+          /* OTHER PAGES: Giữ nguyên bố cục trang trọng */
           <Box
             sx={{
               width: "100%",
               maxWidth: 1400,
               mx: "auto",
-              px: { xs: 1.5, md: 2 },
-              pb: 4,
+              px: { xs: 2, md: 4 },
+              py: 4,
             }}
           >
             <Outlet />

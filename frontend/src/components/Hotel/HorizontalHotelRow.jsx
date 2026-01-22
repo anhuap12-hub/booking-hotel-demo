@@ -13,7 +13,7 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
   if (!Array.isArray(hotels) || hotels.length === 0) return null;
 
   const CARD_WIDTH = 320; 
-  const GAP = 24;
+  const GAP = 28; // Tăng GAP lên một chút để thoáng hơn
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -26,15 +26,15 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
   const showArrow = hotels.length > 1;
 
   return (
-    <Box sx={{ width: "100%", overflow: "visible", position: "relative" }}>
+    <Box sx={{ width: "100%", overflow: "visible", position: "relative", mb: 6 }}>
       {/* ===== HEADER ===== */}
       {city && (
         <Box
           sx={{
             display: "flex",
-            alignItems: "flex-end", // Căn dòng theo chân chữ để sang trọng hơn
+            alignItems: "flex-end", 
             justifyContent: "space-between",
-            mb: 3,
+            mb: 4,
             px: 0.5,
           }}
         >
@@ -42,20 +42,30 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
             <Typography
               sx={{
                 fontFamily: "'Playfair Display', serif",
-                fontWeight: 800,
-                fontSize: "1.5rem",
+                fontWeight: 900,
+                fontSize: { xs: "1.4rem", md: "1.8rem" },
                 color: "#1C1B19",
+                letterSpacing: "-0.01em",
+                lineHeight: 1
               }}
             >
               {city}
             </Typography>
-            <Box sx={{ width: 30, height: 2, bgcolor: "#C2A56D", mt: 0.5 }} />
+            <Box 
+              sx={{ 
+                width: 40, 
+                height: 3, 
+                bgcolor: "#C2A56D", 
+                mt: 1.5,
+                borderRadius: "2px" 
+              }} 
+            />
           </Box>
 
           {showArrow && (
-            <Stack direction="row" spacing={1.5}>
-              <NavButton icon={<ChevronLeftIcon />} onClick={() => scroll("left")} />
-              <NavButton icon={<ChevronRightIcon />} onClick={() => scroll("right")} />
+            <Stack direction="row" spacing={1}>
+              <NavButton icon={<ChevronLeftIcon fontSize="small" />} onClick={() => scroll("left")} />
+              <NavButton icon={<ChevronRightIcon fontSize="small" />} onClick={() => scroll("right")} />
             </Stack>
           )}
         </Box>
@@ -70,10 +80,10 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
           overflowX: "auto",
           overflowY: "visible",
           
-          // Padding rộng ra để lộ shadow của HotelCard
+          // Padding rộng ra để lộ shadow của HotelCard và không bị cắt layout
           px: 1,
           pt: 1,
-          pb: 6, 
+          pb: 4, 
           mx: -1,
 
           scrollbarWidth: "none",
@@ -90,10 +100,14 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
               width: CARD_WIDTH,
               scrollSnapAlign: "start",
             }}
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-50px" }}
-            transition={{ delay: index * 0.08, duration: 0.5 }}
+            transition={{ 
+              delay: index * 0.1, 
+              duration: 0.6,
+              ease: [0.215, 0.61, 0.355, 1] 
+            }}
           >
             <HotelCard hotel={hotel} /> 
           </MotionBox>
@@ -103,22 +117,20 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
   );
 }
 
-// Nút điều hướng custom
+// Nút điều hướng tinh chỉnh lại phong cách tối giản (Minimalist Luxury)
 function NavButton({ icon, onClick }) {
   return (
     <IconButton 
-      size="small" 
       onClick={onClick} 
       component={motion.button}
-      whileHover={{ scale: 1.1, backgroundColor: "#1C1B19", color: "#fff" }}
-      whileTap={{ scale: 0.9 }}
+      whileHover={{ backgroundColor: "#1C1B19", color: "#C2A56D" }}
+      whileTap={{ scale: 0.95 }}
       sx={{ 
-        bgcolor: "#fff", 
+        bgcolor: "transparent", 
         color: "#1C1B19",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-        border: "1px solid #F1F0EE",
-        p: 1,
-        transition: "0.2s"
+        border: "1px solid #EAE8E4",
+        p: 1.2,
+        transition: "all 0.3s ease"
       }}
     >
       {icon}
