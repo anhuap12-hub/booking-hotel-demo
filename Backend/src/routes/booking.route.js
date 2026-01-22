@@ -8,17 +8,19 @@ import {
   getAllBookings,
   updateBooking,
   getBookingStatus,
-  checkAvailability
+  checkAvailability,
+  getBookingById
 } from "../controllers/booking.controller.js";
 import { requireEmailVerified } from "../middleware/requireEmailVerified.js";
 
 const router = express.Router();
+router.get("/:id", getBookingById);
 router.post("/rooms/:roomId/check-availability", checkAvailability);
+router.get("/:id/status", getBookingStatus);
 // ================= USER =================
 router.post("/", protect, requireEmailVerified, createBooking);
 router.get("/my", protect, getUserBookings);
 router.put("/:id/cancel", protect, cancelBooking);
-router.get("/:id/status", protect, getBookingStatus);
 
 // ================= ADMIN =================
 router.get("/admin", protect, adminOnly, getAllBookings);

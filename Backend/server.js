@@ -21,7 +21,7 @@ const app = express();
 /* ===================== MIDDLEWARE ===================== */
 app.use(express.json());
 app.use(cookieParser());
-
+app.use("/api/webhooks", webhookRoutes);
 /* ===================== CORS (FIXED) ===================== */
 const allowedOrigins = process.env.CLIENT_URL
   .split(",")
@@ -47,6 +47,7 @@ app.use(
 connectDB();
 
 /* ===================== ROUTES ===================== */
+
 app.use("/api/admin", adminRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/rooms", roomRoutes);
@@ -55,7 +56,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/bookings", bookingRoutes);
-app.use("/api/webhooks", webhookRoutes);
 
 /* ===================== STATIC ===================== */
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

@@ -233,3 +233,18 @@ export const checkAvailability = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+export const getBookingDetail = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  res.status(200).json({ success: true, booking });
+};
+
+export const getBookingById = async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    
+    res.status(200).json({ success: true, booking });
+  } catch (error) {
+    next(error);
+  }
+};
