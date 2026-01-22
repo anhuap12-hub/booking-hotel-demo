@@ -3,17 +3,23 @@ import Room from "../models/Room.js";
 
 export const sepayWebhook = async (req, res) => {
   try {
-    const { content, transferAmount } = req.body;
-    console.log(`📩 Webhook nhận: ${content} - ${transferAmount}đ`);
+    const { content, transferAmount, referenceCode } = req.body;
+    
+    console.log("------------------------------------------");
+    console.log(`🔔 NHẬN WEBHOOK SEPAY [${new Date().toLocaleString()}]`);
+    console.log(`📝 Nội dung: "${content}"`);
+    console.log(`💰 Số tiền: ${transferAmount}đ`);
+    console.log(`🆔 Mã tham chiếu: ${referenceCode}`);
 
-    // 1. Sửa Regex để lấy đủ ký tự chữ cái (không chỉ a-f)
+    // 1. Trích xuất mã DH
     const orderCode = content.match(/DH([a-zA-Z0-9]+)/)?.[1];
     if (!orderCode) {
-      console.log("⚠️ Nội dung không chứa mã DH hợp lệ");
-      return res.status(200).json({ message: "No DH code" });
+      console.warn("⚠️ Webhook bỏ qua: Nội dung không chứa mã DH hợp lệ");
+      return res.status(200).json({ message: "No DH code found" });
     }
 
-    // 2. Tìm Booking
+    // 2. Tìm đơn hàng
+    console.log(`🔍 Đang tìm đơn hàng có đuôi ID: ${orderCode}...`);
     const booking = await Booking.findOne({
       $expr: {
         $regexMatch: {
@@ -25,43 +31,56 @@ export const sepayWebhook = async (req, res) => {
     });
 
     if (!booking) {
-      console.log("❌ Không tìm thấy đơn hàng:", orderCode);
-      return res.status(200).json({ message: "Not found" });
+      console.error(`❌ KHÔNG TÌM THẤY đơn hàng: ${orderCode}`);
+      return res.status(200).json({ message: "Booking not found" });
     }
 
+    console.log(`✅ Khớp đơn: ${booking._id} | Trạng thái: ${booking.paymentStatus}`);
+
     // 3. Cập nhật trạng thái
-    if (booking.paymentStatus !== "DEPOSITED") {
+    if (booking.paymentStatus !== "DEPOSITED" && booking.paymentStatus !== "PAID") {
       booking.paymentStatus = "DEPOSITED";
       booking.status = "confirmed";
       booking.paidAt = new Date();
-      booking.expireAt = undefined; // Gỡ bỏ TTL (không xóa đơn)
+      booking.expireAt = undefined;
 
       booking.paymentLogs.push({
         at: new Date(),
         action: "DEPOSITED", 
-        note: `Thanh toán SePay thành công: ${transferAmount}đ`
+        note: `Thanh toán qua SePay thành công: ${transferAmount}đ. Mã tham chiếu: ${referenceCode}`
       });
 
       await booking.save();
       
       // Cập nhật trạng thái phòng sang 'booked'
       await Room.findByIdAndUpdate(booking.room, { displayStatus: "booked" });
+      console.log(`🚀 Cập nhật DB thành công cho đơn: ${booking._id}`);
 
-      // 4. GỌI HÀM GỬI EMAIL (Quan trọng)
-      sendBookingEmail(booking).catch(err => console.error("❌ Lỗi gửi mail:", err));
+      // 4. Gửi email xác nhận
+      console.log(`📧 Bắt đầu gửi email tới: ${booking.guest?.email}`);
+      sendBookingEmail(booking)
+        .then(() => console.log("✨ Kết quả: Email đã được gửi thành công!"))
+        .catch(err => console.error("❌ Kết quả: Lỗi gửi mail ->", err.message));
 
-      console.log("✅ Xác nhận thành công đơn:", booking._id);
+    } else {
+      console.log(`ℹ️ Đơn hàng đã được xác nhận trước đó. Không xử lý lại.`);
     }
 
-    res.status(200).json({ success: true });
+    console.log("------------------------------------------");
+    return res.status(200).json({ success: true });
+
   } catch (error) {
-    console.error("❌ SePay Webhook Error:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("💥 LỖI NGHIÊM TRỌNG WEBHOOK:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+// --- HÀM GỬI EMAIL (GIỮ NGUYÊN VÀ THÊM LOG) ---
 const sendBookingEmail = async (booking) => {
-  if (!booking.guest?.email) return;
+  if (!booking.guest?.email) {
+    console.log("⚠️ Bỏ qua gửi mail vì không có địa chỉ email khách.");
+    return;
+  }
 
   const data = {
     sender: { name: "Coffee Stay", email: "anhuap12@gmail.com" },
@@ -71,7 +90,7 @@ const sendBookingEmail = async (booking) => {
       <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
         <h2 style="color: #2c3e50; text-align: center;">Xác Nhận Đặt Cọc Thành Công</h2>
         <p>Chào <strong>${booking.guest.name}</strong>,</p>
-        <p>Coffee Stay đã nhận được tiền cọc cho phòng <strong>${booking.roomSnapshot.name}</strong>.</p>
+        <p>Coffee Stay đã nhận được tiền cọc cho phòng <strong>${booking.roomSnapshot?.name || 'phòng đã chọn'}</strong>.</p>
         <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <p><strong>Mã đơn:</strong> DH${booking._id.toString().slice(-6).toUpperCase()}</p>
           <p><strong>Ngày nhận phòng:</strong> ${new Date(booking.checkIn).toLocaleDateString('vi-VN')}</p>
