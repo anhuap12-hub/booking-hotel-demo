@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Box, Container, Stack, Fade } from "@mui/material";
+import { Box, Container, Stack, Fade} from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
 
 import HeroSection from "../../components/Landing/HeroSection";
