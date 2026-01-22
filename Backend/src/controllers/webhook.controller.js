@@ -43,7 +43,7 @@ export const sepayWebhook = async (req, res) => {
       
       booking.paymentLogs.push({
         at: new Date(),
-        action: "PAID_VIA_SEPAY",
+        action: "DEPOSITED",
         note: `Đã nhận ${finalAmount.toLocaleString()}đ. Ref: ${referenceCode}`
       });
 
