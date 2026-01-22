@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Typography, Button, Skeleton, Grid, Container } from "@mui/material";
-import AddIcon from '@mui/icons-material/Add';
 import HotelCard from "../Hotel/HotelCard";
 import { getAllHotels } from "../../api/hotel.api";
 import { motion, AnimatePresence } from "framer-motion";
 
-const STEP = 3;
+const STEP = 3; // Mỗi lần ấn hiện thêm 3 cái
+const MAX_HOME_DISPLAY = 6; // Giới hạn trang Home chỉ nên hiện tối đa 6 cái cho đẹp
 const MotionBox = motion(Box);
 
 export default function HotelSuggestion({ filters }) {
   const [allHotelsData, setAllHotelsData] = useState([]);
-  const [displayCount, setDisplayCount] = useState(3);
+  const [displayCount, setDisplayCount] = useState(3); // Mặc định hiện 3 cái đầu
   const [loading, setLoading] = useState(false);
   const [btnLoading, setBtnLoading] = useState(false);
 
@@ -18,10 +18,10 @@ export default function HotelSuggestion({ filters }) {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Giả sử limit 30 để có dữ liệu cho nút "Xem thêm"
-        const res = await getAllHotels({ ...filters, limit: 30 });
+        // Lấy dữ liệu với limit vừa đủ cho trang Home
+        const res = await getAllHotels({ ...filters, limit: 12 });
         setAllHotelsData(res.data?.data || []);
-        setDisplayCount(3);
+        setDisplayCount(3); 
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
       } finally {
@@ -37,7 +37,7 @@ export default function HotelSuggestion({ filters }) {
 
   const handleShowMore = () => {
     setBtnLoading(true);
-    // Giả lập delay để tạo cảm giác hệ thống đang "tuyển chọn"
+    // Giả lập delay 600ms để tạo hiệu ứng "Luxury Loading"
     setTimeout(() => {
       setDisplayCount((prev) => prev + STEP);
       setBtnLoading(false);
@@ -45,21 +45,21 @@ export default function HotelSuggestion({ filters }) {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: { xs: 8, md: 12 }, mb: 12 }}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 4, md: 6 }, mb: 8 }}>
       {/* SECTION HEADER */}
       <MotionBox 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        sx={{ mb: 8, textAlign: "center" }}
+        sx={{ mb: 6, textAlign: "center" }}
       >
         <Typography 
           sx={{ 
             color: "#C2A56D", 
-            fontSize: "0.75rem", 
+            fontSize: "0.7rem", 
             fontWeight: 800, 
-            letterSpacing: "0.3em", 
+            letterSpacing: "0.4em", 
             textTransform: "uppercase",
             mb: 1
           }}
@@ -71,47 +71,40 @@ export default function HotelSuggestion({ filters }) {
           sx={{ 
             fontFamily: "'Playfair Display', serif",
             fontWeight: 900,
-            color: "#1C1B19",
-            fontSize: { xs: "2rem", md: "2.8rem" },
-            mb: 3
+            color: "#FFFFFF", // Đổi sang trắng vì Component này thường nằm trong Box đen ở Home
+            fontSize: { xs: "1.8rem", md: "2.5rem" },
+            mb: 2
           }}
         >
           Tuyển chọn tinh túy
         </Typography>
-        <Box sx={{ width: 60, height: 2, bgcolor: "#1C1B19", mx: "auto", opacity: 0.1 }} />
+        <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D", mx: "auto" }} />
       </MotionBox>
 
       {/* LOADING STATE */}
       {loading && allHotelsData.length === 0 ? (
-        <Grid container spacing={4}>
+        <Grid container spacing={3}>
           {[1, 2, 3].map((item) => (
             <Grid item xs={12} sm={6} md={4} key={item}>
               <Skeleton 
                 variant="rectangular" 
-                height={350} 
-                sx={{ borderRadius: "24px", bgcolor: "#F8F7F5", mb: 2 }} 
+                height={300} 
+                sx={{ borderRadius: "20px", bgcolor: "rgba(255,255,255,0.05)", mb: 2 }} 
               />
-              <Skeleton variant="text" width="80%" sx={{ height: 30 }} />
-              <Skeleton variant="text" width="40%" />
             </Grid>
           ))}
         </Grid>
       ) : (
         <Box>
-          <Grid container spacing={4}>
+          <Grid container spacing={3}>
             <AnimatePresence mode="popLayout">
               {visibleHotels.map((h, index) => (
                 <Grid item xs={12} sm={6} md={4} key={h._id}>
                   <MotionBox
                     layout
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ 
-                      duration: 0.6, 
-                      delay: (index % STEP) * 0.15,
-                      ease: [0.215, 0.61, 0.355, 1] 
-                    }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: (index % STEP) * 0.1 }}
                   >
                     <HotelCard hotel={h} />
                   </MotionBox>
@@ -120,70 +113,46 @@ export default function HotelSuggestion({ filters }) {
             </AnimatePresence>
           </Grid>
 
-          {/* VIEW MORE BUTTON */}
+          {/* VIEW MORE BUTTON - Chỉ hiện nếu còn dữ liệu để xem */}
           {displayCount < allHotelsData.length && (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
               <Button
                 disabled={btnLoading}
                 onClick={handleShowMore}
                 sx={{
-                  color: "#1C1B19",
-                  px: 6,
-                  py: 1.5,
-                  fontSize: "0.75rem",
+                  color: "#C2A56D", // Màu vàng đồng cho sang
+                  px: 5,
+                  py: 1.2,
+                  fontSize: "0.7rem",
                   fontWeight: 800,
                   letterSpacing: "0.2em",
                   textTransform: "uppercase",
-                  border: "1px solid #1C1B19",
+                  border: "1px solid #C2A56D",
                   borderRadius: "100px",
-                  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transition: "all 0.4s",
                   "&:hover": {
-                    bgcolor: "#1C1B19",
-                    color: "#C2A56D",
-                    transform: "translateY(-3px)",
-                    boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
+                    bgcolor: "#C2A56D",
+                    color: "#1C1B19",
+                    transform: "translateY(-2px)"
                   },
                   "&.Mui-disabled": {
-                    border: "1px solid #EEE",
-                    color: "#CCC"
+                    border: "1px solid #444",
+                    color: "#666"
                   }
                 }}
               >
-                {btnLoading ? "Đang sắp xếp..." : "Xem thêm trải nghiệm"}
+                {btnLoading ? "Đang chuẩn bị..." : "Khám phá thêm"}
               </Button>
             </Box>
           )}
         </Box>
       )}
 
-      {/* EMPTY STATE - REDESIGNED */}
+      {/* EMPTY STATE */}
       {!loading && allHotelsData.length === 0 && (
-        <MotionBox 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          sx={{ 
-            textAlign: "center", 
-            py: 12, 
-            border: "1px dashed #D4D3D0", 
-            borderRadius: "40px",
-            bgcolor: "#FAF9F7" 
-          }}
-        >
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              fontFamily: "'Playfair Display', serif", 
-              color: "#1C1B19", 
-              mb: 1,
-              fontWeight: 700 
-            }}
-          >
-            Chưa tìm thấy lựa chọn phù hợp
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#72716E", maxWidth: 400, mx: "auto" }}>
-            Hãy thử điều chỉnh lại bộ lọc hoặc tìm kiếm theo một phong cách nghỉ dưỡng khác.
-          </Typography>
-        </MotionBox>
+        <Typography sx={{ color: "rgba(255,255,255,0.5)", textAlign: "center", py: 5 }}>
+          Đang cập nhật những không gian mới...
+        </Typography>
       )}
     </Container>
   );

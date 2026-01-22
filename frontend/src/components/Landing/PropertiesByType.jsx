@@ -25,135 +25,112 @@ export default function PropertiesByType({ properties = [] }) {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mb: 15, mt: 10 }}>
-      {/* HEADER */}
+    <Container maxWidth="lg" sx={{ mb: 10, mt: 8 }}>
+      {/* HEADER - Thu gọn khoảng cách */}
       <Stack
         direction="row"
         justifyContent="space-between"
         alignItems="flex-end"
-        mb={6}
+        mb={4}
       >
         <Box>
           <Typography
             sx={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: { xs: "2rem", md: "2.8rem" },
+              fontSize: { xs: "1.8rem", md: "2.5rem" },
               fontWeight: 900,
               color: "#1C1B19",
               lineHeight: 1.1,
-              mb: 2,
             }}
           >
             Phong cách <br /> Lưu trú
           </Typography>
-          <Box sx={{ width: 40, height: 4, bgcolor: "#C2A56D", borderRadius: 1 }} />
+          <Box sx={{ width: 40, height: 3, bgcolor: "#C2A56D", mt: 1, borderRadius: 1 }} />
         </Box>
 
         <Typography
           onClick={() => handleGlobalNavigate()}
           sx={{
-            color: "#1C1B19",
+            color: "#72716E",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             gap: 1,
-            fontWeight: 800,
-            fontSize: "0.85rem",
+            fontWeight: 700,
+            fontSize: "0.8rem",
             textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            borderBottom: "2px solid #C2A56D",
-            pb: 0.5,
+            letterSpacing: "0.1em",
             transition: "0.3s",
-            "&:hover": { color: "#C2A56D", gap: 2 },
+            "&:hover": { color: "#C2A56D" },
           }}
         >
-          Tất cả <ArrowForwardIcon sx={{ fontSize: 16 }} />
+          Tất cả loại hình <ArrowForwardIcon sx={{ fontSize: 16 }} />
         </Typography>
       </Stack>
 
-      {/* PODS LAYOUT */}
-      <Grid container spacing={4}>
+      {/* GRID LAYOUT - 4 Cột hàng ngang, Card thấp gọn */}
+      <Grid container spacing={3}>
         {properties.map((p, idx) => (
           <Grid item xs={12} sm={6} md={3} key={idx}>
             <MotionBox
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: idx * 0.1, duration: 0.5 }}
               onClick={() => handleGlobalNavigate({ types: [p.name] })}
               sx={{
-                position: "relative",
-                height: { xs: 350, md: 420 }, // Chiều cao pod dọc
-                borderRadius: "100px 100px 20px 20px", // Bo đầu tròn kiểu kén (Pod)
-                overflow: "hidden",
                 cursor: "pointer",
-                bgcolor: "#F9F8F6",
-                "&:hover .pod-image": { transform: "scale(1.1)" },
-                "&:hover .pod-content": { bottom: 30, bgcolor: "#1C1B19", color: "#C2A56D" },
+                "&:hover .prop-img": { transform: "scale(1.05)" },
+                "&:hover .prop-name": { color: "#C2A56D" }
               }}
             >
-              {/* IMAGE */}
-              <Box
-                className="pod-image"
-                component="img"
-                src={p.img}
-                alt={p.name}
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  transition: "transform 1.5s cubic-bezier(0.2, 1, 0.3, 1)",
-                }}
-              />
+              {/* IMAGE WRAPPER - Giảm chiều cao xuống 280px */}
+              <Box sx={{ 
+                height: 280, 
+                borderRadius: "24px", 
+                overflow: "hidden", 
+                mb: 2,
+                position: "relative",
+                bgcolor: "#eee" 
+              }}>
+                <Box
+                  className="prop-img"
+                  component="img"
+                  src={p.img}
+                  alt={p.name}
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    transition: "transform 0.6s ease-in-out",
+                  }}
+                />
+              </Box>
 
-              {/* GRADIENT OVERLAY */}
-              <Box
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(to bottom, transparent 50%, rgba(28,27,25,0.4) 100%)",
-                }}
-              />
-
-              {/* FLOATING CONTENT CARD */}
-              <Box
-                className="pod-content"
-                sx={{
-                  position: "absolute",
-                  bottom: 20,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: "85%",
-                  bgcolor: "rgba(255, 255, 255, 0.9)",
-                  backdropFilter: "blur(10px)",
-                  p: 2,
-                  borderRadius: "16px",
-                  textAlign: "center",
-                  transition: "all 0.4s ease",
-                  color: "#1C1B19",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-                }}
-              >
+              {/* INFO BELOW IMAGE - Thay vì đè lên ảnh */}
+              <Box sx={{ px: 1 }}>
                 <Typography
+                  className="prop-name"
                   sx={{
                     fontFamily: "'Playfair Display', serif",
                     fontWeight: 800,
-                    fontSize: "1.1rem",
-                    mb: 0.2,
+                    fontSize: "1.2rem",
+                    color: "#1C1B19",
+                    transition: "0.3s"
                   }}
                 >
                   {cap(p.name)}
                 </Typography>
                 <Typography
                   sx={{
-                    fontSize: "0.65rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.1em",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: "#72716E",
                     textTransform: "uppercase",
-                    opacity: 0.6,
+                    letterSpacing: "0.05em",
                   }}
                 >
-                  {p.count} Options
+                  {p.count} chỗ nghỉ
                 </Typography>
               </Box>
             </MotionBox>

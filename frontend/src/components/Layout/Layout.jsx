@@ -6,7 +6,9 @@ import AppBreadcrumbs from "../Navigation/AppBreadcrumbs";
 
 export default function Layout() {
   const location = useLocation();
-  const isHome = location.pathname === "/";
+  
+  // Kiểm tra nếu là trang Landing (/) hoặc trang Home (/home)
+  const isFullWidthPage = location.pathname === "/" || location.pathname === "/home";
 
   return (
     <Box
@@ -15,47 +17,35 @@ export default function Layout() {
         display: "flex",
         flexDirection: "column",
         overflowX: "hidden",
-        // Chuyển sang màu nền trung tính hơn hoặc để các Section tự quyết định màu
-        bgcolor: isHome ? "#fff" : "background.default", 
+        bgcolor: "background.default",
       }}
     >
       <Navbar />
 
-      {/* CHỈNH SỬA: Spacer 
-         Ở trang Home, nếu bạn muốn Hero Image nằm dưới Navbar (Transparent), 
-         hãy bỏ Spacer này hoặc set nó về 0.
-      */}
-      {!isHome && <Box sx={{ height: `${NAVBAR_HEIGHT}px` }} />}
+      {/* Spacer: Lấp đầy khoảng trống dưới Navbar fixed */}
+      {/* Nếu Banner của bạn màu tối, hãy đổi bgcolor ở đây thành #1C1B19 để liền mạch */}
+      <Box sx={{ 
+        height: `${NAVBAR_HEIGHT}px`, 
+        bgcolor: isFullWidthPage ? "#1C1B19" : "transparent" 
+      }} />
 
-      {/* Breadcrumb (không hiện ở Home) */}
-      {!isHome && <AppBreadcrumbs />}
+      {/* Breadcrumb: Chỉ hiện ở các trang con, không hiện ở Landing/Home */}
+      {!isFullWidthPage && <AppBreadcrumbs />}
 
-      {/* MAIN CONTENT */}
-      <Box 
-        component="main" 
-        sx={{ 
-          flex: 1, 
-          width: "100%",
-          // Loại bỏ mọi padding mặc định có thể gây ra dải trắng quanh thanh Search
-          p: 0, 
-        }}
-      >
-        {isHome ? (
-          /* HOME: Không bọc trong Container nào cả 
-             Các Section (Deals, Trending, Search) sẽ tự quản lý Container của riêng chúng
-          */
-          <Box sx={{ width: "100%" }}>
-            <Outlet />
-          </Box>
+      {/* MAIN CONTENT AREA */}
+      <Box component="main" sx={{ flex: 1, width: "100%" }}>
+        {isFullWidthPage ? (
+          /* TRANG TRÀN VIỀN: Không bị giới hạn bởi Container hay Padding */
+          <Outlet />
         ) : (
-          /* OTHER PAGES: Giữ nguyên bố cục trang trọng */
+          /* CÁC TRANG KHÁC: Có giới hạn chiều rộng để dễ đọc nội dung */
           <Box
             sx={{
               width: "100%",
               maxWidth: 1400,
               mx: "auto",
-              px: { xs: 2, md: 4 },
-              py: 4,
+              px: { xs: 1.5, md: 2 },
+              pb: 4,
             }}
           >
             <Outlet />
