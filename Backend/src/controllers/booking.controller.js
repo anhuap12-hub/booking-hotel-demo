@@ -126,15 +126,29 @@ export const cancelBooking = async (req, res) => {
  */
 export const getUserBookings = async (req, res) => {
   try {
-    let bookings = await Booking.find({ user: req.user.id })
+    // Đảm bảo dùng đúng ID từ middleware protect (req.user.id hoặc req.user._id)
+    const userId = req.user.id || req.user._id;
+
+    let bookings = await Booking.find({ user: userId })
       .sort({ createdAt: -1 })
       .populate("room", "name type price photos")
       .populate("hotel", "name city address photos");
 
+    // Lọc bỏ các đơn hàng mà Room hoặc Hotel đã bị xóa (tránh lỗi UI)
     bookings = bookings.filter((b) => b.room !== null && b.hotel !== null);
-    return res.json(bookings);
+
+    // TRẢ VỀ CẤU TRÚC CHUẨN ĐỂ FRONTEND KHÔNG BỊ LỖI
+    return res.status(200).json({
+      success: true,
+      bookings: bookings
+    });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("❌ GET USER BOOKINGS ERROR:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Không thể lấy danh sách đơn hàng",
+      error: error.message 
+    });
   }
 };
 

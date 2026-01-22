@@ -21,9 +21,9 @@ import { useNavigate } from "react-router-dom";
 // Cấu hình tập trung cho các trạng thái
 const STATUS_MAP = {
   all: { label: "Tất cả", color: "default" },
-  Pending: { label: "Chờ duyệt", color: "warning", themeColor: "#ed6c02" },
-  Confirmed: { label: "Thành công", color: "success", themeColor: "#2e7d32" },
-  Cancelled: { label: "Đã hủy", color: "error", themeColor: "#d32f2f" },
+  pending: { label: "Chờ duyệt", color: "warning", themeColor: "#ed6c02" },
+  confirmed: { label: "Thành công", color: "success", themeColor: "#2e7d32" },
+  cancelled: { label: "Đã hủy", color: "error", themeColor: "#d32f2f" },
 };
 
 export default function MyBookings() {
@@ -36,28 +36,37 @@ export default function MyBookings() {
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Khởi tạo dữ liệu
-  useEffect(() => {
-    let isMounted = true;
-    const fetchBookings = async () => {
-      try {
-        const res = await instance.get("/bookings/my");
-        if (isMounted) setBookings(res.data || []);
-      } catch (err) {
-        console.error("Fetch error:", err);
-      } finally {
-        if (isMounted) setLoading(false);
+ useEffect(() => {
+  let isMounted = true;
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const res = await instance.get("/bookings/my");
+      
+      if (isMounted) {
+        // QUAN TRỌNG: Backend trả về { success: true, bookings: [] }
+        // Nên phải lấy đúng res.data.bookings
+        const data = res.data.bookings || res.data || []; 
+        setBookings(Array.isArray(data) ? data : []);
       }
-    };
-    fetchBookings();
-    return () => { isMounted = false; };
-  }, []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      if (isMounted) setBookings([]); // Tránh lỗi crash giao diện
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  };
+  fetchBookings();
+  return () => { isMounted = false; };
+}, []);
 
-  // Logic lọc dữ liệu cực kỳ an toàn
-  const filteredBookings = useMemo(() => {
-    if (tab === "all") return bookings;
-    return bookings.filter((b) => b.status?.toLowerCase() === tab.toLowerCase());
-  }, [bookings, tab]);
-
+// 2. Sửa lại Logic lọc để không phân biệt hoa thường (Case-insensitive)
+const filteredBookings = useMemo(() => {
+  if (!Array.isArray(bookings)) return [];
+  if (tab === "all") return bookings;
+  // So sánh chữ thường để tránh lệch pha dữ liệu
+  return bookings.filter((b) => b.status?.toLowerCase() === tab.toLowerCase());
+}, [bookings, tab]);
   const handleView = (booking) => {
     setSelectedBooking(booking);
     setOpenDetail(true);

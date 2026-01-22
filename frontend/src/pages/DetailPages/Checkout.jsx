@@ -80,7 +80,7 @@ export default function Checkout() {
             }).then(() => navigate('/my-bookings'));
           }
         } catch (err) {
-          console.warn("Hệ thống đang kiểm tra lại giao dịch...");
+          console.warn("Hệ thống đang kiểm tra lại giao dịch..."),err;
         }
       }, 3000); 
     }
@@ -95,17 +95,20 @@ export default function Checkout() {
   );
 
   // Thông tin cấu hình thanh toán
-  const orderIdSuffix = booking?._id ? booking._id.slice(-6).toUpperCase() : "...";
-  const finalAmount = 2000; // Số tiền test cố định
-  const bankInfo = {
-    id: "vietinbank",
-    no: "108877368467",
-    name: "NGUYEN HOANG ANH",
-    content: `DH${orderIdSuffix}`
-  };
+// Tìm đến phần bankInfo trong Checkout.jsx
+const orderIdSuffix = booking?._id ? booking._id.slice(-6).toUpperCase() : "";
 
-  const qrUrl = `https://img.vietqr.io/image/${bankInfo.id}-${bankInfo.no}-compact.png?amount=${finalAmount}&addInfo=${bankInfo.content}&accountName=${encodeURIComponent(bankInfo.name)}`;
+const bankInfo = {
+  accountName: "NGUYEN HOANG ANH",
+  accountNumber: "108877368467",
+  bankId: "vietinbank", 
+  amount: booking?.depositAmount || 0,
+  // Thêm SEVQR vào đầu nội dung chuyển khoản
+  content: `SEVQR DH${orderIdSuffix}`, 
+};
 
+// URL QR Code sẽ tự động bao gồm SEVQR trong addInfo
+const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankId}-${bankInfo.accountNumber}-compact2.png?amount=${bankInfo.amount}&addInfo=${encodeURIComponent(bankInfo.content)}&accountName=${encodeURIComponent(bankInfo.accountName)}`;
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       {/* Header đơn hàng */}
