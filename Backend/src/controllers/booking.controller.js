@@ -189,20 +189,26 @@ export const updateBooking = async (req, res) => {
 export const getBookingStatus = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .select("paymentStatus status"); // Chỉ lấy các trường cần thiết để tối ưu tốc độ
+      .select("paymentStatus status"); // Tối ưu: Chỉ lấy 2 trường cần thiết
 
     if (!booking) {
-      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+      return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
     }
 
-    return res.json({
-      paymentStatus: booking.paymentStatus, // UNPAID, DEPOSITED, hoặc PAID
-      status: booking.status                // pending, confirmed...
+    // Trả về cấu trúc có bọc 'booking' để khớp với Frontend: res.data.booking
+    return res.status(200).json({
+      success: true,
+      booking: {
+        paymentStatus: booking.paymentStatus,
+        status: booking.status
+      }
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// 2. Hàm kiểm tra phòng trống (Logic loại bỏ đơn ảo)
 export const checkAvailability = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -211,15 +217,12 @@ export const checkAvailability = async (req, res) => {
     const start = new Date(checkInDate);
     const end = new Date(checkOutDate);
 
-    // TÌM KIẾM XUNG ĐỘT THEO CHIẾN THUẬT MỚI
     const conflict = await Booking.findOne({
       room: roomId,
-      // CHỈ COI LÀ HẾT PHÒNG NẾU:
       $or: [
-        { status: "confirmed" }, // 1. Đã được Admin duyệt
-        { paymentStatus: { $in: ["PAID", "DEPOSITED"] } } // 2. Hoặc đã trả tiền/cọc
+        { status: "confirmed" }, 
+        { paymentStatus: { $in: ["PAID", "DEPOSITED"] } }
       ],
-      // Logic overlap ngày tháng giữ nguyên
       checkIn: { $lt: end }, 
       checkOut: { $gt: start }
     });
@@ -233,18 +236,19 @@ export const checkAvailability = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-export const getBookingDetail = async (req, res) => {
-  const booking = await Booking.findById(req.params.id);
-  res.status(200).json({ success: true, booking });
-};
 
-export const getBookingById = async (req, res, next) => {
+// 3. Hàm lấy chi tiết đầy đủ (Dùng cho trang My Bookings / chi tiết đơn)
+export const getBookingDetail = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-    
+    const booking = await Booking.findById(req.params.id)
+      .populate("room"); // Lấy thêm thông tin chi tiết phòng nếu cần
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+    }
+
     res.status(200).json({ success: true, booking });
   } catch (error) {
-    next(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

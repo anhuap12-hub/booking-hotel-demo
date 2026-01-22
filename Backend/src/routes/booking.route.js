@@ -14,9 +14,14 @@ import {
 import { requireEmailVerified } from "../middleware/requireEmailVerified.js";
 
 const router = express.Router();
-router.get("/:id", getBookingById);
+
+// 1. Các route kiểm tra (Ưu tiên lên đầu)
 router.post("/rooms/:roomId/check-availability", checkAvailability);
-router.get("/:id/status", getBookingStatus);
+router.get("/:id/status", getBookingStatus); // Đưa status lên trước :id chung chung
+
+// 2. Route lấy chi tiết
+router.get("/:id", getBookingById); 
+
 // ================= USER =================
 router.post("/", protect, requireEmailVerified, createBooking);
 router.get("/my", protect, getUserBookings);
@@ -25,6 +30,5 @@ router.put("/:id/cancel", protect, cancelBooking);
 // ================= ADMIN =================
 router.get("/admin", protect, adminOnly, getAllBookings);
 router.put("/:id", protect, adminOnly, updateBooking);
-
 
 export default router;
