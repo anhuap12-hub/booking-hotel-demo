@@ -20,3 +20,6 @@ export const getAdminRoomMap = (params) =>
 
 export const updateRoomStatus = (id, status) => 
   instance.put(`/admin/rooms-status/${id}`, { status });
+
+export const confirmRefunded = (id) => 
+  instance.put(`/admin/bookings/${id}/confirm-refund`);

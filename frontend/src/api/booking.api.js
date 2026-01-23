@@ -36,3 +36,6 @@ export const checkAvailability = (roomId, checkInDate, checkOutDate) => {
 };
 export const getBookingById = (id) => 
   instance.get(`/bookings/${id}`);
+
+export const requestRefund = (id) => 
+  instance.put(`/bookings/${id}/request-refund`);
