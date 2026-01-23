@@ -1,8 +1,8 @@
-import { Container, Grid, Typography, Box, Stack } from "@mui/material";
+import { Box, Typography, Grid, Container, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "../../context/SearchContext";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { motion } from "framer-motion";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 const MotionBox = motion(Box);
 const cap = (s = "") => s.charAt(0).toUpperCase() + s.slice(1);
@@ -25,75 +25,65 @@ export default function PropertiesByType({ properties = [] }) {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mb: 12, mt: 4 }}>
-      {/* 1. HEADER - Sạch sẽ trên nền trắng */}
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="flex-end"
-        mb={5}
+    <Container maxWidth="lg" sx={{ mt: { xs: 6, md: 8 }, mb: 8 }}>
+      {/* HEADER SECTION - Đồng bộ với Trending */}
+      <Stack 
+        direction={{ xs: "column", md: "row" }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: "flex-start", md: "center" }} 
+        sx={{ mb: 4 }}
+        spacing={2}
       >
         <Box>
           <Typography
             sx={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: { xs: "1.8rem", md: "2.8rem" },
+              fontSize: { xs: "2rem", md: "2.5rem" },
               fontWeight: 900,
-              color: "#1C1B19", // Chữ đen sang trọng
-              lineHeight: 1.1,
+              color: "#1C1B19",
+              lineHeight: 1.2,
             }}
           >
-            Phong cách <br /> Lưu trú
+            Phong cách <Box component="span" sx={{ color: "#C2A56D", fontStyle: "italic", fontWeight: 400 }}>Lưu trú</Box>
           </Typography>
-          <Box sx={{ width: 50, height: 3, bgcolor: "#C2A56D", mt: 2 }} />
         </Box>
-
-        <Typography
-          onClick={() => handleGlobalNavigate()}
-          sx={{
-            color: "#72716E",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            fontWeight: 800,
-            fontSize: "0.75rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            transition: "0.3s",
-            borderBottom: "1px solid rgba(0,0,0,0.1)",
-            pb: 0.5,
-            "&:hover": { color: "#C2A56D", borderColor: "#C2A56D" },
+        <Typography 
+          sx={{ 
+            color: "#72716E", 
+            fontSize: "0.9rem", 
+            maxWidth: "400px", 
+            lineHeight: 1.5,
+            borderLeft: { md: "2px solid #C2A56D" },
+            pl: { md: 2 }
           }}
         >
-          Xem tất cả <ArrowForwardIcon sx={{ fontSize: 14 }} />
+          Lựa chọn không gian nghỉ dưỡng phù hợp với cá tính và nhu cầu của riêng bạn.
         </Typography>
       </Stack>
 
-      {/* 2. GRID LAYOUT - Kiểu Landing Page */}
-      <Grid container spacing={3}>
+      {/* GRID SECTION - Đồng bộ chiều cao và hiệu ứng với Trending */}
+      <Grid container spacing={2.5}>
         {properties.map((p, idx) => (
           <Grid item xs={12} sm={6} md={3} key={idx}>
             <MotionBox
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, duration: 0.7 }}
+              transition={{ delay: idx * 0.1, duration: 0.6 }}
               onClick={() => handleGlobalNavigate({ types: [p.name] })}
               sx={{
+                height: { xs: 220, md: 320 }, // Chiều cao 320px giống Trending
+                borderRadius: "24px",
+                overflow: "hidden",
                 cursor: "pointer",
                 position: "relative",
-                height: 420, 
-                borderRadius: "32px",
-                overflow: "hidden",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                bgcolor: "#f0f0f0",
                 "&:hover .prop-img": { transform: "scale(1.1)" },
-                "&:hover .overlay": { 
-                  background: "linear-gradient(to top, rgba(28,27,25,0.9) 0%, rgba(28,27,25,0.1) 60%)" 
-                }
+                "&:hover .prop-overlay": { background: "linear-gradient(to top, rgba(28,27,25,0.9) 0%, transparent 60%)" },
+                "&:hover .prop-btn": { opacity: 1, transform: "translateX(0)" },
               }}
             >
-              {/* Ảnh nền card */}
+              {/* IMAGE */}
               <Box
                 className="prop-img"
                 component="img"
@@ -103,46 +93,67 @@ export default function PropertiesByType({ properties = [] }) {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  transition: "transform 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transition: "transform 0.8s ease-in-out",
                 }}
               />
 
-              {/* Lớp phủ chữ trắng đè lên ảnh */}
+              {/* OVERLAY - Gradient nhẹ giống Trending */}
               <Box
-                className="overlay"
+                className="prop-overlay"
                 sx={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(to top, rgba(28,27,25,0.6) 0%, rgba(28,27,25,0) 40%)",
-                  transition: "all 0.4s ease",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "flex-end",
-                  p: 4,
+                  background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 40%)",
+                  transition: "0.4s",
+                  zIndex: 1,
+                }}
+              />
+
+              {/* CONTENT */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  p: 3,
+                  zIndex: 2,
+                  color: "#fff",
                 }}
               >
+                <Typography variant="overline" sx={{ letterSpacing: "0.1em", opacity: 0.8, fontSize: "0.7rem" }}>
+                  {p.count} CHỖ NGHỈ
+                </Typography>
                 <Typography
                   sx={{
                     fontFamily: "'Playfair Display', serif",
                     fontWeight: 800,
-                    fontSize: "1.6rem",
-                    color: "#FFFFFF",
+                    fontSize: "1.4rem", 
+                    lineHeight: 1.2,
                     mb: 0.5,
                   }}
                 >
                   {cap(p.name)}
                 </Typography>
-                <Typography
-                  sx={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "rgba(255,255,255,0.85)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
+                
+                {/* NÚT "XEM NGAY" TRƯỢT NGANG KHI HOVER */}
+                <Stack 
+                  className="prop-btn"
+                  direction="row" 
+                  alignItems="center" 
+                  spacing={1}
+                  sx={{ 
+                    opacity: 0, 
+                    transform: "translateX(-10px)", 
+                    transition: "0.3s",
+                    color: "#C2A56D"
                   }}
                 >
-                  {p.count} chỗ nghỉ
-                </Typography>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase" }}>
+                    Khám phá
+                  </Typography>
+                  <ArrowForwardIcon sx={{ fontSize: 14 }} />
+                </Stack>
               </Box>
             </MotionBox>
           </Grid>

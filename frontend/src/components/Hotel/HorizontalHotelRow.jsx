@@ -1,4 +1,7 @@
-import { Box, Typography, IconButton, Stack } from "@mui/material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button"; 
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useRef } from "react";
@@ -6,6 +9,7 @@ import HotelCard from "./HotelCard";
 import { motion } from "framer-motion";
 
 const MotionBox = motion(Box);
+const MotionButton = motion(Button); // Tạo Button hỗ trợ hiệu ứng motion
 
 export default function HorizontalHotelRow({ city, hotels = [] }) {
   const scrollRef = useRef(null);
@@ -13,7 +17,7 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
   if (!Array.isArray(hotels) || hotels.length === 0) return null;
 
   const CARD_WIDTH = 320; 
-  const GAP = 28; // Tăng GAP lên một chút để thoáng hơn
+  const GAP = 28; 
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -79,13 +83,10 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
           gap: `${GAP}px`,
           overflowX: "auto",
           overflowY: "visible",
-          
-          // Padding rộng ra để lộ shadow của HotelCard và không bị cắt layout
           px: 1,
           pt: 1,
           pb: 4, 
           mx: -1,
-
           scrollbarWidth: "none",
           "&::-webkit-scrollbar": { display: "none" },
           scrollSnapType: "x mandatory",
@@ -117,23 +118,29 @@ export default function HorizontalHotelRow({ city, hotels = [] }) {
   );
 }
 
-// Nút điều hướng tinh chỉnh lại phong cách tối giản (Minimalist Luxury)
+
 function NavButton({ icon, onClick }) {
   return (
-    <IconButton 
+    <MotionButton 
       onClick={onClick} 
-      component={motion.button}
       whileHover={{ backgroundColor: "#1C1B19", color: "#C2A56D" }}
       whileTap={{ scale: 0.95 }}
       sx={{ 
+        minWidth: 40,
+        width: 40,
+        height: 40,
+        borderRadius: "50%", 
         bgcolor: "transparent", 
         color: "#1C1B19",
         border: "1px solid #EAE8E4",
-        p: 1.2,
-        transition: "all 0.3s ease"
+        p: 0,
+        transition: "all 0.3s ease",
+        "&:hover": {
+            backgroundColor: "#1C1B19", // Đảm bảo hover hoạt động với Button
+        }
       }}
     >
       {icon}
-    </IconButton>
+    </MotionButton>
   );
 }

@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  CircularProgress,
-  InputAdornment,
-  IconButton,
-  Alert,
-  Paper,
-  Fade
-} from "@mui/material";
+
+// Import trực tiếp từng component để tối ưu bundle và tránh lỗi build
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import CircularProgress from "@mui/material/CircularProgress";
+import InputAdornment from "@mui/material/InputAdornment";
+import Alert from "@mui/material/Alert";
+import Paper from "@mui/material/Paper";
+import Fade from "@mui/material/Fade";
+
 import {
   VisibilityOutlined,
   VisibilityOffOutlined,
@@ -60,7 +60,7 @@ export default function Register() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        bgcolor: "#F9F8F6", // Nền kem đồng bộ với Login
+        bgcolor: "#F9F8F6",
         backgroundImage: "radial-gradient(circle at 2px 2px, rgba(194, 165, 109, 0.05) 1px, transparent 0)",
         backgroundSize: "40px 40px",
         p: 2,
@@ -183,13 +183,21 @@ export default function Register() {
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
+                 
+                    <Button
                       onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
+                      sx={{
+                        minWidth: 40,
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        color: "#72716E",
+                        p: 0,
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.04)" }
+                      }}
                     >
                       {showPassword ? <VisibilityOffOutlined sx={{ fontSize: 20 }} /> : <VisibilityOutlined sx={{ fontSize: 20 }} />}
-                    </IconButton>
+                    </Button>
                   </InputAdornment>
                 ),
               }}
@@ -212,8 +220,8 @@ export default function Register() {
                 fontWeight: 700,
                 fontSize: "1rem",
                 textTransform: "none",
-                bgcolor: "#1C1B19", // Ebony
-                color: "#C2A56D",   // Gold
+                bgcolor: "#1C1B19",
+                color: "#C2A56D",
                 boxShadow: "0 10px 20px rgba(28,27,25,0.15)",
                 "&:hover": {
                   bgcolor: "#333230",

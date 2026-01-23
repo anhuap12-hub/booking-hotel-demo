@@ -1,4 +1,7 @@
-import { Box, Typography, IconButton, Stack } from "@mui/material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button"; 
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useRef } from "react";
@@ -6,11 +9,11 @@ import HotelCard from "./HotelCard";
 import { motion } from "framer-motion";
 
 const MotionBox = motion(Box);
+const MotionButton = motion(Button);
 
 export default function HotelCarousel({ city, hotels = [] }) {
   const scrollRef = useRef(null);
 
-  // CARD_WIDTH 300px là tỷ lệ vàng cho các hàng ngang (Carousel)
   const CARD_WIDTH = 300; 
   const GAP = 28; 
 
@@ -80,7 +83,7 @@ export default function HotelCarousel({ city, hotels = [] }) {
           overflowY: "visible",
           px: 1, 
           pt: 1,
-          pb: 6, // Tăng nhẹ để shadow của HotelCard bay bổng hơn
+          pb: 6, 
           mx: -1, 
           scrollbarWidth: "none", 
           "&::-webkit-scrollbar": { display: "none" }, 
@@ -102,10 +105,9 @@ export default function HotelCarousel({ city, hotels = [] }) {
             transition={{
               delay: i * 0.08,
               duration: 0.7,
-              ease: [0.22, 1, 0.36, 1], // Cubic-bezier mượt hơn
+              ease: [0.22, 1, 0.36, 1],
             }}
           >
-            {/* Truyền compact={true} để Card tối giản, phù hợp hàng ngang */}
             <HotelCard hotel={hotel} compact={true} />
           </MotionBox>
         ))}
@@ -114,27 +116,29 @@ export default function HotelCarousel({ city, hotels = [] }) {
   );
 }
 
-// Tách riêng NavButton để code sạch hơn và dễ quản lý style Ebony & Gold
 function NavButton({ icon, onClick }) {
   return (
-    <IconButton
-      size="small"
+    <MotionButton
       onClick={onClick}
-      component={motion.button}
       whileHover={{ scale: 1.05, backgroundColor: "#1C1B19", color: "#C2A56D" }}
       whileTap={{ scale: 0.95 }}
       sx={{
+        minWidth: 40,
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
         bgcolor: "transparent",
         color: "#1C1B19",
         border: "1px solid #EAE8E4",
-        p: 1.2,
+        p: 0,
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         "&:hover": {
-           borderColor: "#1C1B19"
+           borderColor: "#1C1B19",
+           backgroundColor: "#1C1B19"
         }
       }}
     >
       {icon}
-    </IconButton>
+    </MotionButton>
   );
 }

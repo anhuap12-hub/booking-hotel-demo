@@ -1,16 +1,15 @@
-import {
-  Box,
-  Paper,
-  Typography,
-  IconButton,
-  Button,
-  Stack,
-  Avatar,
-  Tooltip,
-} from "@mui/material";
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button"; 
+import Stack from "@mui/material/Stack";
+import Avatar from "@mui/material/Avatar";
+import Tooltip from "@mui/material/Tooltip";
+
+// Import Icon trực tiếp từ đường dẫn tệp
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
-import HeadsetMicIcon from '@mui/icons-material/HeadsetMic';
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
@@ -40,6 +39,8 @@ const BOT_AVATAR = "https://cdn-icons-png.flaticon.com/512/4712/4712109.png";
 const AUTO_REMOVE_TIME = 5000;
 
 const MotionBox = motion(Box);
+// Tạo một component Button có hiệu ứng motion
+const MotionButton = motion(Button);
 
 export default function ChatSupport() {
   const [open, setOpen] = useState(false);
@@ -65,10 +66,8 @@ export default function ChatSupport() {
 
   return (
     <>
-      {/* FLOAT CHAT BUTTON */}
       <Tooltip title="Hỗ trợ trực tuyến" placement="left">
-        <IconButton
-          component={motion.button}
+        <MotionButton
           whileHover={{ scale: 1.1, rotate: 5 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setOpen(true)}
@@ -78,16 +77,18 @@ export default function ChatSupport() {
             right: 30,
             bgcolor: "#1C1B19",
             color: "#C2A56D",
+            minWidth: 60, // Ép kích thước hình tròn
             width: 60,
             height: 60,
             borderRadius: "20px",
             boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
             zIndex: 2000,
+            p: 0,
             "&:hover": { bgcolor: "#333" },
           }}
         >
           <ChatBubbleOutlineIcon />
-        </IconButton>
+        </MotionButton>
       </Tooltip>
 
       {/* CHAT BOX */}
@@ -97,7 +98,7 @@ export default function ChatSupport() {
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            style={{
+            sx={{
               position: "fixed",
               bottom: 100,
               right: 30,
@@ -139,9 +140,23 @@ export default function ChatSupport() {
                     </Typography>
                   </Box>
                 </Stack>
-                <IconButton size="small" onClick={() => setOpen(false)} sx={{ color: "#fff", opacity: 0.6 }}>
+                
+                
+                <Button 
+                  size="small" 
+                  onClick={() => setOpen(false)} 
+                  sx={{ 
+                    minWidth: 32, 
+                    width: 32, 
+                    height: 32, 
+                    p: 0, 
+                    color: "#fff", 
+                    opacity: 0.6,
+                    borderRadius: '50%'
+                  }}
+                >
                   <CloseIcon fontSize="small" />
-                </IconButton>
+                </Button>
               </Box>
 
               {/* CHAT BODY */}
@@ -213,7 +228,6 @@ export default function ChatSupport() {
                   ))}
                 </Stack>
                 
-                {/* ZALO DIRECT LINK */}
                 <Button
                   fullWidth
                   onClick={() => window.open(`https://zalo.me/${ZALO_PHONE}`, "_blank")}

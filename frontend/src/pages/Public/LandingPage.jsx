@@ -121,17 +121,8 @@ export default function LandingPage() {
             <TrendingDestinations cities={cityData} />
           </Box>
 
-          {/* Loại hình chỗ nghỉ - Khối Ebony sang trọng */}
-          <Box sx={{ 
-            py: { xs: 6, md: 10 }, 
-            px: { xs: 2, md: 8 }, 
-            bgcolor: "#1C1B19", 
-            borderRadius: { xs: "32px", md: "50px" }, 
-            color: "white",
-            mx: { xs: -1, sm: 0 } // Mobile bung rộng hơn một chút
-          }}>
-            <PropertiesByType properties={propertyTypes} />
-          </Box>
+          {/* Loại hình chỗ nghỉ  */}
+          <PropertiesByType properties={propertyTypes} />
 
           {/* Ưu đãi cuối tuần */}
           <Box>

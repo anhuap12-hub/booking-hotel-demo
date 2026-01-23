@@ -1,15 +1,23 @@
 import { useState, useMemo, useEffect } from "react";
-import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, Typography, Alert, Box, Stack, IconButton, InputAdornment
-} from "@mui/material";
-import { 
-  Close as CloseIcon, 
-  CalendarMonth as CalendarIcon, 
-  PersonOutline as PersonIcon,
-  PhoneIphone as PhoneIcon,
-  Groups as GroupsIcon
-} from '@mui/icons-material';
+// Sửa import: Tách riêng từng component để tránh lỗi ReferenceError
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import InputAdornment from "@mui/material/InputAdornment";
+
+// Import Icon trực tiếp
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/PersonOutline';
+import PhoneIcon from '@mui/icons-material/PhoneIphone';
+import GroupsIcon from '@mui/icons-material/Groups';
+
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,13 +35,12 @@ export default function BookingDialog({ open, onClose, room }) {
   const [guestPhone, setGuestPhone] = useState("");
   const [error, setError] = useState("");
 
-  // FIX LỖI RENDER: Chỉ set giá trị khi Dialog thực sự MỞ và guestName còn trống
   useEffect(() => {
     if (open && user && !guestName) {
       setGuestName(user.name || "");
     }
     if (!open) {
-      setError(""); // Reset lỗi khi đóng
+      setError(""); 
     }
   }, [open, user, guestName]);
 
@@ -85,9 +92,22 @@ export default function BookingDialog({ open, onClose, room }) {
             {room.name.toUpperCase()}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ bgcolor: '#F5F5F3' }}>
+        
+        
+        <Button 
+          onClick={onClose} 
+          sx={{ 
+            minWidth: 40, 
+            width: 40, 
+            height: 40, 
+            borderRadius: '50%', 
+            bgcolor: '#F5F5F3', 
+            color: '#000',
+            p: 0 
+          }}
+        >
           <CloseIcon fontSize="small" />
-        </IconButton>
+        </Button>
       </DialogTitle>
 
       <DialogContent sx={{ px: { xs: 2.5, sm: 4 }, py: 2 }}>
@@ -100,7 +120,6 @@ export default function BookingDialog({ open, onClose, room }) {
         </AnimatePresence>
 
         <Stack spacing={3}>
-          {/* DATES SELECTOR */}
           <Stack direction="row" spacing={2}>
             <TextField
               label="Check-in" type="date" fullWidth InputLabelProps={{ shrink: true }}
@@ -114,7 +133,6 @@ export default function BookingDialog({ open, onClose, room }) {
             />
           </Stack>
 
-          {/* GUEST INFO */}
           <Box sx={{ p: 2.5, borderRadius: "16px", border: '1px solid #EEE' }}>
             <Typography variant="caption" sx={{ color: '#999', fontWeight: 700, mb: 2, display: 'block' }}>THÔNG TIN KHÁCH HÀNG</Typography>
             <Stack spacing={2}>
@@ -139,7 +157,6 @@ export default function BookingDialog({ open, onClose, room }) {
             </Stack>
           </Box>
 
-          {/* BILLING SUMMARY */}
           <AnimatePresence>
             {nights > 0 && (
               <MotionBox 

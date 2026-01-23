@@ -1,7 +1,10 @@
-import { Modal, Box, Typography, Button } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
+import Modal from "@mui/material/Modal";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+// Tách lẻ Icon để đảm bảo bundle không bị lỗi
 import CloseIcon from "@mui/icons-material/Close";
-import {  useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function GeniusModal({ open, onClose }) {
   const navigate = useNavigate();
@@ -9,7 +12,6 @@ export default function GeniusModal({ open, onClose }) {
     <Modal 
       open={open} 
       onClose={onClose}
-      // Căn giữa Modal hoàn hảo bằng Flexbox
       sx={{
         display: "flex",
         alignItems: "center",
@@ -23,26 +25,30 @@ export default function GeniusModal({ open, onClose }) {
           bgcolor: "#f7f5f2",
           borderRadius: 3,
           p: 4,
-          // Đã loại bỏ mt: "15vh" và mx: "auto" vì Modal cha đã xử lý căn giữa
           position: "relative",
           textAlign: "center",
           border: "1px solid #e6e1d9",
           boxShadow: "0 30px 80px rgba(0,0,0,0.25)",
-          outline: "none", // Loại bỏ viền xanh mặc định khi Modal focus
+          outline: "none", 
         }}
       >
-        {/* CLOSE */}
-        <IconButton
+        <Button
           onClick={onClose}
           sx={{
             position: "absolute",
             top: 10,
             right: 10,
+            minWidth: 40,
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
             color: "#6f6b63",
+            p: 0,
+            "&:hover": { bgcolor: "rgba(0,0,0,0.04)" }
           }}
         >
           <CloseIcon fontSize="small" />
-        </IconButton>
+        </Button>
 
         {/* BADGE */}
         <Typography

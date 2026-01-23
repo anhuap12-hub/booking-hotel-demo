@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  Box,
-  Button,
-  Stack,
-  Typography,
-  Avatar,
-  Tooltip,
-  Container,
-} from "@mui/material";
+// Thay đổi cách import thành import trực tiếp từng component
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Avatar from "@mui/material/Avatar";
+import Tooltip from "@mui/material/Tooltip";
+import Container from "@mui/material/Container";
+
 import HomeIcon from "@mui/icons-material/Home";
 import {
   LocalHotel,
@@ -15,13 +15,12 @@ import {
   AdminPanelSettings,
   BookOnline,
   Login,
-  PersonAdd,
   LocalOffer,
   Logout,
 } from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
 
-export const NAVBAR_HEIGHT = 110; // Tăng một chút để tạo độ thoáng
+export const NAVBAR_HEIGHT = 110;
 
 export default function Navbar() {
   const { pathname } = useLocation();
@@ -48,9 +47,9 @@ export default function Navbar() {
         right: 0,
         height: NAVBAR_HEIGHT,
         zIndex: 1200,
-        bgcolor: "#1C1B19", // Màu Ebony sâu hơn
+        bgcolor: "#1C1B19",
         color: "#F1F0EE",
-        borderBottom: "1px solid rgba(194,165,109,0.15)", // Border màu Gold nhẹ
+        borderBottom: "1px solid rgba(194,165,109,0.15)",
         boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
       }}
     >
@@ -70,7 +69,7 @@ export default function Navbar() {
               fontSize: 24,
               fontWeight: 800,
               letterSpacing: -0.5,
-              color: "#C2A56D", // Màu thương hiệu Gold
+              color: "#C2A56D",
               textDecoration: "none",
             }}
           >
@@ -124,9 +123,21 @@ export default function Navbar() {
                 </Typography>
               </Stack>
               <Tooltip title="Đăng xuất">
-                <IconButton onClick={logout} size="small" sx={{ color: "rgba(255,255,255,0.5)", "&:hover": { color: "#ff4d4f" } }}>
-                  <Logout fontSize="small" />
-                </IconButton>
+      
+                <Button 
+                  onClick={logout} 
+                  sx={{ 
+                    minWidth: 32, 
+                    width: 32, 
+                    height: 32, 
+                    borderRadius: "50%", 
+                    color: "rgba(255,255,255,0.5)", 
+                    p: 0,
+                    "&:hover": { color: "#ff4d4f", bgcolor: "rgba(255,77,79,0.1)" } 
+                  }}
+                >
+                  <Logout sx={{ fontSize: 18 }} />
+                </Button>
               </Tooltip>
             </Stack>
           )}
@@ -156,7 +167,6 @@ export default function Navbar() {
                   position: "relative",
                   transition: "0.3s",
                   "&:hover": { color: "#C2A56D" },
-                  // Thanh underline khi active
                   "&::after": active ? {
                     content: '""',
                     position: "absolute",

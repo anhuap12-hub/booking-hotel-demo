@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+
+// Tối ưu hóa Import trực tiếp
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import Fade from '@mui/material/Fade';
+
 import { 
-  Container, Grid, Paper, Typography, Box, 
-  CircularProgress, Divider, Stack, Avatar, IconButton, Tooltip, Fade
-} from '@mui/material';
-import { 
-  AccountBalanceWalletOutlined, VerifiedUserOutlined, InfoOutlined, 
+  VerifiedUserOutlined, InfoOutlined, 
   HotelOutlined, ContentCopy, SecurityOutlined, CalendarMonthOutlined, 
   LocationOnOutlined, PaymentOutlined
 } from '@mui/icons-material';
@@ -22,7 +33,7 @@ export default function Checkout() {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // GIỮ NGUYÊN LOGIC CỦA BẠN
+  // LOGIC KHỞI TẠO ĐƠN HÀNG (GIỮ NGUYÊN)
   useEffect(() => {
     const initOrder = async () => {
       try {
@@ -49,6 +60,7 @@ export default function Checkout() {
     else navigate('/rooms');
   }, [roomId, checkIn, checkOut, guestName, guestPhone, guestsCount, navigate]);
 
+  // LOGIC KIỂM TRA TRẠNG THÁI THANH TOÁN (GIỮ NGUYÊN)
   useEffect(() => {
     let interval;
     if (booking?._id && !['PAID', 'DEPOSITED'].includes(booking?.paymentStatus)) {
@@ -76,6 +88,7 @@ export default function Checkout() {
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
+    // Có thể thêm một thông báo nhỏ "Đã sao chép" ở đây nếu muốn
   };
 
   if (loading) return (
@@ -245,7 +258,6 @@ export default function Checkout() {
                     boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
                   }} 
                 />
-                {/* Decorative Gold Corners */}
                 <Box sx={{ position: 'absolute', top: 0, left: 0, width: 30, height: 30, borderTop: '4px solid #C2A56D', borderLeft: '4px solid #C2A56D', borderRadius: '8px 0 0 0' }} />
                 <Box sx={{ position: 'absolute', top: 0, right: 0, width: 30, height: 30, borderTop: '4px solid #C2A56D', borderRight: '4px solid #C2A56D', borderRadius: '0 8px 0 0' }} />
                 <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: 30, height: 30, borderBottom: '4px solid #C2A56D', borderLeft: '4px solid #C2A56D', borderRadius: '0 0 0 8px' }} />
@@ -265,9 +277,18 @@ export default function Checkout() {
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="h5" fontWeight={900} color="#1C1B19" letterSpacing={1}>{bankInfo.content}</Typography>
                     <Tooltip title="Sao chép nội dung">
-                      <IconButton size="small" onClick={() => handleCopy(bankInfo.content)} sx={{ color: '#C2A56D' }}>
+                      
+                      <Button 
+                        onClick={() => handleCopy(bankInfo.content)} 
+                        sx={{ 
+                          minWidth: 40, width: 40, height: 40, 
+                          borderRadius: '50%', color: '#C2A56D',
+                          p: 0,
+                          '&:hover': { bgcolor: 'rgba(194, 165, 109, 0.1)' }
+                        }}
+                      >
                         <ContentCopy sx={{ fontSize: 20 }} />
-                      </IconButton>
+                      </Button>
                     </Tooltip>
                   </Stack>
                 </Box>

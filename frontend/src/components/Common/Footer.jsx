@@ -1,13 +1,13 @@
-import {
-  Box,
-  Typography,
-  Stack,
-  Link,
-  Container,
-  Divider,
-  Grid,
-  IconButton,
-} from "@mui/material";
+// Import trực tiếp từng thành phần để tránh lỗi "not defined" khi build production
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Stack from "@mui/material/Stack";
+import Link from "@mui/material/Link";
+import Container from "@mui/material/Container";
+import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
+import Button from "@mui/material/Button";
+
 import {
   Facebook,
   Twitter,
@@ -180,16 +180,21 @@ export default function Footer() {
             <Stack spacing={1.5} alignItems={{ xs: "flex-start", md: "flex-end" }}>
               <Stack direction="row" spacing={1}>
                 {[Facebook, Twitter, Instagram].map((Icon, i) => (
-                  <IconButton
+                  <Button
                     key={i}
                     size="small"
                     sx={{
+                      minWidth: 32,
+                      width: 32,
+                      height: 32,
+                      p: 0,
+                      borderRadius: '50%',
                       color: "#cfcac2",
-                      "&:hover": { color: "#ffffff" },
+                      "&:hover": { color: "#ffffff", bgcolor: "rgba(255,255,255,0.1)" },
                     }}
                   >
                     <Icon fontSize="small" />
-                  </IconButton>
+                  </Button>
                 ))}
               </Stack>
 

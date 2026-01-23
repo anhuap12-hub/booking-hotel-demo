@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
-import {
-  Stack,
-  TextField,
-  Typography,
-  Button,
-  Paper,
-  IconButton,
-  Box,
-  Divider,
-} from "@mui/material";
+
+// Import trực tiếp từng module từ MUI
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
+
 import CloseIcon from "@mui/icons-material/Close";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
@@ -21,22 +21,24 @@ const AdminEditHotel = () => {
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
-  const [desc, setDesc] = useState(""); // ✅ schema desc
+  const [desc, setDesc] = useState(""); 
   const [photos, setPhotos] = useState([]);
   const [existingPhotos, setExistingPhotos] = useState([]);
 
   useEffect(() => {
     const fetchHotel = async () => {
-      const res = await axios.get(`/hotels/${id}`);
-      const hotel = res.data.data;
-
-      setName(hotel.name || "");
-      setCity(hotel.city || "");
-      setAddress(hotel.address || "");
-      setDesc(hotel.desc || "");
-      setExistingPhotos(hotel.photos || []);
+      try {
+        const res = await axios.get(`/hotels/${id}`);
+        const hotel = res.data.data;
+        setName(hotel.name || "");
+        setCity(hotel.city || "");
+        setAddress(hotel.address || "");
+        setDesc(hotel.desc || "");
+        setExistingPhotos(hotel.photos || []);
+      } catch (err) {
+        console.error("Error fetching hotel:", err);
+      }
     };
-
     fetchHotel();
   }, [id]);
 
@@ -54,32 +56,24 @@ const AdminEditHotel = () => {
 
   const handleDragEnd = (result, type = "new") => {
     if (!result.destination) return;
-
-    const items =
-      type === "new" ? Array.from(photos) : Array.from(existingPhotos);
-
+    const items = type === "new" ? Array.from(photos) : Array.from(existingPhotos);
     const [moved] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, moved);
-
     type === "new" ? setPhotos(items) : setExistingPhotos(items);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       let uploadedUrls = [];
-
       if (photos.length > 0) {
         const uploadForm = new FormData();
         photos.forEach((file) => uploadForm.append("photos", file));
-
         const uploadRes = await axios.post(
           `/upload/hotels/${id}`,
           uploadForm,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-
         uploadedUrls = uploadRes.data.urls;
       }
 
@@ -87,7 +81,7 @@ const AdminEditHotel = () => {
         name,
         city,
         address,
-        desc, // ✅ đúng schema
+        desc,
         photos: [...existingPhotos, ...uploadedUrls],
       });
 
@@ -122,28 +116,9 @@ const AdminEditHotel = () => {
         <Divider />
 
         <Stack spacing={2}>
-          <TextField
-            label="Hotel Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            fullWidth
-          />
-
-          <TextField
-            label="City"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            fullWidth
-          />
-
-          <TextField
-            label="Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            fullWidth
-          />
-
-          {/* ✅ DESC */}
+          <TextField label="Hotel Name" value={name} onChange={(e) => setName(e.target.value)} fullWidth />
+          <TextField label="City" value={city} onChange={(e) => setCity(e.target.value)} fullWidth />
+          <TextField label="Address" value={address} onChange={(e) => setAddress(e.target.value)} fullWidth />
           <TextField
             label="Description"
             value={desc}
@@ -160,7 +135,6 @@ const AdminEditHotel = () => {
           <Typography variant="subtitle1" fontWeight={600} mb={1}>
             Existing Photos
           </Typography>
-
           <DragDropContext onDragEnd={(r) => handleDragEnd(r, "existing")}>
             <Droppable droppableId="existingPhotos" direction="horizontal">
               {(provided) => (
@@ -172,11 +146,7 @@ const AdminEditHotel = () => {
                   {...provided.droppableProps}
                 >
                   {existingPhotos.map((photo, i) => (
-                    <Draggable
-                      key={i}
-                      draggableId={`existing-${i}`}
-                      index={i}
-                    >
+                    <Draggable key={`exist-${i}`} draggableId={`existing-${i}`} index={i}>
                       {(provided) => (
                         <Box
                           ref={provided.innerRef}
@@ -196,21 +166,25 @@ const AdminEditHotel = () => {
                               borderColor: "divider",
                             }}
                           />
-
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleDeletePhoto(i, "existing")
-                            }
+                         
+                          <Button
+                            onClick={() => handleDeletePhoto(i, "existing")}
                             sx={{
                               position: "absolute",
                               top: 4,
                               right: 4,
+                              minWidth: 24,
+                              width: 24,
+                              height: 24,
+                              borderRadius: "50%",
                               bgcolor: "rgba(255,255,255,0.85)",
+                              color: "text.primary",
+                              p: 0,
+                              "&:hover": { bgcolor: "#fff" }
                             }}
                           >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
+                            <CloseIcon sx={{ fontSize: 16 }} />
+                          </Button>
                         </Box>
                       )}
                     </Draggable>
@@ -228,7 +202,6 @@ const AdminEditHotel = () => {
             <Typography variant="subtitle1" fontWeight={600} mb={1}>
               New Photos
             </Typography>
-
             <DragDropContext onDragEnd={(r) => handleDragEnd(r, "new")}>
               <Droppable droppableId="newPhotos" direction="horizontal">
                 {(provided) => (
@@ -240,7 +213,7 @@ const AdminEditHotel = () => {
                     {...provided.droppableProps}
                   >
                     {photos.map((file, i) => (
-                      <Draggable key={i} draggableId={`new-${i}`} index={i}>
+                      <Draggable key={`new-${i}`} draggableId={`new-${i}`} index={i}>
                         {(provided) => (
                           <Box
                             ref={provided.innerRef}
@@ -260,19 +233,24 @@ const AdminEditHotel = () => {
                                 borderColor: "divider",
                               }}
                             />
-
-                            <IconButton
-                              size="small"
+                            <Button
                               onClick={() => handleDeletePhoto(i, "new")}
                               sx={{
                                 position: "absolute",
                                 top: 4,
                                 right: 4,
+                                minWidth: 24,
+                                width: 24,
+                                height: 24,
+                                borderRadius: "50%",
                                 bgcolor: "rgba(255,255,255,0.85)",
+                                color: "text.primary",
+                                p: 0,
+                                "&:hover": { bgcolor: "#fff" }
                               }}
                             >
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
+                              <CloseIcon sx={{ fontSize: 16 }} />
+                            </Button>
                           </Box>
                         )}
                       </Draggable>

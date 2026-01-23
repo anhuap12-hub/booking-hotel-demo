@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getRoomById, updateRoom } from "../../api/room.api";
-import {
-  Stack,
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  Typography,
-  Box,
-  IconButton,
-  Paper,
-  Divider,
-} from "@mui/material";
+import axios from "../../api/axios";
+
+// Import trực tiếp để đảm bảo an toàn cho Build Production
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import InputLabel from "@mui/material/InputLabel";
+import FormControl from "@mui/material/FormControl";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
+import Divider from "@mui/material/Divider";
+
 import CloseIcon from "@mui/icons-material/Close";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
@@ -80,41 +81,40 @@ export default function AdminEditRoom() {
     type === "new" ? setPhotos(items) : setExistingPhotos(items);
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    let uploadedUrls = [];
+    try {
+      let uploadedUrls = [];
 
-    if (photos.length > 0) {
-      const uploadForm = new FormData();
-      photos.forEach((file) => uploadForm.append("photos", file));
+      if (photos.length > 0) {
+        const uploadForm = new FormData();
+        photos.forEach((file) => uploadForm.append("photos", file));
 
-      const uploadRes = await axios.post(
-        `/upload/rooms/${roomId}`,
-        uploadForm,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+        const uploadRes = await axios.post(
+          `/upload/rooms/${roomId}`,
+          uploadForm,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
 
-      uploadedUrls = uploadRes.data.urls;
+        uploadedUrls = uploadRes.data.urls;
+      }
+
+      await updateRoom(roomId, {
+        ...form,
+        price: Number(form.price.replace(/\./g, "")),
+        maxPeople: Number(form.maxPeople),
+        photos: [...existingPhotos, ...uploadedUrls],
+      });
+
+      // ✅ QUAY VỀ TRANG ROOM CỦA HOTEL
+      navigate(`/admin/hotels/${form.hotel}/rooms`);
+
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert("Lưu thay đổi thất bại");
     }
-
-    await updateRoom(roomId, {
-      ...form,
-      price: Number(form.price.replace(/\./g, "")),
-      maxPeople: Number(form.maxPeople),
-      photos: [...existingPhotos, ...uploadedUrls],
-    });
-
-    // ✅ QUAY VỀ TRANG ROOM CỦA HOTEL
-    navigate(`/admin/hotels/${form.hotel}/rooms`);
-
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    alert("Lưu thay đổi thất bại");
-  }
-};
-
+  };
 
   return (
     <Paper
@@ -166,7 +166,7 @@ export default function AdminEditRoom() {
 
           <FormControl>
             <InputLabel>Type</InputLabel>
-            <Select name="type" value={form.type} onChange={handleChange}>
+            <Select name="type" value={form.type} label="Type" onChange={handleChange}>
               <MenuItem value="single">Single</MenuItem>
               <MenuItem value="double">Double</MenuItem>
               <MenuItem value="suite">Suite</MenuItem>
@@ -187,10 +187,11 @@ export default function AdminEditRoom() {
                   ref={provided.innerRef}
                   direction="row"
                   spacing={2}
+                  flexWrap="wrap"
                   {...provided.droppableProps}
                 >
                   {existingPhotos.map((photo, i) => (
-                    <Draggable key={i} draggableId={`ex-${i}`} index={i}>
+                    <Draggable key={`ex-${i}`} draggableId={`ex-${i}`} index={i}>
                       {(provided) => (
                         <Box
                           ref={provided.innerRef}
@@ -208,20 +209,25 @@ export default function AdminEditRoom() {
                               borderRadius: 2,
                             }}
                           />
-                          <IconButton
-                            size="small"
+                         
+                          <Button
+                            onClick={() => handleDeletePhoto(i, "existing")}
                             sx={{
                               position: "absolute",
                               top: 4,
                               right: 4,
+                              minWidth: 28,
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
                               bgcolor: "white",
+                              color: "black",
+                              p: 0,
+                              "&:hover": { bgcolor: "#eee" }
                             }}
-                            onClick={() =>
-                              handleDeletePhoto(i, "existing")
-                            }
                           >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
+                            <CloseIcon sx={{ fontSize: 16 }} />
+                          </Button>
                         </Box>
                       )}
                     </Draggable>

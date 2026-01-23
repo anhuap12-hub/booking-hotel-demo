@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  CircularProgress,
-  Stack,
-  InputAdornment,
-  IconButton,
-  Alert,
-  Paper,
-} from "@mui/material";
+
+// Import trực tiếp từng component
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
+import InputAdornment from "@mui/material/InputAdornment";
+import Alert from "@mui/material/Alert";
+import Paper from "@mui/material/Paper";
+
 import { Visibility, VisibilityOff, EmailOutlined, LockOutlined } from "@mui/icons-material";
 
 export default function Login() {
@@ -53,7 +53,7 @@ export default function Login() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        bgcolor: "#F9F8F6", // Nền kem nhạt đồng bộ
+        bgcolor: "#F9F8F6",
         backgroundImage: "radial-gradient(circle at 2px 2px, rgba(194, 165, 109, 0.05) 1px, transparent 0)",
         backgroundSize: "40px 40px",
         p: 2,
@@ -73,7 +73,6 @@ export default function Login() {
           bgcolor: "#FFF",
         }}
       >
-        {/* HEADER */}
         <Box sx={{ mb: 4, textAlign: "center" }}>
           <Typography
             sx={{
@@ -91,28 +90,18 @@ export default function Login() {
           </Typography>
         </Box>
 
-        {/* ERROR MESSAGE */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3, 
-              borderRadius: "12px",
-              "& .MuiAlert-message": { fontWeight: 500 }
-            }}
-          >
+          <Alert severity="error" sx={{ mb: 3, borderRadius: "12px" }}>
             {error}
           </Alert>
         )}
 
-        {/* FORM FIELDS */}
         <Stack spacing={2.5}>
           <TextField
             label="Địa chỉ Email"
             type="email"
             required
             fullWidth
-            variant="outlined"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             sx={{
@@ -120,7 +109,6 @@ export default function Login() {
                 borderRadius: "12px",
                 "&.Mui-focused fieldset": { borderColor: "#C2A56D" },
               },
-              "& .MuiInputLabel-root.Mui-focused": { color: "#C2A56D" },
             }}
             InputProps={{
               startAdornment: (
@@ -143,7 +131,6 @@ export default function Login() {
                 borderRadius: "12px",
                 "&.Mui-focused fieldset": { borderColor: "#C2A56D" },
               },
-              "& .MuiInputLabel-root.Mui-focused": { color: "#C2A56D" },
             }}
             InputProps={{
               startAdornment: (
@@ -153,13 +140,21 @@ export default function Login() {
               ),
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
+                  
+                  <Button
                     onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    size="small"
+                    sx={{
+                      minWidth: 40,
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      color: "#72716E",
+                      p: 0,
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.04)" }
+                    }}
                   >
                     {showPassword ? <VisibilityOff sx={{ fontSize: 20 }} /> : <Visibility sx={{ fontSize: 20 }} />}
-                  </IconButton>
+                  </Button>
                 </InputAdornment>
               ),
             }}
@@ -174,7 +169,6 @@ export default function Login() {
                 color: "#C2A56D",
                 textDecoration: "none",
                 fontWeight: 600,
-                "&:hover": { textDecoration: "underline" },
               }}
             >
               Quên mật khẩu?
@@ -190,40 +184,20 @@ export default function Login() {
               py: 1.8,
               borderRadius: "12px",
               fontWeight: 700,
-              fontSize: "1rem",
+              bgcolor: "#1C1B19",
+              color: "#C2A56D",
               textTransform: "none",
-              bgcolor: "#1C1B19", // Ebony
-              color: "#C2A56D",   // Gold
-              boxShadow: "0 10px 20px rgba(28,27,25,0.15)",
-              "&:hover": {
-                bgcolor: "#333230",
-                transform: "translateY(-1px)",
-                boxShadow: "0 12px 25px rgba(28,27,25,0.2)",
-              },
-              transition: "all 0.3s ease",
+              "&:hover": { bgcolor: "#333230" },
             }}
           >
-            {loading ? (
-              <CircularProgress size={24} sx={{ color: "#C2A56D" }} />
-            ) : (
-              "Đăng nhập"
-            )}
+            {loading ? <CircularProgress size={24} sx={{ color: "#C2A56D" }} /> : "Đăng nhập"}
           </Button>
         </Stack>
 
-        {/* FOOTER */}
         <Box sx={{ textAlign: "center", mt: 4 }}>
           <Typography fontSize={14} color="#72716E">
             Chưa có tài khoản trải nghiệm?{" "}
-            <Link
-              to="/register"
-              style={{
-                color: "#1C1B19",
-                textDecoration: "none",
-                fontWeight: 700,
-                borderBottom: "1px solid #C2A56D"
-              }}
-            >
+            <Link to="/register" style={{ color: "#1C1B19", fontWeight: 700, textDecoration: "none" }}>
               Đăng ký ngay
             </Link>
           </Typography>
