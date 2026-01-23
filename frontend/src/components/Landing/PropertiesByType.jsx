@@ -25,27 +25,27 @@ export default function PropertiesByType({ properties = [] }) {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mb: 10, mt: 8 }}>
-      {/* HEADER - Thu gọn khoảng cách */}
+    <Container maxWidth="lg" sx={{ mb: 12, mt: 4 }}>
+      {/* 1. HEADER - Sạch sẽ trên nền trắng */}
       <Stack
         direction="row"
         justifyContent="space-between"
         alignItems="flex-end"
-        mb={4}
+        mb={5}
       >
         <Box>
           <Typography
             sx={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: { xs: "1.8rem", md: "2.5rem" },
+              fontSize: { xs: "1.8rem", md: "2.8rem" },
               fontWeight: 900,
-              color: "#1C1B19",
+              color: "#1C1B19", // Chữ đen sang trọng
               lineHeight: 1.1,
             }}
           >
             Phong cách <br /> Lưu trú
           </Typography>
-          <Box sx={{ width: 40, height: 3, bgcolor: "#C2A56D", mt: 1, borderRadius: 1 }} />
+          <Box sx={{ width: 50, height: 3, bgcolor: "#C2A56D", mt: 2 }} />
         </Box>
 
         <Typography
@@ -56,67 +56,78 @@ export default function PropertiesByType({ properties = [] }) {
             display: "flex",
             alignItems: "center",
             gap: 1,
-            fontWeight: 700,
-            fontSize: "0.8rem",
+            fontWeight: 800,
+            fontSize: "0.75rem",
             textTransform: "uppercase",
-            letterSpacing: "0.1em",
+            letterSpacing: "0.15em",
             transition: "0.3s",
-            "&:hover": { color: "#C2A56D" },
+            borderBottom: "1px solid rgba(0,0,0,0.1)",
+            pb: 0.5,
+            "&:hover": { color: "#C2A56D", borderColor: "#C2A56D" },
           }}
         >
-          Tất cả loại hình <ArrowForwardIcon sx={{ fontSize: 16 }} />
+          Xem tất cả <ArrowForwardIcon sx={{ fontSize: 14 }} />
         </Typography>
       </Stack>
 
-      {/* GRID LAYOUT - 4 Cột hàng ngang, Card thấp gọn */}
+      {/* 2. GRID LAYOUT - Kiểu Landing Page */}
       <Grid container spacing={3}>
         {properties.map((p, idx) => (
           <Grid item xs={12} sm={6} md={3} key={idx}>
             <MotionBox
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, duration: 0.5 }}
+              transition={{ delay: idx * 0.1, duration: 0.7 }}
               onClick={() => handleGlobalNavigate({ types: [p.name] })}
               sx={{
                 cursor: "pointer",
-                "&:hover .prop-img": { transform: "scale(1.05)" },
-                "&:hover .prop-name": { color: "#C2A56D" }
+                position: "relative",
+                height: 420, 
+                borderRadius: "32px",
+                overflow: "hidden",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                "&:hover .prop-img": { transform: "scale(1.1)" },
+                "&:hover .overlay": { 
+                  background: "linear-gradient(to top, rgba(28,27,25,0.9) 0%, rgba(28,27,25,0.1) 60%)" 
+                }
               }}
             >
-              {/* IMAGE WRAPPER - Giảm chiều cao xuống 280px */}
-              <Box sx={{ 
-                height: 280, 
-                borderRadius: "24px", 
-                overflow: "hidden", 
-                mb: 2,
-                position: "relative",
-                bgcolor: "#eee" 
-              }}>
-                <Box
-                  className="prop-img"
-                  component="img"
-                  src={p.img}
-                  alt={p.name}
-                  sx={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    transition: "transform 0.6s ease-in-out",
-                  }}
-                />
-              </Box>
+              {/* Ảnh nền card */}
+              <Box
+                className="prop-img"
+                component="img"
+                src={p.img}
+                alt={p.name}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  transition: "transform 1s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              />
 
-              {/* INFO BELOW IMAGE - Thay vì đè lên ảnh */}
-              <Box sx={{ px: 1 }}>
+              {/* Lớp phủ chữ trắng đè lên ảnh */}
+              <Box
+                className="overlay"
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(to top, rgba(28,27,25,0.6) 0%, rgba(28,27,25,0) 40%)",
+                  transition: "all 0.4s ease",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "flex-end",
+                  p: 4,
+                }}
+              >
                 <Typography
-                  className="prop-name"
                   sx={{
                     fontFamily: "'Playfair Display', serif",
                     fontWeight: 800,
-                    fontSize: "1.2rem",
-                    color: "#1C1B19",
-                    transition: "0.3s"
+                    fontSize: "1.6rem",
+                    color: "#FFFFFF",
+                    mb: 0.5,
                   }}
                 >
                   {cap(p.name)}
@@ -125,9 +136,9 @@ export default function PropertiesByType({ properties = [] }) {
                   sx={{
                     fontSize: "0.75rem",
                     fontWeight: 600,
-                    color: "#72716E",
+                    color: "rgba(255,255,255,0.85)",
                     textTransform: "uppercase",
-                    letterSpacing: "0.05em",
+                    letterSpacing: "0.1em",
                   }}
                 >
                   {p.count} chỗ nghỉ
