@@ -1,4 +1,5 @@
-import { Modal, Box, Typography, Button, IconButton } from "@mui/material";
+import { Modal, Box, Typography, Button } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import {  useNavigate } from "react-router-dom";
 
