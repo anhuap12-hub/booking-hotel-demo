@@ -148,12 +148,17 @@ export default function AdminBookings() {
                         
                         {/* HIỂN THỊ THÔNG TIN HOÀN TIỀN NẾU CÓ */}
                         {isRefundPending ? (
-                          <Box width={160} sx={{ p: 1, bgcolor: '#FFF5F5', borderRadius: '4px', mt: 1 }}>
-                            <Typography variant="caption" color="error" fontWeight={800}>CẦN HOÀN: {b.refundInfo?.amount?.toLocaleString()} đ</Typography>
-                            <Tooltip title={`STK: ${b.refundInfo?.accountNumber} - ${b.refundInfo?.bankName}`}>
-                                <InfoOutlined sx={{ fontSize: 14, ml: 1, cursor: 'help' }} />
-                            </Tooltip>
-                          </Box>
+                          <Box width={180} sx={{ p: 1.5, bgcolor: '#FFF5F5', borderRadius: '8px', border: '1px solid #FEB2B2', mt: 1 }}>
+    <Typography variant="caption" color="error" fontWeight={900} display="block">
+      CẦN HOÀN: {b.refundInfo?.amount?.toLocaleString()} đ
+    </Typography>
+    <Typography variant="caption" sx={{ fontSize: 10, color: '#555', fontWeight: 600 }}>
+      {b.refundInfo?.bankName} - {b.refundInfo?.accountNumber}
+    </Typography>
+    <Typography variant="caption" sx={{ fontSize: 10, color: '#555', display: 'block', fontStyle: 'italic' }}>
+      Chủ: {b.refundInfo?.accountHolder}
+    </Typography>
+  </Box>
                         ) : (
                           <>
                             {isDeposited && (

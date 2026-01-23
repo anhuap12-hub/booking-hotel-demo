@@ -189,36 +189,7 @@ export const requestRefund = async (req, res) => {
   }
 };
 
-/**
- * ==============================
- * ADMIN: CONFIRM REFUNDED
- * ==============================
- */
-export const confirmRefunded = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const booking = await Booking.findById(id);
 
-    if (!booking || booking.paymentStatus !== "REFUND_PENDING") {
-      return res.status(400).json({ message: "Đơn hàng không ở trạng thái chờ hoàn tiền" });
-    }
-
-    booking.paymentStatus = "REFUNDED";
-    booking.refundInfo.processedAt = new Date();
-
-    booking.paymentLogs.push({
-      at: new Date(),
-      by: req.user._id,
-      action: "REFUNDED",
-      note: `Admin xác nhận đã chuyển khoản hoàn tiền thành công.`
-    });
-
-    await booking.save();
-    res.status(200).json({ success: true, message: "Xác nhận hoàn tiền hoàn tất" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 /**
  * ==============================
