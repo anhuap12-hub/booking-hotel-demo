@@ -3,7 +3,7 @@ import {
   Card, CardContent, Typography, Box, Chip, Stack, Button, useTheme, useMediaQuery
 } from "@mui/material";
 import { 
-  CalendarToday, Hotel, Payment, ChevronRight
+  CalendarToday, Hotel, ChevronRight
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -19,12 +19,11 @@ export default function BookingCard({ booking, onView }) {
 
   const { status, paymentStatus, totalPrice, expireAt, roomSnapshot, room } = booking;
   
-  // 1. Logic hết hạn (Check an toàn với Date)
   const isExpired = status === 'pending' && 
                     paymentStatus === 'UNPAID' && 
                     expireAt && new Date(expireAt) < new Date();
 
-  // 2. Badge thanh toán
+  // 1. Badge thanh toán (Giữ nguyên map cũ nhưng thêm fallback an toàn)
   const getPaymentBadge = (ps) => {
     const s = ps?.toUpperCase();
     const map = {
@@ -38,12 +37,19 @@ export default function BookingCard({ booking, onView }) {
 
   const payInfo = getPaymentBadge(paymentStatus);
 
-  // 3. Tag trạng thái chính
+  // 2. LOGIC FIX: Tag trạng thái chính (Ưu tiên hiển thị Cọc)
   const getStatusTag = () => {
     if (isExpired) return { text: "Hết hạn", bg: "#ef4444" };
     if (paymentStatus === 'REFUNDED') return { text: "Đã kết thúc", bg: "#7b1fa2" };
     if (status === 'cancelled') return { text: "Đã hủy", bg: "#94a3b8" };
-    return { text: status === 'confirmed' ? "Thành công" : "Sắp tới", bg: status === 'confirmed' ? "#1C1B19" : "#C2A56D" };
+    
+    // Nếu khách mới cọc 30%, hiện màu xanh dương để phân biệt với "Thành công" (đã trả hết)
+    if (paymentStatus === 'DEPOSITED') return { text: "Đã đặt cọc", bg: "#0288d1" };
+    
+    // Chỉ hiện "Thành công" khi trạng thái là confirmed VÀ đã trả đủ tiền (PAID)
+    if (status === 'confirmed' && paymentStatus === 'PAID') return { text: "Thành công", bg: "#1C1B19" };
+    
+    return { text: "Sắp tới", bg: "#C2A56D" };
   };
 
   const tagInfo = getStatusTag();
@@ -61,7 +67,6 @@ export default function BookingCard({ booking, onView }) {
       <CardContent sx={{ p: isMobile ? 2 : 3 }}>
         <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 2 : 3}>
           
-          {/* IMAGE SECTION */}
           <Box sx={{ 
             width: isMobile ? "100%" : 160, 
             height: isMobile ? 180 : 160, 
@@ -74,16 +79,16 @@ export default function BookingCard({ booking, onView }) {
             />
             <Box sx={{ 
               position: 'absolute', top: 12, left: 12, bgcolor: tagInfo.bg, color: "#fff",
-              px: 1.2, py: 0.4, borderRadius: "6px", fontSize: 9, fontWeight: 900, textTransform: 'uppercase'
+              px: 1.2, py: 0.4, borderRadius: "6px", fontSize: 9, fontWeight: 900, textTransform: 'uppercase',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
             }}>
               {tagInfo.text}
             </Box>
           </Box>
 
-          {/* CONTENT SECTION */}
           <Box flex={1} display="flex" flexDirection="column">
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
-              <Box sx={{ maxWidth: '75%' }}>
+              <Box sx={{ maxWidth: '70%' }}>
                 <Typography sx={{ 
                   fontSize: isMobile ? "1.1rem" : "1.25rem", fontWeight: 800, 
                   color: "#1C1B19", fontFamily: "'Playfair Display', serif",

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-  Box, Typography, Stack, Paper, Divider, CircularProgress, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip
+  Box, Typography, Stack, Paper, CircularProgress, Grid,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Alert
 } from "@mui/material";
 import {
-  Hotel as HotelIcon, BookOnline as BookOnlineIcon, TrendingUp as TrendingUpIcon,
+  TrendingUp as TrendingUpIcon,
   AccountBalanceWallet as AccountBalanceWalletIcon, Paid as PaidIcon,
   History as HistoryIcon, ArrowUpward as ArrowUpwardIcon, ArrowDownward as ArrowDownwardIcon
 } from "@mui/icons-material";
@@ -13,14 +13,20 @@ import { getAdminStats } from "../../api/admin.api";
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setError(null);
         const res = await getAdminStats();
         setStats(res.data);
       } catch (e) {
         console.error(e);
+        // Lưu thông báo lỗi nếu bị 403 hoặc lỗi server
+        setError(e.response?.status === 403 
+          ? "Bạn không có quyền truy cập báo cáo này (403 Forbidden)." 
+          : "Không thể tải dữ liệu báo cáo tài chính.");
       } finally {
         setLoading(false);
       }
@@ -32,6 +38,11 @@ export default function AdminDashboard() {
     <Box py={10} textAlign="center"><CircularProgress sx={{ color: '#C2A56D' }} /></Box>
   );
 
+  // Nếu có lỗi (như 403), hiển thị thông báo thay vì sập giao diện
+  if (error) return (
+    <Box p={3}><Alert severity="error" sx={{ borderRadius: '12px' }}>{error}</Alert></Box>
+  );
+
   return (
     <Box sx={{ p: 1 }}>
       <Typography variant="h4" fontWeight={800} mb={1} sx={{ fontFamily: "'Playfair Display', serif" }}>
@@ -41,19 +52,39 @@ export default function AdminDashboard() {
         Theo dõi biến động dòng tiền và lịch sử giao dịch thực tế
       </Typography>
 
-      {/* TỔNG QUAN TÀI CHÍNH (CARDS) */}
+      {/* TỔNG QUAN TÀI CHÍNH (CARDS) - Đã thêm Optional Chaining để tránh lỗi null */}
       <Grid container spacing={3} mb={5}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tổng tiền cọc (30%)" value={`${stats.totalDeposited?.toLocaleString()}đ`} icon={<AccountBalanceWalletIcon />} color="#0288d1" />
+          <StatCard 
+            title="Tổng tiền cọc (30%)" 
+            value={`${(stats?.totalDeposited || 0).toLocaleString()}đ`} 
+            icon={<AccountBalanceWalletIcon />} 
+            color="#0288d1" 
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tiền mặt đã thu" value={`${stats.totalCashCollected?.toLocaleString()}đ`} icon={<PaidIcon />} color="#2e7d32" />
+          <StatCard 
+            title="Tiền mặt đã thu" 
+            value={`${(stats?.totalCashCollected || 0).toLocaleString()}đ`} 
+            icon={<PaidIcon />} 
+            color="#2e7d32" 
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tổng doanh thu" value={`${stats.totalRevenue?.toLocaleString()}đ`} icon={<TrendingUpIcon />} color="#ed6c02" />
+          <StatCard 
+            title="Tổng doanh thu" 
+            value={`${(stats?.totalRevenue || 0).toLocaleString()}đ`} 
+            icon={<TrendingUpIcon />} 
+            color="#ed6c02" 
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tiền đã hoàn (Refund)" value={`-${stats.totalRefunded?.toLocaleString()}đ`} icon={<HistoryIcon />} color="#d32f2f" />
+          <StatCard 
+            title="Tiền đã hoàn (Refund)" 
+            value={`-${(stats?.totalRefunded || 0).toLocaleString()}đ`} 
+            icon={<HistoryIcon />} 
+            color="#d32f2f" 
+          />
         </Grid>
       </Grid>
 
@@ -75,14 +106,15 @@ export default function AdminDashboard() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {stats.paymentHistory?.map((payment, idx) => (
+            {/* Sử dụng stats?.paymentHistory || [] để tránh lỗi map trên null */}
+            {(stats?.paymentHistory || []).map((payment, idx) => (
               <TableRow key={idx} hover>
                 <TableCell>
                   <Typography variant="body2">{new Date(payment.createdAt).toLocaleDateString('vi-VN')}</Typography>
                   <Typography variant="caption" color="text.secondary">{new Date(payment.createdAt).toLocaleTimeString('vi-VN')}</Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" fontWeight={700}>#{payment.bookingId?.slice(-6).toUpperCase()}</Typography>
+                  <Typography variant="body2" fontWeight={700}>#{payment.bookingId?.slice(-6).toUpperCase() || 'N/A'}</Typography>
                 </TableCell>
                 <TableCell>
                   <Chip 
@@ -101,7 +133,7 @@ export default function AdminDashboard() {
                 </TableCell>
                 <TableCell align="right">
                   <Typography variant="body2" fontWeight={800} color={payment.type === 'INFLOW' ? "success.main" : "error.main"}>
-                    {payment.type === 'INFLOW' ? '+' : '-'}{payment.amount?.toLocaleString()}đ
+                    {payment.type === 'INFLOW' ? '+' : '-'}{(payment.amount || 0).toLocaleString()}đ
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -109,6 +141,13 @@ export default function AdminDashboard() {
                 </TableCell>
               </TableRow>
             ))}
+            {(!stats?.paymentHistory || stats.paymentHistory.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                  Chưa có lịch sử giao dịch.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -116,7 +155,6 @@ export default function AdminDashboard() {
   );
 }
 
-// Component phụ cho Card chỉ số
 function StatCard({ title, value, icon, color }) {
   return (
     <Paper elevation={0} sx={{ p: 2.5, borderRadius: "16px", border: "1px solid #E5E2DC", bgcolor: '#fff' }}>
