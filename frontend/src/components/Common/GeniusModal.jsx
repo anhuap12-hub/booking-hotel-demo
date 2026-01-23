@@ -1,7 +1,9 @@
 import { Modal, Box, Typography, Button, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import {  useNavigate } from "react-router-dom";
 
 export default function GeniusModal({ open, onClose }) {
+  const navigate = useNavigate();
   return (
     <Modal 
       open={open} 
@@ -87,7 +89,7 @@ export default function GeniusModal({ open, onClose }) {
         <Button
           fullWidth
           size="large"
-          onClick={() => (window.location.href = "/login")}
+          onClick={() => navigate("/login")}
           sx={{
             bgcolor: "#3a342b",
             color: "#fff",
