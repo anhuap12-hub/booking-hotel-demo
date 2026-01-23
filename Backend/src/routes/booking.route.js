@@ -14,7 +14,11 @@ import {
 import { requireEmailVerified } from "../middleware/requireEmailVerified.js";
 
 const router = express.Router();
+// Khách gửi yêu cầu (Cần auth khách hàng)
+router.put("/:id/request-refund", protect, requestRefund);
 
+// Admin xác nhận (Cần auth admin)
+router.put("/admin/:id/confirm-refund", protect, adminOnly, confirmRefunded);
 // ================= 1. CÁC ROUTE TĨNH (STATIC) =================
 // Đưa các route không chứa tham số biến đổi (:id) lên trên cùng
 router.post("/rooms/:roomId/check-availability", checkAvailability);

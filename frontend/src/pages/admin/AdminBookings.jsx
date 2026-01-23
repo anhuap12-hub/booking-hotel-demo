@@ -3,9 +3,13 @@ import {
   Box, Typography, Stack, Paper, Table, TableHead, TableRow, TableCell,
   TableBody, Chip, Button, CircularProgress, Tooltip, Divider
 } from "@mui/material";
-import { getAdminBookings, updateContactStatus, markBookingPaid } from "../../api/admin.api";
+// Giả định bạn thêm API confirmRefunded vào admin.api
+import { getAdminBookings, updateContactStatus, markBookingPaid, confirmRefunded } from "../../api/admin.api";
 import AdminBookingLogsDialog from "./AdminBookingLogsDialog";
-import { AccessTime, CheckCircle, Cancel, Payment } from "@mui/icons-material";
+import { 
+  AccessTime, CheckCircle, Cancel, Payment, 
+  CurrencyExchange, InfoOutlined 
+} from "@mui/icons-material";
 
 /* ================= HELPERS ================= */
 
@@ -23,6 +27,8 @@ const paymentStatusConfig = (status) => {
     case "PAID": return { label: "ĐÃ THANH TOÁN", color: "success" };
     case "DEPOSITED": return { label: "ĐÃ CỌC 30%", color: "primary" };
     case "UNPAID": return { label: "CHƯA THANH TOÁN", color: "warning" };
+    case "REFUND_PENDING": return { label: "CHỜ HOÀN TIỀN", color: "error" }; // MỚI
+    case "REFUNDED": return { label: "ĐÃ HOÀN TIỀN", color: "secondary" };      // MỚI
     default: return { label: status, color: "default" };
   }
 };
@@ -68,6 +74,18 @@ export default function AdminBookings() {
     }
   };
 
+  // MỚI: XỬ LÝ HOÀN TIỀN
+  const handleConfirmRefund = async (id) => {
+    if (window.confirm("Xác nhận BẠN ĐÃ CHUYỂN KHOẢN hoàn tiền cho khách? Trạng thái sẽ chuyển thành ĐÃ HOÀN TIỀN.")) {
+      try {
+        await confirmRefunded(id);
+        fetchBookings();
+      } catch (err) {
+        alert("Lỗi: " + (err.response?.data?.message || "Không thể xác nhận hoàn tiền"));
+      }
+    }
+  };
+
   if (loading) return <Box py={10} textAlign="center"><CircularProgress sx={{ color: '#C2A56D' }} /></Box>;
 
   return (
@@ -83,7 +101,7 @@ export default function AdminBookings() {
             <TableHead>
               <TableRow sx={{ bgcolor: "#F9F8F6" }}>
                 <TableCell sx={{ fontWeight: 700 }}>Thông tin khách</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Ngày đặt / Lưu trú</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Ngày lưu trú</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Chi tiết tài chính</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 700 }}>Thực thi</TableCell>
@@ -97,80 +115,90 @@ export default function AdminBookings() {
                 const isCancelled = b.status === "cancelled";
                 const isPaidFull = b.paymentStatus === "PAID";
                 const isDeposited = b.paymentStatus === "DEPOSITED";
+                const isRefundPending = b.paymentStatus === "REFUND_PENDING";
 
                 return (
                   <TableRow 
                     key={b._id} 
                     sx={{ 
-                      opacity: isCancelled ? 0.6 : 1,
-                      bgcolor: isDeposited && !isPaidFull ? "rgba(2, 136, 209, 0.02)" : "inherit",
+                      opacity: isCancelled ? 0.7 : 1,
+                      bgcolor: isRefundPending ? "rgba(239, 68, 68, 0.02)" : "inherit",
                       "&:hover": { bgcolor: "#FDFDFD" }
                     }}
                   >
-                    {/* KHÁCH HÀNG */}
                     <TableCell>
                       <Typography variant="body2" fontWeight={700}>{b.guest?.name}</Typography>
                       <Typography variant="caption" color="text.secondary" display="block">{b.guest?.phone}</Typography>
                       <Chip label={`#${b._id.slice(-6).toUpperCase()}`} size="small" sx={{ fontSize: 10, height: 18, mt: 0.5 }} />
                     </TableCell>
 
-                    {/* NGÀY THÁNG */}
                     <TableCell>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTime sx={{ fontSize: 12 }} /> Đặt lúc: {new Date(b.createdAt).toLocaleString('vi-VN')}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600} sx={{ mt: 1 }}>
+                      <Typography variant="body2" fontWeight={600}>
                         {new Date(b.checkIn).toLocaleDateString('vi-VN')} → {new Date(b.checkOut).toLocaleDateString('vi-VN')}
                       </Typography>
-                      <Typography variant="caption" color="primary">{b.room?.name} | {b.guestsCount} khách</Typography>
+                      <Typography variant="caption" color="primary">{b.roomSnapshot?.name || b.room?.name}</Typography>
                     </TableCell>
 
-                    {/* TÀI CHÍNH */}
                     <TableCell>
                       <Stack spacing={0.5}>
                         <Box display="flex" justifyContent="space-between" width={160}>
                           <Typography variant="caption">Tổng cộng:</Typography>
                           <Typography variant="caption" fontWeight={700}>{b.totalPrice?.toLocaleString()} đ</Typography>
                         </Box>
-                        {isDeposited && (
-                          <Box display="flex" justifyContent="space-between" width={160} color="primary.main">
-                            <Typography variant="caption">Đã cọc:</Typography>
-                            <Typography variant="caption" fontWeight={700}>-{b.depositAmount?.toLocaleString()} đ</Typography>
+                        
+                        {/* HIỂN THỊ THÔNG TIN HOÀN TIỀN NẾU CÓ */}
+                        {isRefundPending ? (
+                          <Box width={160} sx={{ p: 1, bgcolor: '#FFF5F5', borderRadius: '4px', mt: 1 }}>
+                            <Typography variant="caption" color="error" fontWeight={800}>CẦN HOÀN: {b.refundInfo?.amount?.toLocaleString()} đ</Typography>
+                            <Tooltip title={`STK: ${b.refundInfo?.accountNumber} - ${b.refundInfo?.bankName}`}>
+                                <InfoOutlined sx={{ fontSize: 14, ml: 1, cursor: 'help' }} />
+                            </Tooltip>
                           </Box>
+                        ) : (
+                          <>
+                            {isDeposited && (
+                              <Box display="flex" justifyContent="space-between" width={160} color="primary.main">
+                                <Typography variant="caption">Đã cọc:</Typography>
+                                <Typography variant="caption" fontWeight={700}>-{b.depositAmount?.toLocaleString()} đ</Typography>
+                              </Box>
+                            )}
+                            <Divider />
+                            <Box display="flex" justifyContent="space-between" width={160} color={isPaidFull ? "success.main" : "error.main"}>
+                              <Typography variant="caption" fontWeight={700}>{isPaidFull ? "Đã thu đủ:" : "Còn phải thu:"}</Typography>
+                              <Typography variant="body2" fontWeight={900}>
+                                {isPaidFull ? b.totalPrice?.toLocaleString() : b.remainingAmount?.toLocaleString()} đ
+                              </Typography>
+                            </Box>
+                          </>
                         )}
-                        <Divider />
-                        <Box display="flex" justifyContent="space-between" width={160} color={isPaidFull ? "success.main" : "error.main"}>
-                          <Typography variant="caption" fontWeight={700}>{isPaidFull ? "Đã thu đủ:" : "Còn phải thu:"}</Typography>
-                          <Typography variant="body2" fontWeight={900}>
-                            {isPaidFull ? b.totalPrice?.toLocaleString() : b.remainingAmount?.toLocaleString()} đ
-                          </Typography>
-                        </Box>
                       </Stack>
                     </TableCell>
 
-                    {/* TRẠNG THÁI */}
                     <TableCell>
                       <Stack spacing={1}>
-                        <Chip 
-                          size="small" 
-                          label={bStatus.label} 
-                          sx={{ bgcolor: bStatus.bg, color: bStatus.color, fontWeight: 800, fontSize: 11 }} 
-                        />
-                        <Chip 
-                          size="small" 
-                          label={pStatus.label} 
-                          color={pStatus.color}
-                          variant={isPaidFull ? "contained" : "outlined"}
-                          sx={{ fontWeight: 800, fontSize: 10 }}
-                        />
+                        <Chip size="small" label={bStatus.label} sx={{ bgcolor: bStatus.bg, color: bStatus.color, fontWeight: 800, fontSize: 11 }} />
+                        <Chip size="small" label={pStatus.label} color={pStatus.color} variant={isPaidFull ? "contained" : "outlined"} sx={{ fontWeight: 800, fontSize: 10 }} />
                       </Stack>
                     </TableCell>
 
-                    {/* HÀNH ĐỘNG */}
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        {/* Nhóm nút Duyệt/Hủy cho CSKH */}
-                        {!isCancelled && !isPaidFull && (
+                        
+                        {/* NÚT XÁC NHẬN HOÀN TIỀN (CHỈ HIỆN KHI ĐANG CHỜ HOÀN) */}
+                        {isRefundPending && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="error"
+                            startIcon={<CurrencyExchange />}
+                            onClick={() => handleConfirmRefund(b._id)}
+                            sx={{ fontWeight: 700 }}
+                          >
+                            Xác nhận đã hoàn tiền
+                          </Button>
+                        )}
+
+                        {!isCancelled && !isPaidFull && !isRefundPending && (
                           <>
                             <Tooltip title="Xác nhận đơn hàng">
                               <Button size="small" variant="contained" color="success" sx={{ minWidth: 40 }} onClick={() => handleConfirm(b._id)}>
@@ -185,8 +213,7 @@ export default function AdminBookings() {
                           </>
                         )}
 
-                        {/* NÚT THU TIỀN MẶT - CHỈ HIỆN KHI ĐÃ CỌC & CHƯA TRẢ ĐỦ & KHÔNG HỦY */}
-                        {isDeposited && !isPaidFull && !isCancelled && (
+                        {isDeposited && !isPaidFull && !isCancelled && !isRefundPending && (
                           <Button
                             size="small"
                             variant="contained"
