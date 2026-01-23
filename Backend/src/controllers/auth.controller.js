@@ -7,8 +7,10 @@ import { sendVerifyEmail } from "../utils/sendVerifyEmail.js";
 /**
  * Helper: lấy URL frontend (KHÔNG đoán LAN IP)
  */
-const getFrontendUrl = () => {
-  return process.env.CLIENT_URL || "http://localhost:5173";
+export const getFrontendUrl = () => {
+  const url = process.env.CLIENT_URL || "http://localhost:5173";
+  // Xóa dấu / ở cuối nếu có để tránh lỗi double slash (//)
+  return url.endsWith("/") ? url.slice(0, -1) : url;
 };
 
 /**
