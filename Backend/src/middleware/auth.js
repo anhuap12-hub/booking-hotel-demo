@@ -14,10 +14,11 @@ export const protect = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = {
-      id: decoded.id,
-      role: decoded.role,
-    };
+req.user = {
+  _id: decoded.id, // Gán vào _id cho giống chuẩn MongoDB
+  id: decoded.id,  // Giữ lại id để không làm hỏng các logic cũ đang dùng .id
+  role: decoded.role,
+};
 
     next();
   } catch (error) {

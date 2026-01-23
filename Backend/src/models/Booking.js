@@ -37,7 +37,7 @@ const bookingSchema = new mongoose.Schema(
     
     // --- TTL INDEX: Tự động xóa đơn PENDING + UNPAID sau 30 phút ---
     // Nếu bạn set giá trị cho trường này, MongoDB sẽ tự xóa document khi đến giờ
-    expireAt: { type: Date, index: { expires: 0 } }, 
+    expireAt: { type: Date, index: true },
 
     contactStatus: {
       type: String,
@@ -82,7 +82,7 @@ const bookingSchema = new mongoose.Schema(
       {
         at: { type: Date, default: Date.now },
         by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        action: { type: String, enum: ["CREATED","DEPOSITED", "PAID", "REFUNDED","CANCELLED"] },
+        action: { type: String, enum: ["CREATED","DEPOSITED", "PAID", "REFUNDED","CANCELLED","SYSTEM_AUTO_CANCEL"] },
         note: String,
       },
     ],
@@ -99,8 +99,13 @@ bookingSchema.index({ paymentStatus: 1, status: 1, createdAt: -1 });
 
 bookingSchema.pre("validate", function () {
   if (this.contactStatus) this.contactStatus = this.contactStatus.toUpperCase();
-  if (this.checkIn >= this.checkOut) this.invalidate("checkOut", "checkOut must be after checkIn");
+  if (this.status) this.status = this.status.toLowerCase();
   if (this.paymentStatus) this.paymentStatus = this.paymentStatus.toUpperCase();
+
+  if (this.checkIn >= this.checkOut) {
+    this.invalidate("checkOut", "Ngày trả phòng phải sau ngày nhận phòng");
+  }
+  // Không cần gọi next(), Mongoose tự chạy tiếp
 });
 
 export default mongoose.model("Booking", bookingSchema);

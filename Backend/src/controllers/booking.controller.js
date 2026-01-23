@@ -11,8 +11,9 @@ export const createBooking = async (req, res) => {
     console.log("📥 CREATE BOOKING REQUEST:", req.body);
     const { room, checkIn, checkOut, guest, guestsCount } = req.body;
 
-    // 1. Kiểm tra xác thực
-    if (!req.user?.id) return res.status(401).json({ message: "Unauthorized" });
+    // 1. Kiểm tra xác thực (Dùng _id hoặc id tùy theo middleware bạn đã sửa)
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     // 2. Kiểm tra dữ liệu đầu vào
     if (!room || !checkIn || !checkOut || !guest || !guestsCount) {
@@ -25,55 +26,48 @@ export const createBooking = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy thông tin phòng hoặc khách sạn" });
     }
 
-    // 4. Chuẩn hóa ngày để tính số đêm chính xác (về 12h trưa để tránh sai lệch múi giờ/giờ lẻ)
+    // 4. Chuẩn hóa ngày
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
-    
     const dIn = new Date(checkInDate).setHours(12, 0, 0, 0);
     const dOut = new Date(checkOutDate).setHours(12, 0, 0, 0);
     
     if (dIn >= dOut) {
       return res.status(400).json({ message: "Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 ngày" });
     }
-
     const nights = Math.round((dOut - dIn) / (24 * 60 * 60 * 1000));
 
-    // 5. Tính toán giá tiền tại Backend (Bảo mật: Không dùng giá từ Frontend gửi lên)
+    // 5. Tính toán giá tiền
     const originalPrice = roomExists.price ?? roomExists.pricePerNight;
     const discount = roomExists.discount || 0;
     const finalPricePerNight = discount > 0 
       ? Math.round(originalPrice * (1 - discount / 100)) 
       : originalPrice;
 
-    if (!finalPricePerNight) return res.status(400).json({ message: "Dữ liệu giá phòng không hợp lệ" });
-
     const totalPrice = finalPricePerNight * nights;
-    const DEPOSIT_RATE = 0.3; // Đặt cọc 30%
+    const DEPOSIT_RATE = 0.3; 
     const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
     const remainingAmount = totalPrice - depositAmount;
 
-    // 6. Kiểm tra trùng lịch (Chỉ tính các đơn đã xác nhận hoặc đã thanh toán)
+    // 6. Kiểm tra trùng lịch (Logic này rất tốt)
     const conflict = await Booking.findOne({
       room,
-      status: { $ne: "cancelled" }, // Bỏ qua các đơn đã hủy
-      $or: [
-        { status: "confirmed" },
-        { paymentStatus: { $in: ["PAID", "DEPOSITED"] } }
-      ],
+      status: { $in: ["pending", "confirmed"] }, // Chặn cả đơn đang đợi thanh toán để tránh overbook
+      paymentStatus: { $ne: "REFUNDED" },
       checkIn: { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
     
     if (conflict) {
-      return res.status(400).json({ message: "Phòng này đã có người khác đặt trong khoảng thời gian này" });
+      return res.status(400).json({ message: "Phòng này đang có đơn đặt hoặc đang chờ thanh toán." });
     }
 
-    // 7. Thiết lập thời gian hết hạn thanh toán (30 phút)
-    const expiryTime = new Date(Date.now() + 60 * 60 * 1000);
+    // 7. Thiết lập thời gian hết hạn thanh toán (Đúng 30 phút)
+    const expiryTime = new Date(Date.now() + 30 * 60 * 1000); 
 
     // 8. Tạo đơn hàng
     const booking = await Booking.create({
-      user: req.user.id,
+      user: userId,
       hotel: roomExists.hotel._id,
       room: roomExists._id,
       checkIn: checkInDate,
@@ -100,15 +94,13 @@ export const createBooking = async (req, res) => {
       paymentLogs: [{
         at: new Date(),
         action: "CREATED",
-        note: `Đơn hàng được tạo. Tổng: ${totalPrice.toLocaleString()}đ cho ${nights} đêm. Tiền cọc 30%: ${depositAmount.toLocaleString()}đ`
+        note: `Đơn hàng được tạo. Hết hạn thanh toán lúc: ${expiryTime.toLocaleTimeString('vi-VN')}`
       }]
     });
 
-    console.log(`✅ BOOKING CREATED: ${booking._id} | Nights: ${nights} | Deposit: ${depositAmount}`);
-    
     return res.status(201).json({ 
       success: true,
-      message: "Tạo đơn hàng thành công. Vui lòng thanh toán đặt cọc trong vòng 30 phút.", 
+      message: "Tạo đơn hàng thành công. Vui lòng thanh toán trong 30 phút.", 
       booking 
     });
 
@@ -148,7 +140,12 @@ export const cancelBooking = async (req, res) => {
  */
 export const getUserBookings = async (req, res) => {
   try {
-    const userId = req.user._id; // Giả định middleware protect gán vào _id
+    // Lấy ID từ req.user (đã được middleware protect xử lý)
+    const userId = req.user?._id || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Không tìm thấy thông tin người dùng" });
+    }
 
     const bookings = await Booking.find({ user: userId })
       .populate("room", "name type price photos")
@@ -156,26 +153,26 @@ export const getUserBookings = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // 1. Lọc đơn hàng hợp lệ & 2. Chuẩn hóa dữ liệu trả về
-    const formattedBookings = bookings
-      .filter((b) => b.room && b.hotel)
-      .map((b) => ({
-        ...b,
-        // Đảm bảo status luôn có giá trị mặc định nếu lỡ bị trống
-        status: b.status || "Pending",
-        // Tính toán thêm nếu cần (ví dụ: số đêm ở) để Frontend không phải tính lại
-        totalNights: Math.ceil(
-          (new Date(b.checkOut) - new Date(b.checkIn)) / (1000 * 60 * 60 * 24)
-        ) || 1
-      }));
+    // CHỐNG CRASH: Lọc bỏ các đơn hàng mà Hotel hoặc Room đã bị xóa khỏi DB
+    const validBookings = bookings.filter(b => b.hotel && b.room);
 
-    return res.status(200).json(formattedBookings);
+    const formattedBookings = validBookings.map((b) => ({
+      ...b,
+      status: b.status || "pending",
+      // Đảm bảo số đêm luôn ít nhất là 1 để hiển thị đẹp
+      totalNights: Math.max(1, Math.ceil(
+        (new Date(b.checkOut) - new Date(b.checkIn)) / (1000 * 60 * 60 * 24)
+      ))
+    }));
+
+    // Trả về JSON theo cấu trúc mà Frontend của bạn đang đợi (res.data.bookings hoặc res.data)
+    return res.status(200).json(formattedBookings); 
     
   } catch (error) {
     console.error("❌ GET USER BOOKINGS ERROR:", error.message);
     return res.status(500).json({ 
       success: false,
-      message: "Server không thể xử lý danh sách đơn hàng",
+      message: "Lỗi hệ thống khi lấy danh sách đơn hàng",
     });
   }
 };

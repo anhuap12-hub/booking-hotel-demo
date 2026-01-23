@@ -1,7 +1,6 @@
 // src/pages/Home/Home.jsx
 import { useEffect, useState, useMemo } from "react";
 import { Box, Container, Stack, Fade, CircularProgress } from "@mui/material";
-import { useAuth } from "../../context/AuthContext";
 import HeroBanner from "../../components/Home/HeroBanner";
 import QuickStats from "../../components/Home/QuickStats";
 import WhyBook from "../../components/Home/WhyBook";

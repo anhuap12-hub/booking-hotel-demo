@@ -4,42 +4,32 @@ import instance from "../../api/axios";
 import Navbar from "../../components/Layout/Navbar";
 import BookingCard from "../../components/Booking/BookingCard";
 
-// Import trực tiếp từng component để tối ưu
-import Container from "@mui/material/Container";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import Stack from "@mui/material/Stack";
-import Chip from "@mui/material/Chip";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
-import Paper from "@mui/material/Paper";
-import Avatar from "@mui/material/Avatar";
-import Fade from "@mui/material/Fade";
+import {
+  Container, Typography, Box, CircularProgress, Stack, Chip,
+  Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions,
+  Button, Paper, Avatar, Fade
+} from "@mui/material";
 
 import { 
   HotelOutlined, PersonOutlined, PhoneOutlined, Close, 
-  MeetingRoomOutlined, CalendarMonthOutlined, ConfirmationNumberOutlined
+  MeetingRoomOutlined, CalendarMonthOutlined, ConfirmationNumberOutlined,
+  TimerOffOutlined
 } from "@mui/icons-material";
 
-// ĐỒNG BỘ: Schema màu Ebony & Gold cho trạng thái
+// ĐỒNG BỘ: Schema trạng thái theo yêu cầu của bạn
 const STATUS_CONFIG = {
   all: { label: "Tất cả", color: "#1C1B19", bg: "#F9F8F6" },
-  pending: { label: "Chờ thanh toán", color: "#C2A56D", bg: "rgba(194, 165, 109, 0.1)" },
-  confirmed: { label: "Thành công", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
+  pending: { label: "Chờ đặt cọc", color: "#C2A56D", bg: "rgba(194, 165, 109, 0.1)" },
+  deposited: { label: "Đã đặt cọc", color: "#0288d1", bg: "rgba(2, 136, 209, 0.1)" }, // Xanh dương cho đã cọc 30%
+  confirmed: { label: "Đã thanh toán phòng", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" }, // Thành công toàn bộ
   cancelled: { label: "Đã hủy", color: "#A8A7A1", bg: "#F1F1F1" },
 };
 
-// Sửa lỗi: Truyền Icon trực tiếp vào component
-const InfoRow = ({ label, value }) => (
+// SỬA LỖI: Nhận Component Icon và render đúng
+const InfoRow = ({ icon: IconComponent, label, value }) => (
   <Stack direction="row" spacing={2} alignItems="center">
     <Avatar sx={{ bgcolor: '#F9F8F6', width: 42, height: 42, borderRadius: "12px", border: '1px solid rgba(194, 165, 109, 0.2)' }}>
-      <IconComponent sx={{ fontSize: 20, color: '#C2A56D' }} />
+      {IconComponent && <IconComponent sx={{ fontSize: 20, color: '#C2A56D' }} />}
     </Avatar>
     <Box>
       <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Typography>
@@ -63,7 +53,7 @@ export default function MyBookings() {
         const data = res.data.bookings || res.data || [];
         setBookings(Array.isArray(data) ? data : []);
       } catch (err) {
-        setBookings([]), err;
+        setBookings([]),err;
       } finally {
         setLoading(false);
       }
@@ -71,9 +61,17 @@ export default function MyBookings() {
     fetchBookings();
   }, []);
 
+  // Hàm quyết định trạng thái hiển thị dựa trên logic bạn muốn
+  const getBookingStatus = (booking) => {
+    if (booking.status === 'cancelled') return 'cancelled';
+    if (booking.paymentStatus === 'PAID') return 'confirmed';
+    if (booking.paymentStatus === 'DEPOSITED') return 'deposited';
+    return 'pending';
+  };
+
   const filteredBookings = useMemo(() => {
     if (tab === "all") return bookings;
-    return bookings.filter(b => b.status?.toLowerCase() === tab.toLowerCase());
+    return bookings.filter(b => getBookingStatus(b) === tab);
   }, [bookings, tab]);
 
   return (
@@ -84,173 +82,112 @@ export default function MyBookings() {
         {/* HEADER */}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-end" mb={6}>
           <Box>
-            <Typography variant="h3" sx={{ 
-              color: "#1C1B19", 
-              fontWeight: 800, 
-              fontFamily: "'Playfair Display', serif",
-              letterSpacing: "-0.5px" 
-            }}>
+            <Typography variant="h3" sx={{ color: "#1C1B19", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
               Kỳ nghỉ của tôi
             </Typography>
             <Typography variant="body2" sx={{ color: "#72716E", mt: 1 }}>Quản lý các đặc quyền lưu trú và lịch trình đặt phòng</Typography>
           </Box>
-          <Chip 
-            label={`${bookings.length} Booking`} 
-            sx={{ 
-              fontWeight: 700, 
-              bgcolor: "#1C1B19", 
-              color: "#C2A56D",
-              borderRadius: "8px",
-              px: 1
-            }} 
-          />
+          <Chip label={`${bookings.length} Booking`} sx={{ fontWeight: 700, bgcolor: "#1C1B19", color: "#C2A56D", borderRadius: "8px" }} />
         </Stack>
 
-        {/* CUSTOM TABS */}
+        {/* TABS */}
         <Paper elevation={0} sx={{ borderRadius: "16px", p: 0.5, bgcolor: "rgba(28, 27, 25, 0.04)", mb: 5 }}>
-          <Tabs 
-            value={tab} 
-            onChange={(_, v) => setTab(v)}
-            variant="fullWidth"
-            sx={{
-              '& .MuiTabs-indicator': { display: 'none' },
-              '& .MuiTab-root': {
-                borderRadius: "12px", minHeight: 44, fontWeight: 700, textTransform: "none",
-                color: "#72716E", transition: "0.3s",
-                '&.Mui-selected': { 
-                    bgcolor: "white", 
-                    color: "#C2A56D", 
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)" 
-                }
-              }
-            }}
-          >
+          <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="fullWidth" sx={{ '& .MuiTabs-indicator': { display: 'none' } }}>
             {Object.keys(STATUS_CONFIG).map((key) => (
-              <Tab key={key} label={STATUS_CONFIG[key].label} value={key} />
+              <Tab key={key} label={STATUS_CONFIG[key].label} value={key} sx={{
+                borderRadius: "12px", minHeight: 44, fontWeight: 700, textTransform: "none", color: "#72716E",
+                '&.Mui-selected': { bgcolor: "white", color: "#C2A56D", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }
+              }} />
             ))}
           </Tabs>
         </Paper>
 
-        {/* LISTING AREA */}
+        {/* LISTING */}
         {loading ? (
-          <Box sx={{ textAlign: 'center', py: 10 }}>
-            <CircularProgress sx={{ color: '#C2A56D' }} thickness={4} size={40} />
-          </Box>
+          <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress sx={{ color: '#C2A56D' }} /></Box>
         ) : filteredBookings.length === 0 ? (
-          <Paper sx={{ 
-            textAlign: "center", py: 12, borderRadius: "24px", 
-            bgcolor: "transparent", border: "2px dashed rgba(194, 165, 109, 0.3)" 
-          }}>
+          <Paper sx={{ textAlign: "center", py: 12, borderRadius: "24px", border: "2px dashed rgba(194, 165, 109, 0.3)", bgcolor: "transparent" }}>
             <HotelOutlined sx={{ fontSize: 60, color: "rgba(194, 165, 109, 0.4)", mb: 2 }} />
-            <Typography variant="h6" sx={{ color: "#1C1B19", fontWeight: 700 }}>Bạn chưa có chuyến đi nào</Typography>
-            <Typography variant="body2" sx={{ color: "#A8A7A1", mb: 3 }}>Bắt đầu khám phá những không gian nghỉ dưỡng thượng lưu ngay hôm nay.</Typography>
-            <Button 
-                variant="contained"
-                onClick={() => navigate("/")} 
-                sx={{ 
-                    bgcolor: '#1C1B19', color: '#C2A56D', px: 4, py: 1.5,
-                    borderRadius: "12px", textTransform: 'none', fontWeight: 700,
-                    '&:hover': { bgcolor: '#333230' }
-                }}
-            >
-                Khám phá khách sạn
-            </Button>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>Bạn chưa có chuyến đi nào</Typography>
+            <Button onClick={() => navigate("/")} sx={{ mt: 3, color: '#C2A56D' }}>Khám phá ngay</Button>
           </Paper>
         ) : (
           <Stack spacing={4}>
-            {filteredBookings.map((booking) => (
-              <Fade in key={booking._id}>
-                <Box>
-                  <BookingCard 
-                    booking={booking} 
-                    onView={(b) => { setSelectedBooking(b); }}
-                    onCancel={() => {}} 
-                  />
-                </Box>
-              </Fade>
-            ))}
+            {filteredBookings.map((booking) => {
+              const currentStatus = getBookingStatus(booking);
+              const isExpired = booking.status === 'pending' && booking.paymentStatus === 'UNPAID' && new Date(booking.expireAt) < new Date();
+              
+              return (
+                <Fade in key={booking._id}>
+                  <Box sx={{ position: 'relative' }}>
+                    <BookingCard 
+                      booking={{ ...booking, displayStatus: currentStatus }} 
+                      onView={(b) => setSelectedBooking(b)} 
+                    />
+                    {/* NÚT THANH TOÁN KHI OUT RA VÀO LẠI */}
+                    {currentStatus === 'pending' && !isExpired && (
+                      <Button
+                        variant="contained"
+                        onClick={() => navigate(`/checkout/${booking.room?._id || booking.room}`, { state: booking })}
+                        sx={{ position: 'absolute', right: 20, bottom: 20, bgcolor: '#C2A56D', color: '#fff', borderRadius: '8px', fontWeight: 700 }}
+                      >
+                        Thanh toán cọc
+                      </Button>
+                    )}
+                  </Box>
+                </Fade>
+              );
+            })}
           </Stack>
         )}
       </Container>
 
       {/* DETAIL DIALOG */}
-      <Dialog 
-        open={!!selectedBooking} 
-        onClose={() => setSelectedBooking(null)} 
-        fullWidth maxWidth="xs"
-        PaperProps={{ sx: { borderRadius: "28px", p: 1, boxShadow: '0 25px 50px rgba(0,0,0,0.15)' } }}
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+      <Dialog open={!!selectedBooking} onClose={() => setSelectedBooking(null)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "28px" } }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>Chi tiết đặt phòng</Typography>
-          
-          <Button 
-            onClick={() => setSelectedBooking(null)} 
-            sx={{ 
-                minWidth: 40, width: 40, height: 40, borderRadius: "50%", 
-                color: '#A8A7A1', p: 0 
-            }}
-          >
-            <Close />
-          </Button>
+          <Button onClick={() => setSelectedBooking(null)} sx={{ minWidth: 40, borderRadius: "50%", color: '#A8A7A1' }}><Close /></Button>
         </DialogTitle>
         <DialogContent>
           {selectedBooking && (
-            <Stack spacing={3.5} sx={{ mt: 1 }}>
+            <Stack spacing={3}>
               <Box sx={{ p: 3, borderRadius: "20px", bgcolor: '#1C1B19', color: '#FFF', position: 'relative', overflow: 'hidden' }}>
-                <Typography variant="overline" sx={{ color: '#C2A56D', fontWeight: 800, letterSpacing: 1 }}>Mã đơn hàng: #{selectedBooking._id?.slice(-6).toUpperCase()}</Typography>
-                <Stack spacing={2.5} mt={2}>
-                  <InfoRow icon={HotelOutlined} label="Điểm đến" value={selectedBooking.hotel?.name} />
-                  <InfoRow icon={MeetingRoomOutlined} label="Loại phòng" value={selectedBooking.room?.name} />
+                <Typography variant="overline" sx={{ color: '#C2A56D', fontWeight: 800 }}>Mã đơn: #{selectedBooking._id?.slice(-6).toUpperCase()}</Typography>
+                <Stack spacing={2} mt={2}>
+                  <InfoRow icon={HotelOutlined} label="Khách sạn" value={selectedBooking.hotel?.name || selectedBooking.roomSnapshot?.hotelName} />
+                  <InfoRow icon={MeetingRoomOutlined} label="Phòng" value={selectedBooking.room?.name || selectedBooking.roomSnapshot?.name} />
                   <InfoRow icon={CalendarMonthOutlined} label="Lịch trình" value={`${new Date(selectedBooking.checkIn).toLocaleDateString("vi-VN")} - ${new Date(selectedBooking.checkOut).toLocaleDateString("vi-VN")}`} />
                 </Stack>
-                <ConfirmationNumberOutlined sx={{ position: 'absolute', right: -15, bottom: -15, fontSize: 100, opacity: 0.05, transform: 'rotate(-15deg)', color: '#C2A56D' }} />
               </Box>
 
               <Box sx={{ px: 1 }}>
-                <Typography variant="overline" sx={{ color: "#A8A7A1", fontWeight: 800, display: 'block', mb: 2 }}>THÔNG TIN ĐĂNG KÝ</Typography>
-                <Stack spacing={2.5}>
-                  <InfoRow icon={PersonOutlined} label="Chủ phòng" value={selectedBooking.guest?.name} />
+                <Typography variant="overline" sx={{ color: "#A8A7A1", fontWeight: 800, display: 'block', mb: 1 }}>THÔNG TIN KHÁCH</Typography>
+                <Stack spacing={2}>
+                  <InfoRow icon={PersonOutlined} label="Họ tên" value={selectedBooking.guest?.name} />
                   <InfoRow icon={PhoneOutlined} label="Liên hệ" value={selectedBooking.guest?.phone} />
                 </Stack>
               </Box>
 
-              <Box sx={{ 
-                p: 2.5, borderRadius: "16px", 
-                bgcolor: STATUS_CONFIG[selectedBooking.status?.toLowerCase()]?.bg || "#F9F8F6",
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                border: `1px solid ${STATUS_CONFIG[selectedBooking.status?.toLowerCase()]?.color}20`
-              }}>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1C1B19' }}>Trạng thái:</Typography>
-                <Typography sx={{ 
-                    fontWeight: 800, 
-                    color: STATUS_CONFIG[selectedBooking.status?.toLowerCase()]?.color,
-                    fontSize: '0.85rem',
-                    textTransform: 'uppercase'
-                  }}>
-                    {selectedBooking.status}
-                </Typography>
-              </Box>
+              {/* HIỂN THỊ TRẠNG THÁI THEO LOGIC MỚI */}
+              {(() => {
+                const s = getBookingStatus(selectedBooking);
+                const expired = s === 'pending' && new Date(selectedBooking.expireAt) < new Date();
+                const config = STATUS_CONFIG[s];
+                
+                return (
+                  <Box sx={{ p: 2, borderRadius: "16px", bgcolor: expired ? "#FDEDED" : config.bg, border: `1px solid ${expired ? '#d32f2f20' : config.color + '20'}`, display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>Tình trạng:</Typography>
+                    <Typography sx={{ fontWeight: 800, color: expired ? '#d32f2f' : config.color, fontSize: '0.85rem' }}>
+                      {expired ? "ĐÃ HẾT HẠN (30P)" : config.label.toUpperCase()}
+                    </Typography>
+                  </Box>
+                );
+              })()}
             </Stack>
           )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
-          <Button 
-            fullWidth 
-            variant="contained" 
-            onClick={() => setSelectedBooking(null)} 
-            sx={{ 
-                borderRadius: "12px", 
-                bgcolor: '#1C1B19', 
-                color: '#C2A56D',
-                py: 1.8, 
-                textTransform: 'none', 
-                fontWeight: 700,
-                fontSize: '1rem',
-                '&:hover': { bgcolor: '#333230' }
-            }}
-          >
-            Đóng
-          </Button>
+          <Button fullWidth variant="contained" onClick={() => setSelectedBooking(null)} sx={{ bgcolor: '#1C1B19', color: '#C2A56D', borderRadius: '12px', py: 1.5, fontWeight: 700 }}>Đóng</Button>
         </DialogActions>
       </Dialog>
     </Box>

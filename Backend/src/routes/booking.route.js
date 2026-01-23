@@ -15,20 +15,20 @@ import { requireEmailVerified } from "../middleware/requireEmailVerified.js";
 
 const router = express.Router();
 
-// 1. Các route kiểm tra (Ưu tiên lên đầu)
+// ================= 1. CÁC ROUTE TĨNH (STATIC) =================
+// Đưa các route không chứa tham số biến đổi (:id) lên trên cùng
 router.post("/rooms/:roomId/check-availability", checkAvailability);
-router.get("/:id/status", getBookingStatus); // Đưa status lên trước :id chung chung
+router.get("/my", protect, getUserBookings); // CHUYỂN LÊN ĐÂY
+router.get("/admin", protect, adminOnly, getAllBookings); // CHUYỂN LÊN ĐÂY
 
-// 2. Route lấy chi tiết
+// ================= 2. CÁC ROUTE ĐỘNG (DYNAMIC) =================
+// Các route có ":id" phải nằm dưới các route tĩnh để tránh bị hiểu nhầm
+router.get("/:id/status", getBookingStatus); 
 router.get("/:id", getBookingById); 
 
-// ================= USER =================
+// ================= 3. CÁC THAO TÁC CẬP NHẬT/TẠO =================
 router.post("/", protect, requireEmailVerified, createBooking);
-router.get("/my", protect, getUserBookings);
 router.put("/:id/cancel", protect, cancelBooking);
-
-// ================= ADMIN =================
-router.get("/admin", protect, adminOnly, getAllBookings);
 router.put("/:id", protect, adminOnly, updateBooking);
 
 export default router;

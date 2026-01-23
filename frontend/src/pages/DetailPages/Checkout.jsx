@@ -50,7 +50,8 @@ export default function Checkout() {
           title: 'Thông báo',
           text: 'Không thể khởi tạo đơn hàng. Vui lòng thử lại.',
           icon: 'warning',
-          confirmButtonText: 'Quay lại'
+          confirmButtonText: 'Quay lại', 
+          err
         }).then(() => navigate('/rooms'));
       } finally {
         setLoading(false);
@@ -79,7 +80,7 @@ export default function Checkout() {
             }).then(() => navigate('/my-bookings'));
           }
         } catch (err) {
-          console.warn("Đang kiểm tra giao dịch...");
+          console.warn("Đang kiểm tra giao dịch..."),err;
         }
       }, 3000); 
     }

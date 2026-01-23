@@ -4,7 +4,6 @@ import path from "path";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import connectDB from "./src/config/db.js";
 import webhookRoutes from "./src/routes/webhook.route.js";
 import userRoutes from "./src/routes/user.route.js";
