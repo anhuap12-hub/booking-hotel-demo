@@ -7,68 +7,89 @@ import {
   Checkbox,
   Select,
   MenuItem,
+  Divider,
+  Stack
 } from "@mui/material";
 
 export default function FilterSidebar({
-  filters,
+  filters = {}, // Mặc định là object rỗng để tránh lỗi undefined
   setFilters,
   cities = [],
   amenities = [],
 }) {
-  const price = filters.priceRange || [0, 2_000_000];
-  const types = filters.types || [];
-  const selectedAmenities = filters.amenities || [];
+  // Trích xuất an toàn các giá trị từ filters
+  const price = filters?.priceRange || [0, 2000000];
+  const types = filters?.types || [];
+  const selectedAmenities = filters?.amenities || [];
+  const currentCity = filters?.city || "";
 
   return (
-    <Box width="100%">
-      <Typography fontSize={14} fontWeight={700} mb={1}>
-        Bộ lọc
+    <Box width="100%" sx={{ p: 0.5 }}>
+      <Typography fontSize={16} fontWeight={800} mb={2} color="primary.main">
+        Bộ lọc tìm kiếm
       </Typography>
 
-      {/* PRICE */}
-      <Box mb={1.2}>
-        <Typography fontSize={12}>Giá / đêm</Typography>
-        <Slider
-          size="small"
-          value={price}
-          min={0}
-          max={2_000_000}
-          step={50_000}
-          onChange={(_, v) =>
-            setFilters((f) => ({ ...f, priceRange: v }))
-          }
-        />
-        <Typography fontSize={11}>
-          {price[0].toLocaleString()} – {price[1].toLocaleString()}
+      <Divider sx={{ mb: 2 }} />
+
+      {/* PRICE RANGE */}
+      <Box mb={3}>
+        <Typography fontSize={13} fontWeight={700} gutterBottom>
+          Khoảng giá / đêm
         </Typography>
+        <Box sx={{ px: 1 }}>
+          <Slider
+            size="small"
+            value={price}
+            min={0}
+            max={5000000} // Tăng max lên cho thực tế hơn
+            step={100000}
+            onChange={(_, v) =>
+              setFilters((f) => ({ ...f, priceRange: v }))
+            }
+            valueLabelDisplay="auto"
+          />
+        </Box>
+        <Stack direction="row" justifyContent="space-between">
+          <Typography fontSize={11} color="text.secondary">
+            {price[0].toLocaleString()}đ
+          </Typography>
+          <Typography fontSize={11} color="text.secondary">
+            {price[1].toLocaleString()}đ
+          </Typography>
+        </Stack>
       </Box>
 
-      {/* CITY */}
-      <Box mb={1.2}>
-        <Typography fontSize={12}>Thành phố</Typography>
+      {/* CITY SELECTION */}
+      <Box mb={3}>
+        <Typography fontSize={13} fontWeight={700} gutterBottom>
+          Thành phố
+        </Typography>
         <Select
           fullWidth
           size="small"
-          value={filters.city || ""}
+          value={currentCity}
           displayEmpty
           onChange={(e) =>
             setFilters((f) => ({ ...f, city: e.target.value }))
           }
+          sx={{ fontSize: 13 }}
         >
-          <MenuItem value="">Tất cả thành phố</MenuItem>
+          <MenuItem value="" sx={{ fontSize: 13 }}>Tất cả thành phố</MenuItem>
           {cities.map((c) => (
-            <MenuItem key={c} value={c}>
+            <MenuItem key={c} value={c} sx={{ fontSize: 13 }}>
               {c}
             </MenuItem>
           ))}
         </Select>
       </Box>
 
-      {/* TYPE */}
-      <Box mb={1.2}>
-        <Typography fontSize={12}>Loại chỗ ở</Typography>
+      {/* ACCOMMODATION TYPE */}
+      <Box mb={3}>
+        <Typography fontSize={13} fontWeight={700} gutterBottom>
+          Loại chỗ ở
+        </Typography>
         <FormGroup>
-          {["hotel", "apartment", "resort"].map((type) => (
+          {["hotel", "apartment", "resort", "villa"].map((type) => (
             <FormControlLabel
               key={type}
               control={
@@ -85,7 +106,11 @@ export default function FilterSidebar({
                   }
                 />
               }
-              label={<Typography fontSize={12}>{type}</Typography>}
+              label={
+                <Typography fontSize={13} sx={{ textTransform: 'capitalize' }}>
+                  {type}
+                </Typography>
+              }
             />
           ))}
         </FormGroup>
@@ -93,9 +118,11 @@ export default function FilterSidebar({
 
       {/* AMENITIES */}
       <Box>
-        <Typography fontSize={12}>Tiện nghi</Typography>
+        <Typography fontSize={13} fontWeight={700} gutterBottom>
+          Tiện nghi phổ biến
+        </Typography>
         <FormGroup>
-          {amenities.map((a) => (
+          {amenities.slice(0, 10).map((a) => ( // Giới hạn hiển thị 10 cái cho gọn
             <FormControlLabel
               key={a}
               control={
@@ -112,7 +139,7 @@ export default function FilterSidebar({
                   }
                 />
               }
-              label={<Typography fontSize={12}>{a}</Typography>}
+              label={<Typography fontSize={13}>{a}</Typography>}
             />
           ))}
         </FormGroup>

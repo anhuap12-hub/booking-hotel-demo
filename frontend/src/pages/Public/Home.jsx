@@ -14,7 +14,7 @@ import { NAVBAR_HEIGHT } from "../../components/Layout/Navbar";
 export default function Home() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { updateSearch } = useSearch();
+  const {search, updateSearch } = useSearch();
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,9 +63,10 @@ export default function Home() {
           <Box sx={{ display: { xs: "none", lg: "block" } }}>
              <Box sx={{ position: "sticky", top: NAVBAR_HEIGHT + 20 }}>
                 <FilterSidebar 
+                 filters={search}
                   cities={cities} 
                   amenities={amenities} 
-                  setFilters={(p) => updateSearch(prev => ({...prev, ...p}))} 
+                  setFilters={updateSearch} 
                 />
              </Box>
           </Box>
