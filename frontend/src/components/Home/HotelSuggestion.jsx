@@ -1,25 +1,29 @@
-import { useState, useEffect, useMemo } from "react";
-import { Box, Typography, Button, Skeleton, Grid, Container, Stack } from "@mui/material";
+import { useState, useEffect, useRef } from "react";
+import { Box, Typography, Button, Skeleton, Stack, Container } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import HotelCard from "../Hotel/HotelCard";
 import { getAllHotels } from "../../api/hotel.api";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
-const STEP = 3;
 const MotionBox = motion(Box);
+const MotionButton = motion(Button);
 
 export default function HotelSuggestion({ filters }) {
-  const [allHotelsData, setAllHotelsData] = useState([]);
-  const [displayCount, setDisplayCount] = useState(3);
+  const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [btnLoading, setBtnLoading] = useState(false);
+  const scrollRef = useRef(null);
+
+  // Kích thước card cố định để tính toán scroll
+  const CARD_WIDTH = 340; 
+  const GAP = 24;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await getAllHotels({ ...filters, limit: 12 });
-        setAllHotelsData(res.data?.data || []);
-        setDisplayCount(3);
+        const res = await getAllHotels({ ...filters, limit: 10 }); // Lấy khoảng 10 cái để cuộn cho sướng
+        setHotels(res.data?.data || []);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
       } finally {
@@ -29,97 +33,103 @@ export default function HotelSuggestion({ filters }) {
     fetchData();
   }, [filters]);
 
-  const visibleHotels = useMemo(() => allHotelsData.slice(0, displayCount), [allHotelsData, displayCount]);
-
-  const handleShowMore = () => {
-    setBtnLoading(true);
-    setTimeout(() => {
-      setDisplayCount((prev) => prev + STEP);
-      setBtnLoading(false);
-    }, 600);
+  const scroll = (dir) => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({
+      left: dir === "left" ? -(CARD_WIDTH + GAP) : CARD_WIDTH + GAP,
+      behavior: "smooth",
+    });
   };
 
   return (
-    // Đặt background white và tăng padding để card có không gian "thở"
-    <Box sx={{ bgcolor: "#FFFFFF", width: "100%" }}>
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
+    <Box sx={{ bgcolor: "#FFFFFF", width: "100%", py: { xs: 4, md: 8 }, overflow: "hidden" }}>
+      <Container maxWidth="xl">
         
-        {/* HEADER - Tinh giản tối đa */}
-        <Stack spacing={1} alignItems="center" textAlign="center" sx={{ mb: 8 }}>
-          <Typography sx={{ color: "#C2A56D", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.3em", textTransform: "uppercase" }}>
-            Dành riêng cho bạn
-          </Typography>
-          <Typography variant="h4" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, color: "#1C1B19", fontSize: { xs: "1.6rem", md: "2.2rem" } }}>
-            Tuyển chọn tinh túy
-          </Typography>
-          <Box sx={{ width: 30, height: 1.5, bgcolor: "#C2A56D", mt: 1 }} />
-        </Stack>
+        {/* HEADER VÀ ĐIỀU HƯỚNG */}
+        <Box sx={{ 
+          display: "flex", 
+          alignItems: "flex-end", 
+          justifyContent: "space-between", 
+          mb: 6,
+          px: 1 
+        }}>
+          <Stack spacing={1}>
+            <Typography sx={{ color: "#C2A56D", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.3em", textTransform: "uppercase" }}>
+              Dành riêng cho bạn
+            </Typography>
+            <Typography variant="h4" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, color: "#1C1B19", fontSize: { xs: "1.6rem", md: "2.2rem" } }}>
+              Tuyển chọn tinh túy
+            </Typography>
+            <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D", mt: 1 }} />
+          </Stack>
 
-        {/* LISTING AREA */}
-        <Stack spacing={6} alignItems="center">
-          {/* Tăng spacing lên 4 hoặc 5 để các Card cách xa nhau, tạo cảm giác nhỏ gọn hơn */}
-          <Grid container spacing={4}>
-            {loading && allHotelsData.length === 0 ? (
-              [1, 2, 3].map((i) => (
-                <Grid item xs={12} sm={6} md={4} key={i}>
-                  <Skeleton variant="rectangular" height={250} sx={{ borderRadius: "12px" }} />
-                </Grid>
-              ))
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {visibleHotels.map((h, index) => (
-                  <Grid item xs={12} sm={6} md={4} key={h._id}>
-                    <MotionBox
-                      layout
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: (index % STEP) * 0.1 }}
-                      sx={{ 
-                        // ÉP KÍCH THƯỚC CARD TẠI ĐÂY
-                        "& img": { 
-                          aspectRatio: "16/10", // Ép ảnh về tỉ lệ chuẩn, không để ảnh dài lê thê
-                          objectFit: "cover",
-                          borderRadius: "12px 12px 0 0" 
-                        },
-                        "& .MuiPaper-root": {
-                           boxShadow: "0 4px 20px rgba(0,0,0,0.05)", // Shadow nhẹ nhàng, không bị đen đặc
-                           borderRadius: "12px",
-                           overflow: "hidden"
-                        }
-                      }}
-                    >
-                      <HotelCard hotel={h} />
-                    </MotionBox>
-                  </Grid>
-                ))}
-              </AnimatePresence>
-            )}
-          </Grid>
+          {/* Nút điều hướng giống hệt City Section */}
+          <Stack direction="row" spacing={1.5}>
+            <NavButton icon={<ChevronLeftIcon />} onClick={() => scroll("left")} />
+            <NavButton icon={<ChevronRightIcon />} onClick={() => scroll("right")} />
+          </Stack>
+        </Box>
 
-          {/* BUTTON KHÁM PHÁ - Kiểu Minimalist */}
-          {displayCount < allHotelsData.length && (
-            <Button
-              disabled={btnLoading}
-              onClick={handleShowMore}
-              sx={{
-                color: "#1C1B19",
-                px: 5,
-                py: 1,
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                border: "1px solid #E0E0E0",
-                borderRadius: "0px", // Hình vuông tối giản
-                "&:hover": {
-                  borderColor: "#1C1B19",
-                  bgcolor: "transparent"
-                }
-              }}
-            >
-              {btnLoading ? "ĐANG TẢI..." : "XEM THÊM"}
-            </Button>
+        {/* SCROLLABLE AREA */}
+        <Box
+          ref={scrollRef}
+          sx={{
+            display: "flex",
+            gap: `${GAP}px`,
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+            px: 1,
+            pb: 4, // Tránh bóng đổ bị cắt
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {loading ? (
+            // Skeleton khi đang load
+            [1, 2, 3, 4].map((i) => (
+              <Box key={i} sx={{ minWidth: CARD_WIDTH }}>
+                <Skeleton variant="rectangular" height={350} sx={{ borderRadius: "16px" }} />
+              </Box>
+            ))
+          ) : (
+            hotels.map((h, index) => (
+              <MotionBox
+                key={h._id}
+                sx={{
+                  flex: "0 0 auto",
+                  width: CARD_WIDTH,
+                  scrollSnapAlign: "start",
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <HotelCard hotel={h} />
+              </MotionBox>
+            ))
           )}
-        </Stack>
+        </Box>
       </Container>
     </Box>
+  );
+}
+
+// Re-use NavButton style
+function NavButton({ icon, onClick }) {
+  return (
+    <MotionButton 
+      onClick={onClick} 
+      whileHover={{ scale: 1.1, backgroundColor: "#1C1B19", color: "#C2A56D" }}
+      whileTap={{ scale: 0.9 }}
+      sx={{ 
+        minWidth: 45, width: 45, height: 45, borderRadius: "50%", 
+        border: "1px solid #EAE8E4", color: "#1C1B19", p: 0,
+        transition: "all 0.3s ease"
+      }}
+    >
+      {icon}
+    </MotionButton>
   );
 }

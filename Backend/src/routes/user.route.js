@@ -1,25 +1,24 @@
 import express from 'express'
-import { updateProfile, getUserById, deleteUser, updateUserByAdmin } from '../controllers/user.controller.js'
+import { 
+  updateProfile, 
+  updatePhone 
+} from '../controllers/user.controller.js'
 import { protect } from '../middleware/auth.js'
-import {getAllUsers} from '../controllers/user.controller.js'
-import { adminOnly } from '../middleware/role.js'
-import { updateUserRole } from '../controllers/user.controller.js'
 
 const router = express.Router()
-//public
 
-router.put('/profile', protect, updateProfile)
-router.get('/profile', protect, async (req, res, next) => {
-    try {
-        res.json({ message: "Profile fetched successfully", user: req.user })
-    } catch (error) {
-        next(error)
-    }
+// Route lấy thông tin cá nhân của chính mình
+router.get('/profile', protect, (req, res) => {
+    res.json({ 
+      message: "Profile fetched successfully", 
+      user: req.user 
+    })
 })
-//admin
-router.put('/:id', protect, adminOnly, updateUserByAdmin)
-router.get('/', protect, adminOnly, getAllUsers)
-router.get('/:id', protect, adminOnly, getUserById)
-router.delete('/:id', protect, adminOnly, deleteUser)
-router.put('/:id/role', protect, adminOnly, updateUserRole)
+
+// Route tự cập nhật profile
+router.put('/profile', protect, updateProfile)
+
+// Route cập nhật số điện thoại
+router.put('/update-phone', protect, updatePhone)
+
 export default router;

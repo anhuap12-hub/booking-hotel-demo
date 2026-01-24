@@ -34,6 +34,7 @@ const BookingInfo = lazy(() => import("./pages/Public/BookingInfo"));
 // User
 const MyBookings = lazy(() => import("./pages/DetailPages/MyBookings"));
 // Admin
+const AdminUsers = lazy(() => import ("./pages/admin/AdminUsers"))
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminHotels = lazy(() => import("./pages/admin/AdminHotels"));
 const AdminAddHotel = lazy(() => import("./pages/admin/AdminAddHotel"));
@@ -98,15 +99,23 @@ export default function App() {
                     </AdminRoute>
                   }
                 >
-                  <Route path="room-map" element={<AdminRoomMap />} />
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="hotels" element={<AdminHotels />} />
-                  <Route path="hotels/new" element={<AdminAddHotel />} />
-                  <Route path="hotels/:id/edit" element={<AdminEditHotel />} />
-                  <Route path="hotels/:hotelId/rooms" element={<AdminRooms />} />
-                  <Route path="hotels/:hotelId/rooms/new" element={<AdminAddRoom />} />
-                  <Route path="rooms/:roomId/edit" element={<AdminEditRoom />} />
-                  <Route path="bookings" element={<AdminBookings />} />
+                  {/* Dashboard - Trang mặc định khi vào /admin */}
+                    <Route index element={<AdminDashboard />} />
+
+                    {/* Quản lý User */}
+                     <Route path="users" element={<AdminUsers />} />
+
+                    {/* Quản lý Hotels & Rooms */}
+                    <Route path="hotels" element={<AdminHotels />} />
+                    <Route path="hotels/new" element={<AdminAddHotel />} />
+                    <Route path="hotels/:id/edit" element={<AdminEditHotel />} />
+                    <Route path="hotels/:hotelId/rooms" element={<AdminRooms />} />
+                    <Route path="hotels/:hotelId/rooms/new" element={<AdminAddRoom />} />
+                    <Route path="rooms/:roomId/edit" element={<AdminEditRoom />} />
+
+                     {/* Quản lý Booking & Map */}
+                     <Route path="bookings" element={<AdminBookings />} />
+                     <Route path="room-map" element={<AdminRoomMap />} />
                 </Route>
 
                 {/* Fallback */}

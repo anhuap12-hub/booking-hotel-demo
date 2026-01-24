@@ -6,6 +6,13 @@ import uploadImage from "../middleware/uploadImage.js";
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
 import { getAdminRoomMap, updateRoomStatus } from "../controllers/room.controller.js";
+import { 
+  getAllUsers, 
+  getUserById, 
+  updateUserByAdmin, 
+  updateUserRole, 
+  deleteUser 
+} from "../controllers/user.controller.js";
 import {
   markBookingPaid,
   getAdminBookings,
@@ -22,6 +29,12 @@ const router = express.Router();
 router.use(protect);
 router.use(adminOnly);
 
+/* ========= USERS (Quản lý người dùng) ========= */
+router.get("/users", getAllUsers); // Lấy danh sách
+router.get("/users/:id", getUserById); // Chi tiết 1 user
+router.put("/users/:id", updateUserByAdmin); // Sửa username/email
+router.patch("/users/:id/role", updateUserRole); // Chốt sửa quyền (Role)
+router.delete("/users/:id", deleteUser); // Xóa user
 /* ========= HOTEL (Khách sạn) ========= */
 router.post("/hotels", async (req, res, next) => {
   try {

@@ -13,9 +13,14 @@ const AdminRoute = ({ children }) => {
     );
   }
 
+  // Nếu không có user, đá về trang login
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== "admin") return <Navigate to="/home" replace />;
+  // Kiểm tra role: thêm toLowerCase() và dấu "?" để tránh lỗi crash nếu user.role undefined
+  if (user.role?.toLowerCase() !== "admin") {
+    console.warn("Truy cập bị từ chối: Không phải Admin");
+    return <Navigate to="/home" replace />;
+  }
 
   return children;
 };

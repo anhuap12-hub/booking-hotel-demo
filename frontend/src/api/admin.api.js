@@ -31,3 +31,27 @@ export const updateRoomStatus = (id, status) =>
 // XÁC NHẬN HOÀN TIỀN: Quan trọng để khớp với logic refund
 export const confirmRefunded = (id, data = {}) => 
   instance.put(`/admin/bookings/${id}/confirm-refund`, data);
+
+
+/* ========= USERS (Quản lý người dùng) ========= */
+
+// Lấy toàn bộ danh sách người dùng cho bảng quản trị
+export const getAllUsers = () => 
+  instance.get("/admin/users");
+
+// Lấy thông tin chi tiết một người dùng
+export const getUserById = (id) => 
+  instance.get(`/admin/users/${id}`);
+
+// Admin sửa thông tin cơ bản (Username, Email) của người dùng
+export const updateUserByAdmin = (id, data) => 
+  instance.put(`/admin/users/${id}`, data);
+
+// Cập nhật riêng quyền hạn (Role: admin hoặc user)
+// Sử dụng PATCH để khớp với route router.patch trong admin.route.js
+export const updateUserRole = (id, role) => 
+  instance.patch(`/admin/users/${id}/role`, { role });
+
+// Xóa vĩnh viễn tài khoản người dùng
+export const deleteUser = (id) => 
+  instance.delete(`/admin/users/${id}`);

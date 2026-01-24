@@ -18,6 +18,7 @@ const menuItems = [
   { label: "Hotels", path: "/admin/hotels", icon: <HotelIcon /> },
   { label: "Room Map", path: "/admin/room-map", icon: <MapIcon /> },
   { label: "Bookings", path: "/admin/bookings", icon: <BookOnlineIcon /> },
+  { label: "Users", path: "/admin/users", icon: <PeopleAltIcon /> },
 ];
 
 export default function AdminLayout() {
