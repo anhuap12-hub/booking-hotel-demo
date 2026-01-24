@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "../../api/axios";
 import {
   Button,
@@ -14,11 +14,20 @@ import {
   TableContainer,
   CircularProgress,
   Box,
+  TextField,
+  MenuItem,
+  Avatar,
 } from "@mui/material";
 
 const AdminHotels = () => {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // State phục vụ việc lọc
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [cityFilter, setCityFilter] = useState("all");
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +44,22 @@ const AdminHotels = () => {
     };
     fetchHotels();
   }, []);
+
+  // ✅ LOGIC LỌC DỮ LIỆU TẠI FRONTEND
+  const filteredHotels = useMemo(() => {
+    return hotels.filter((hotel) => {
+      const matchesName = hotel.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = typeFilter === "all" || hotel.type === typeFilter;
+      const matchesCity = cityFilter === "all" || hotel.city === cityFilter;
+      return matchesName && matchesType && matchesCity;
+    });
+  }, [hotels, searchTerm, typeFilter, cityFilter]);
+
+  // ✅ LẤY DANH SÁCH CITY DUY NHẤT ĐỂ LÀM DROPDOWN
+  const uniqueCities = useMemo(() => {
+    const cities = hotels.map((h) => h.city);
+    return ["all", ...new Set(cities)];
+  }, [hotels]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this hotel?")) return;
@@ -59,20 +84,61 @@ const AdminHotels = () => {
         Manage Hotels
       </Typography>
 
-      <Button
-        variant="contained"
-        component={Link}
-        to="/admin/hotels/new"
-        sx={{ alignSelf: "flex-start" }}
-      >
-        Add Hotel
-      </Button>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} justifyContent="space-between">
+        <Button
+          variant="contained"
+          component={Link}
+          to="/admin/hotels/new"
+          sx={{ alignSelf: "flex-start", height: "fit-content" }}
+        >
+          Add Hotel
+        </Button>
+
+        {/* ✅ BỘ LỌC TÌM KIẾM */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} flex={1} justifyContent="flex-end">
+          <TextField
+            label="Search by name..."
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ minWidth: 200 }}
+          />
+          <TextField
+            select
+            label="Type"
+            size="small"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            sx={{ minWidth: 120 }}
+          >
+            <MenuItem value="all">All Types</MenuItem>
+            <MenuItem value="hotel">Hotel</MenuItem>
+            <MenuItem value="apartment">Apartment</MenuItem>
+            <MenuItem value="resort">Resort</MenuItem>
+            <MenuItem value="villa">Villa</MenuItem>
+          </TextField>
+          <TextField
+            select
+            label="City"
+            size="small"
+            value={cityFilter}
+            onChange={(e) => setCityFilter(e.target.value)}
+            sx={{ minWidth: 150 }}
+          >
+            {uniqueCities.map((city) => (
+              <MenuItem key={city} value={city}>
+                {city === "all" ? "All Cities" : city}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
+      </Stack>
 
       <TableContainer component={Paper} elevation={3}>
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: "#f0f4f8" }}>
-              <TableCell><b>Name</b></TableCell>
+              <TableCell><b>Hotel</b></TableCell> {/* Gộp ảnh và tên */}
               <TableCell><b>City</b></TableCell>
               <TableCell><b>Address</b></TableCell>
               <TableCell><b>Price (from room)</b></TableCell>
@@ -83,30 +149,46 @@ const AdminHotels = () => {
           </TableHead>
 
           <TableBody>
-            {Array.isArray(hotels) && hotels.length > 0 ? (
-              hotels.map((hotel) => {
-                // ✅ TÍNH GIÁ THẤP NHẤT TỪ ROOMS
+            {filteredHotels.length > 0 ? (
+              filteredHotels.map((hotel) => {
                 const minRoomPrice = (() => {
                   if (!Array.isArray(hotel.rooms)) return null;
-
                   const prices = hotel.rooms
                     .map((r) => r.price)
                     .filter((p) => typeof p === "number");
-
                   if (!prices.length) return null;
-
                   return Math.min(...prices);
                 })();
 
                 return (
                   <TableRow key={hotel._id} hover>
-                    <TableCell>{hotel.name}</TableCell>
+                    <TableCell>
+                      {/* ✅ HIỂN THỊ ẢNH BÊN TRÁI TÊN */}
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar
+                          src={hotel.photos?.[0]} // Lấy ảnh đầu tiên
+                          variant="rounded"
+                          sx={{ width: 50, height: 50, border: "1px solid #ddd" }}
+                        >
+                          H
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">
+                            {hotel.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ textTransform: "capitalize" }}>
+                            {hotel.type}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </TableCell>
+
                     <TableCell>{hotel.city}</TableCell>
                     <TableCell>{hotel.address}</TableCell>
 
                     <TableCell>
                       {minRoomPrice
-                        ? `VND ${minRoomPrice.toLocaleString("vi-VN")}`
+                        ? `${minRoomPrice.toLocaleString("vi-VN")} VND`
                         : "Chưa có phòng"}
                     </TableCell>
 
@@ -151,7 +233,9 @@ const AdminHotels = () => {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  Không có khách sạn nào
+                  <Typography variant="body2" sx={{ py: 2 }}>
+                    Không tìm thấy khách sạn nào phù hợp
+                  </Typography>
                 </TableCell>
               </TableRow>
             )}

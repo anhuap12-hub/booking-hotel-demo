@@ -71,12 +71,20 @@ export default function MyBookings() {
 
   useEffect(() => { fetchBookings(); }, []);
 
-  const getBookingStatus = (booking) => {
-    if (booking.paymentStatus === 'REFUNDED') return 'refunded';
-    if (booking.paymentStatus === 'REFUND_PENDING') return 'refund_pending';
-    if (booking.status === 'cancelled') return 'cancelled';
-    if (booking.paymentStatus === 'PAID') return 'confirmed'; 
-    if (booking.paymentStatus === 'DEPOSITED') return 'deposited'; 
+const getBookingStatus = (booking) => {
+    const { paymentStatus, status, totalPrice, depositAmount } = booking;
+    
+    if (paymentStatus === 'REFUNDED') return 'refunded';
+    if (paymentStatus === 'REFUND_PENDING') return 'refund_pending';
+    if (status === 'cancelled') return 'cancelled';
+
+    // ✅ ĐỒNG BỘ LOGIC VỚI CARD
+    const isPaidFull = paymentStatus === 'PAID' && depositAmount >= totalPrice;
+    const hasDeposited = depositAmount > 0 && depositAmount < totalPrice;
+
+    if (isPaidFull) return 'confirmed'; 
+    if (hasDeposited || paymentStatus === 'DEPOSITED') return 'deposited'; 
+    
     return 'pending';
   };
 

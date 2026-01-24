@@ -3,12 +3,11 @@ import {
   Box, Typography, Stack, Paper, Table, TableHead, TableRow, TableCell,
   TableBody, Chip, Button, CircularProgress, Tooltip, Divider
 } from "@mui/material";
-// Giả định bạn thêm API confirmRefunded vào admin.api
 import { getAdminBookings, updateContactStatus, markBookingPaid, confirmRefunded } from "../../api/admin.api";
 import AdminBookingLogsDialog from "./AdminBookingLogsDialog";
 import { 
-  AccessTime, CheckCircle, Cancel, Payment, 
-  CurrencyExchange, InfoOutlined 
+  CheckCircle, Cancel, Payment, 
+  CurrencyExchange
 } from "@mui/icons-material";
 
 /* ================= HELPERS ================= */
@@ -22,15 +21,15 @@ const bookingColor = (status) => {
   }
 };
 
-const paymentStatusConfig = (status) => {
-  switch (status) {
-    case "PAID": return { label: "ĐÃ THANH TOÁN", color: "success" };
-    case "DEPOSITED": return { label: "ĐÃ CỌC 30%", color: "primary" };
-    case "UNPAID": return { label: "CHƯA THANH TOÁN", color: "warning" };
-    case "REFUND_PENDING": return { label: "CHỜ HOÀN TIỀN", color: "error" }; // MỚI
-    case "REFUNDED": return { label: "ĐÃ HOÀN TIỀN", color: "secondary" };      // MỚI
-    default: return { label: status, color: "default" };
-  }
+const paymentStatusConfig = (status, isPaidFull, isOnlyDeposited) => {
+  if (status === "REFUND_PENDING") return { label: "CHỜ HOÀN TIỀN", color: "error" };
+  if (status === "REFUNDED") return { label: "ĐÃ HOÀN TIỀN", color: "secondary" };
+  
+  // Logic ưu tiên số tiền thực tế
+  if (isPaidFull) return { label: "ĐÃ THANH TOÁN", color: "success" };
+  if (isOnlyDeposited) return { label: "ĐÃ CỌC 30%", color: "primary" };
+  
+  return { label: "CHƯA THANH TOÁN", color: "warning" };
 };
 
 /* ================= MAIN COMPONENT ================= */
@@ -74,7 +73,6 @@ export default function AdminBookings() {
     }
   };
 
-  // MỚI: XỬ LÝ HOÀN TIỀN
   const handleConfirmRefund = async (id) => {
     if (window.confirm("Xác nhận BẠN ĐÃ CHUYỂN KHOẢN hoàn tiền cho khách? Trạng thái sẽ chuyển thành ĐÃ HOÀN TIỀN.")) {
       try {
@@ -110,11 +108,16 @@ export default function AdminBookings() {
 
             <TableBody>
               {bookings.map((b) => {
+                const total = b.totalPrice || 0;
+                const paid = b.depositAmount || 0;
+                
+                // Logic so sánh chuẩn
+                const isPaidFull = b.paymentStatus === "PAID" && paid >= total;
+                const isOnlyDeposited = (b.paymentStatus === "DEPOSITED") || (b.paymentStatus === "PAID" && paid < total && paid > 0);
+                
                 const bStatus = bookingColor(b.status);
-                const pStatus = paymentStatusConfig(b.paymentStatus);
+                const pStatus = paymentStatusConfig(b.paymentStatus, isPaidFull, isOnlyDeposited);
                 const isCancelled = b.status === "cancelled";
-                const isPaidFull = b.paymentStatus === "PAID";
-                const isDeposited = b.paymentStatus === "DEPOSITED";
                 const isRefundPending = b.paymentStatus === "REFUND_PENDING";
 
                 return (
@@ -141,37 +144,34 @@ export default function AdminBookings() {
 
                     <TableCell>
                       <Stack spacing={0.5}>
-                        <Box display="flex" justifyContent="space-between" width={160}>
+                        <Box display="flex" justifyContent="space-between" width={180}>
                           <Typography variant="caption">Tổng cộng:</Typography>
-                          <Typography variant="caption" fontWeight={700}>{b.totalPrice?.toLocaleString()} đ</Typography>
+                          <Typography variant="caption" fontWeight={700}>{total.toLocaleString()} đ</Typography>
                         </Box>
                         
-                        {/* HIỂN THỊ THÔNG TIN HOÀN TIỀN NẾU CÓ */}
                         {isRefundPending ? (
                           <Box width={180} sx={{ p: 1.5, bgcolor: '#FFF5F5', borderRadius: '8px', border: '1px solid #FEB2B2', mt: 1 }}>
-    <Typography variant="caption" color="error" fontWeight={900} display="block">
-      CẦN HOÀN: {b.refundInfo?.amount?.toLocaleString()} đ
-    </Typography>
-    <Typography variant="caption" sx={{ fontSize: 10, color: '#555', fontWeight: 600 }}>
-      {b.refundInfo?.bankName} - {b.refundInfo?.accountNumber}
-    </Typography>
-    <Typography variant="caption" sx={{ fontSize: 10, color: '#555', display: 'block', fontStyle: 'italic' }}>
-      Chủ: {b.refundInfo?.accountHolder}
-    </Typography>
-  </Box>
+                            <Typography variant="caption" color="error" fontWeight={900} display="block">
+                              CẦN HOÀN: {b.refundInfo?.amount?.toLocaleString() || paid.toLocaleString()} đ
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: 10, color: '#555', fontWeight: 600 }}>
+                              {b.refundInfo?.bankName} - {b.refundInfo?.accountNumber}
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: 10, color: '#555', display: 'block', fontStyle: 'italic' }}>
+                              Chủ: {b.refundInfo?.accountHolder}
+                            </Typography>
+                          </Box>
                         ) : (
                           <>
-                            {isDeposited && (
-                              <Box display="flex" justifyContent="space-between" width={160} color="primary.main">
-                                <Typography variant="caption">Đã cọc:</Typography>
-                                <Typography variant="caption" fontWeight={700}>-{b.depositAmount?.toLocaleString()} đ</Typography>
-                              </Box>
-                            )}
+                            <Box display="flex" justifyContent="space-between" width={180} color="primary.main">
+                              <Typography variant="caption">Đã thu (Cọc):</Typography>
+                              <Typography variant="caption" fontWeight={700}>-{paid.toLocaleString()} đ</Typography>
+                            </Box>
                             <Divider />
-                            <Box display="flex" justifyContent="space-between" width={160} color={isPaidFull ? "success.main" : "error.main"}>
+                            <Box display="flex" justifyContent="space-between" width={180} color={isPaidFull ? "success.main" : "error.main"}>
                               <Typography variant="caption" fontWeight={700}>{isPaidFull ? "Đã thu đủ:" : "Còn phải thu:"}</Typography>
                               <Typography variant="body2" fontWeight={900}>
-                                {isPaidFull ? b.totalPrice?.toLocaleString() : b.remainingAmount?.toLocaleString()} đ
+                                {isPaidFull ? total.toLocaleString() : (total - paid).toLocaleString()} đ
                               </Typography>
                             </Box>
                           </>
@@ -189,7 +189,6 @@ export default function AdminBookings() {
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
                         
-                        {/* NÚT XÁC NHẬN HOÀN TIỀN (CHỈ HIỆN KHI ĐANG CHỜ HOÀN) */}
                         {isRefundPending && (
                           <Button
                             size="small"
@@ -218,7 +217,7 @@ export default function AdminBookings() {
                           </>
                         )}
 
-                        {isDeposited && !isPaidFull && !isCancelled && !isRefundPending && (
+                        {!isPaidFull && !isCancelled && !isRefundPending && (paid > 0) && (
                           <Button
                             size="small"
                             variant="contained"
