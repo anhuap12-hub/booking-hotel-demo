@@ -13,8 +13,7 @@ import {
 import { 
   HotelOutlined, Close, MeetingRoomOutlined, 
   CalendarMonthOutlined, AccountBalanceWalletOutlined,
-  HistoryEduOutlined, ErrorOutline, InfoOutlined,
-  PaymentOutlined
+  HistoryEduOutlined, InfoOutlined
 } from "@mui/icons-material";
 
 /* ================= HELPERS - CONFIGURATION ================= */
@@ -72,16 +71,12 @@ export default function MyBookings() {
 
   useEffect(() => { fetchBookings(); }, []);
 
-  // Logic phân loại trạng thái để khớp với STATUS_CONFIG
   const getBookingStatus = (booking) => {
     if (booking.paymentStatus === 'REFUNDED') return 'refunded';
     if (booking.paymentStatus === 'REFUND_PENDING') return 'refund_pending';
     if (booking.status === 'cancelled') return 'cancelled';
-    
-    // Tách biệt dựa trên paymentStatus từ Backend
     if (booking.paymentStatus === 'PAID') return 'confirmed'; 
     if (booking.paymentStatus === 'DEPOSITED') return 'deposited'; 
-    
     return 'pending';
   };
 
@@ -107,7 +102,6 @@ export default function MyBookings() {
       <Navbar />
 
       <Container maxWidth="md" sx={{ mt: { xs: 12, md: 15 }, pb: 10 }}>
-        {/* HEADER */}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-end" mb={6}>
           <Box>
             <Typography variant="h3" sx={{ color: "#1C1B19", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
@@ -121,7 +115,6 @@ export default function MyBookings() {
           />
         </Stack>
 
-        {/* TABS NAVIGATION */}
         <Paper elevation={0} sx={{ borderRadius: "16px", p: 0.5, bgcolor: "rgba(28, 27, 25, 0.04)", mb: 5 }}>
           <Tabs 
             value={tab} 
@@ -144,7 +137,6 @@ export default function MyBookings() {
           </Tabs>
         </Paper>
 
-        {/* LISTING CARDS */}
         {loading ? (
           <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress sx={{ color: '#C2A56D' }} /></Box>
         ) : filteredBookings.length === 0 ? (
@@ -187,13 +179,19 @@ export default function MyBookings() {
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>Chi tiết kỳ nghỉ</Typography>
-          <IconButton onClick={() => setSelectedBooking(null)}><Close /></IconButton>
+          {/* ĐÃ THAY THẾ ICONBUTTON BẰNG BUTTON GỌN NHẸ */}
+          <Button 
+            onClick={() => setSelectedBooking(null)} 
+            minwidth={0} 
+            sx={{ minWidth: 40, color: 'text.secondary' }}
+          >
+            <Close />
+          </Button>
         </DialogTitle>
 
         <DialogContent>
           {selectedBooking && (
             <Stack spacing={3} sx={{ mt: 1 }}>
-              {/* Thông tin phòng */}
               <Box sx={{ p: 2.5, borderRadius: "20px", bgcolor: '#F9F8F6', border: '1px solid #EAE9E2' }}>
                 <Typography variant="overline" sx={{ color: '#C2A56D', fontWeight: 900, mb: 1, display: 'block' }}>Mã đơn: #{selectedBooking._id?.slice(-6).toUpperCase()}</Typography>
                 <Stack spacing={2}>
@@ -203,7 +201,6 @@ export default function MyBookings() {
                 </Stack>
               </Box>
 
-              {/* TÀI CHÍNH MINH BẠCH */}
               <Box sx={{ px: 1 }}>
                 <Typography variant="subtitle2" sx={{ color: "#1C1B19", fontWeight: 800, mb: 2 }}>Thông tin thanh toán</Typography>
                 <Stack spacing={2}>
@@ -212,15 +209,12 @@ export default function MyBookings() {
                     label="Tổng tiền phòng" 
                     value={`${selectedBooking.totalPrice?.toLocaleString()} VND`} 
                   />
-                  
                   <InfoRow 
                     icon={HistoryEduOutlined} 
                     label="Tiền đã trả" 
                     value={`${selectedBooking.depositAmount?.toLocaleString()} VND`}
                     color={getBookingStatus(selectedBooking) === 'confirmed' ? "#10b981" : "#0288d1"} 
                   />
-
-                  {/* Hiển thị số tiền còn thiếu nếu mới đặt cọc */}
                   {selectedBooking.paymentStatus === 'DEPOSITED' && (
                     <Box sx={{ ml: 7, p: 2, bgcolor: 'rgba(2, 136, 209, 0.05)', borderRadius: '12px', border: '1px dashed #0288d1' }}>
                       <Typography variant="caption" sx={{ color: "#0288d1", fontWeight: 700, display: 'block' }}>
@@ -238,7 +232,6 @@ export default function MyBookings() {
                 </Stack>
               </Box>
 
-              {/* Trạng thái đơn */}
               <Box sx={{ 
                 p: 2, 
                 borderRadius: "16px", 
