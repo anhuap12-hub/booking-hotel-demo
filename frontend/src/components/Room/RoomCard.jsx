@@ -12,24 +12,32 @@ import {
 import { useNavigate } from "react-router-dom";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+
+/* ... các imports giữ nguyên ... */
 
 export default function RoomCard({ room, onBook }) {
   const navigate = useNavigate();
 
+  // Đảm bảo không lỗi nếu các object lồng nhau bị undefined
   const discount = room?.discount || 0;
   const hasDiscount = discount > 0;
-  const finalPrice = hasDiscount
-    ? Math.round(room.price * (1 - discount / 100))
-    : room.price;
+  
+  // Tính giá cuối cùng (Safe-check)
+  const price = room?.price || 0;
+  const finalPrice = room?.finalPrice || (hasDiscount 
+    ? Math.round(price * (1 - discount / 100)) 
+    : price);
 
-  const isAvailable = room.status === "active";
-  const isMaintenance = room.status === "maintenance";
+  const isAvailable = room?.status === "active";
+  const statusLabel = {
+    active: "Còn phòng",
+    maintenance: "Đang bảo trì",
+    inactive: "Ngưng phục vụ"
+  };
 
-  const handleDetail = () => navigate(`/rooms/${room._id}`);
-  const handleBook = (e) => {
-    e.stopPropagation();
-    onBook?.(room);
+  const handleDetail = () => {
+    // Chỉ chuyển trang nếu không phải đang click vào nút Đặt ngay
+    navigate(`/rooms/${room?._id}`);
   };
 
   return (
@@ -41,178 +49,125 @@ export default function RoomCard({ room, onBook }) {
         borderRadius: "20px",
         overflow: "hidden",
         mb: 3,
-        bgcolor: "#FFF",
-        border: "1px solid rgba(0,0,0,0.05)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
-        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+        border: "1px solid rgba(0,0,0,0.08)",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         cursor: "pointer",
         "&:hover": { 
           transform: "translateY(-4px)",
-          boxShadow: "0 20px 40px rgba(28,27,25,0.12)",
-          "& .room-image": { transform: "scale(1.08)" }
+          boxShadow: "0 15px 35px rgba(0,0,0,0.12)",
+          "& .room-img": { transform: "scale(1.05)" } // Hiệu ứng zoom nhẹ ảnh
         },
       }}
     >
-      {/* ẢNH PHÒNG VỚI HIỆU ỨNG ZOOM */}
-      <Box sx={{ width: { md: 340 }, position: "relative", overflow: "hidden" }}>
+      {/* KHỐI ẢNH */}
+      <Box sx={{ width: { md: 320 }, position: "relative", overflow: "hidden" }}>
         <CardMedia
           component="img"
-          className="room-image"
+          className="room-img"
           sx={{ 
-            height: { xs: 240, md: "100%" },
-            transition: "transform 0.6s ease"
+            height: { xs: 220, md: "100%" }, 
+            objectFit: "cover",
+            transition: "transform 0.5s ease" 
           }}
-          image={room.photos?.[0]?.url || "https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg"}
+          // Fallback ảnh nếu data lỗi hoặc trống
+          image={room?.photos?.[0]?.url || "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&q=80&w=800"}
+          alt={room?.name}
         />
-
         {hasDiscount && (
-          <Chip
-            label={`-${discount}%`}
-            size="small"
-            sx={{ 
-              position: "absolute", top: 16, left: 16, 
-              fontWeight: 800, bgcolor: "#1C1B19", color: "#C2A56D",
-              borderRadius: "6px"
-            }}
-          />
-        )}
-
-        {!isAvailable && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0, left: 0, right: 0, bottom: 0,
-              bgcolor: "rgba(28,27,25,0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backdropFilter: "blur(4px)"
-            }}
-          >
-            <Chip 
-              icon={<InfoOutlinedIcon style={{ color: '#C2A56D' }} />} 
-              label={isMaintenance ? "ĐANG BẢO TRÌ" : "HẾT PHÒNG"} 
-              sx={{ color: '#C2A56D', fontWeight: 700, border: '1px solid #C2A56D' }} 
-              variant="outlined" 
-            />
+          <Box sx={{ 
+            position: "absolute", top: 12, left: 12, 
+            bgcolor: "#E31837", color: "#fff",
+            px: 1.5, py: 0.5, borderRadius: "6px",
+            fontWeight: 800, fontSize: "0.7rem",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            zIndex: 1
+          }}>
+            ƯU ĐÃI {discount}%
           </Box>
         )}
       </Box>
 
-      {/* NỘI DUNG CHI TIẾT */}
-      <CardContent sx={{ flex: 1, p: { xs: 3, md: 4 }, display: 'flex', flexDirection: 'column' }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
-          <Typography
-            variant="caption"
-            sx={{ 
-              textTransform: "uppercase", 
-              fontWeight: 700, 
-              letterSpacing: 1.5, 
-              color: "#C2A56D" 
-            }}
-          >
-            {room.type}
+      {/* KHỐI NỘI DUNG */}
+      <CardContent sx={{ flex: 1, p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column' }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+          <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: 1.2, lineHeight: 1 }}>
+            {room?.type || "Standard"}
           </Typography>
-          
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <VerifiedUserOutlinedIcon sx={{ fontSize: 16, color: "#72716E" }} />
-            <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 500 }}>
-              Hoàn {room.cancellationPolicy?.refundPercent}% phí
-            </Typography>
-          </Stack>
+          <Chip 
+            label={statusLabel[room?.status] || "N/A"} 
+            size="small" 
+            color={isAvailable ? "success" : "default"}
+            sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+            variant="outlined"
+          />
         </Stack>
 
-        <Typography 
-          variant="h5" 
-          sx={{ 
-            fontFamily: "'Playfair Display', serif", 
-            fontWeight: 800, 
-            color: "#1C1B19",
-            mb: 1.5 
-          }}
-        >
-          {room.name}
+        <Typography variant="h5" fontWeight={700} sx={{ fontFamily: "'Playfair Display', serif", mb: 1 }}>
+          {room?.name}
         </Typography>
 
-        <Stack direction="row" spacing={3} mb={3}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <PeopleOutlineIcon sx={{ fontSize: 18, color: "#A8A7A1" }} />
-            <Typography variant="body2" sx={{ color: "#72716E", fontWeight: 500 }}>
-              Sức chứa: {room.maxPeople} khách
+        <Stack direction="row" spacing={2} mb={2} color="text.secondary">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <PeopleOutlineIcon sx={{ fontSize: 18 }} />
+            <Typography variant="body2" fontWeight={500}>{room?.maxPeople} khách</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <VerifiedUserOutlinedIcon sx={{ fontSize: 18 }} />
+            <Typography variant="body2" fontWeight={500}>
+              Hoàn {room?.cancellationPolicy?.refundPercent || 0}% phí
             </Typography>
-          </Stack>
+          </Box>
         </Stack>
 
-        {/* TIỆN NGHI (AMENITIES) */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-          {room.amenities?.slice(0, 3).map((item, index) => (
-            <Chip 
-              key={index} 
-              label={item} 
-              size="small" 
-              sx={{ 
-                fontSize: '0.75rem', 
-                bgcolor: "#F9F8F6", 
-                color: "#1C1B19",
-                border: "1px solid #EFE7DD",
-                fontWeight: 500
-              }} 
-            />
-          ))}
-          {room.amenities?.length > 3 && (
-            <Typography variant="caption" sx={{ color: '#A8A7A1', alignSelf: 'center' }}>
-              +{room.amenities.length - 3} tiện ích khác
-            </Typography>
-          )}
-        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ 
+          mb: 3, 
+          display: "-webkit-box", 
+          WebkitLineClamp: 2, 
+          WebkitBoxOrient: "vertical", 
+          overflow: "hidden", 
+          minHeight: '3em',
+          lineHeight: 1.6
+        }}>
+          {room?.desc || "Chưa có mô tả cho loại phòng này."}
+        </Typography>
 
         <Box sx={{ mt: 'auto' }}>
-          <Divider sx={{ mb: 3, borderColor: "rgba(0,0,0,0.05)" }} />
-          
+          <Divider sx={{ mb: 2, borderStyle: 'dashed' }} />
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Box>
               {hasDiscount && (
-                <Typography sx={{ textDecoration: "line-through", color: "#A8A7A1", fontSize: 14 }}>
-                  {room.price.toLocaleString()}₫
+                <Typography sx={{ textDecoration: "line-through", color: "text.disabled", fontSize: "0.85rem", fontWeight: 500 }}>
+                  {price.toLocaleString()}₫
                 </Typography>
               )}
-              <Typography sx={{ fontSize: "1.5rem", fontWeight: 800, color: "#1C1B19" }}>
+              <Typography variant="h5" fontWeight={900} color="error.main" sx={{ display: 'flex', alignItems: 'baseline' }}>
                 {finalPrice.toLocaleString()}₫
-                <Typography component="span" sx={{ fontSize: "0.9rem", color: "#72716E", ml: 0.5 }}>/đêm</Typography>
+                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5, fontWeight: 600 }}>/ĐÊM</Typography>
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1.5}>
-              <Button
-                variant="text"
-                onClick={(e) => { e.stopPropagation(); handleDetail(); }}
-                sx={{ 
-                  textTransform: "none", 
-                  fontWeight: 700, 
-                  color: "#1C1B19",
-                  "&:hover": { bgcolor: "rgba(0,0,0,0.04)" }
-                }}
-              >
-                Chi tiết
-              </Button>
-              <Button
-                variant="contained"
-                disabled={!isAvailable}
-                onClick={handleBook}
-                sx={{ 
-                  textTransform: "none", 
-                  borderRadius: "12px", 
-                  fontWeight: 700,
-                  px: 4,
-                  bgcolor: "#1C1B19",
-                  color: "#C2A56D",
-                  "&:hover": { bgcolor: "#2b2a28" },
-                  "&:disabled": { bgcolor: "#F1F0EE", color: "#A8A7A1" }
-                }}
-              >
-                {isAvailable ? "Đặt ngay" : "Hết phòng"}
-              </Button>
-            </Stack>
+            <Button
+              variant="contained"
+              disabled={!isAvailable}
+              onClick={(e) => {
+                e.stopPropagation();
+                onBook?.(room);
+              }}
+              sx={{ 
+                borderRadius: "12px", 
+                px: 3, 
+                py: 1,
+                fontWeight: 700,
+                textTransform: 'none',
+                bgcolor: "#1C1B19", 
+                color: "#C2A56D",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
+                "&:hover": { bgcolor: "#000", transform: "translateY(-2px)" },
+                "&:disabled": { bgcolor: "#eee" }
+              }}
+            >
+              {isAvailable ? "Đặt ngay" : "Hết phòng"}
+            </Button>
           </Box>
         </Box>
       </CardContent>
