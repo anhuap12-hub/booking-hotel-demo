@@ -12,7 +12,7 @@ import HotelIcon from "@mui/icons-material/Hotel";
 import MapIcon from "@mui/icons-material/Map";
 import BookOnlineIcon from "@mui/icons-material/BookOnline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 const menuItems = [
   { label: "Dashboard", path: "/admin", icon: <DashboardIcon /> },
   { label: "Hotels", path: "/admin/hotels", icon: <HotelIcon /> },
