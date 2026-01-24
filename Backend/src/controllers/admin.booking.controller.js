@@ -138,24 +138,39 @@ export const getFollowUpBookings = async (req, res) => {
 };
 export const markBookingPaid = async (req, res) => {
   try {
+    const { amount, note } = req.body; // Lấy số tiền Admin nhập từ Frontend
     const booking = await Booking.findById(req.params.id);
-    if (!booking)
-      return res.status(404).json({ message: "Booking not found" });
 
-    if (booking.paymentStatus === "PAID")
-      return res.status(400).json({ message: "Already paid" });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.paymentStatus === "PAID") return res.status(400).json({ message: "Already paid" });
 
-    booking.paymentStatus = "PAID";
+    // --- LOGIC QUAN TRỌNG TẠI ĐÂY ---
+    // Nếu số tiền nhập vào < tổng tiền phòng => Trạng thái là ĐÃ CỌC (DEPOSITED)
+    // Nếu số tiền >= tổng tiền phòng => Trạng thái là ĐÃ THANH TOÁN (PAID)
+    
+    const isFullPayment = amount >= booking.totalPrice;
+
+    if (isFullPayment) {
+      booking.paymentStatus = "PAID";
+      booking.depositAmount = booking.totalPrice; // Đã trả đủ
+      booking.remainingAmount = 0;
+      booking.status = "confirmed"; // Xác nhận đơn luôn khi trả đủ
+    } else {
+      booking.paymentStatus = "DEPOSITED";
+      booking.depositAmount = (booking.depositAmount || 0) + Number(amount); // Cộng dồn tiền cọc
+      booking.remainingAmount = booking.totalPrice - booking.depositAmount;
+      booking.status = "confirmed"; // Trả cọc cũng cho phép xác nhận đơn
+    }
+
     booking.paidAt = new Date();
     booking.paidBy = req.user.id;
 
     booking.paymentLogs.push({
+      at: new Date(),
       by: req.user.id,
-      action: "PAID",
-      note: req.body.note || "Admin xác nhận thanh toán",
+      action: isFullPayment ? "PAID" : "DEPOSITED",
+      note: note || (isFullPayment ? "Xác nhận thanh toán đủ" : `Xác nhận nhận cọc: ${amount.toLocaleString()}đ`),
     });
-
-    booking.status = "confirmed";
 
     await booking.save();
     res.json(booking);

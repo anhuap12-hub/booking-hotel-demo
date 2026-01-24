@@ -266,12 +266,16 @@ export const checkAvailability = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { checkInDate, checkOutDate } = req.body;
+
     const conflict = await Booking.findOne({
       room: roomId,
-      $or: [{ status: "confirmed" }, { paymentStatus: { $in: ["PAID", "DEPOSITED"] } }],
+      // CHỈNH SỬA: Chấp nhận cả đơn đã cọc (DEPOSITED) là đơn gây xung đột phòng
+      status: { $in: ["confirmed", "pending"] }, 
+      paymentStatus: { $in: ["PAID", "DEPOSITED"] }, 
       checkIn: { $lt: new Date(checkOutDate) }, 
       checkOut: { $gt: new Date(checkInDate) }
     });
+
     return res.status(200).json({ success: true, available: !conflict });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

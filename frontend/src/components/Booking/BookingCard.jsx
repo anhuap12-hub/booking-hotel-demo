@@ -3,7 +3,7 @@ import {
   Card, CardContent, Typography, Box, Chip, Stack, Button, useTheme, useMediaQuery
 } from "@mui/material";
 import { 
-  CalendarToday, Hotel, ChevronRight
+  CalendarToday, Hotel, ChevronRight, PaymentsOutlined
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -17,39 +17,34 @@ export default function BookingCard({ booking, onView }) {
 
   if (!booking) return null;
 
-  const { status, paymentStatus, totalPrice, expireAt, roomSnapshot, room } = booking;
+  const { status, paymentStatus, totalPrice, depositAmount, expireAt, roomSnapshot, room } = booking;
   
+  // Kiểm tra hết hạn (An toàn hơn với fallback)
   const isExpired = status === 'pending' && 
                     paymentStatus === 'UNPAID' && 
                     expireAt && new Date(expireAt) < new Date();
 
-  // 1. Badge thanh toán (Giữ nguyên map cũ nhưng thêm fallback an toàn)
+  // 1. Badge Thanh toán (Tăng tính trực quan)
   const getPaymentBadge = (ps) => {
     const s = ps?.toUpperCase();
     const map = {
-      'PAID': { label: "Đã thanh toán", color: "#10b981", bgcolor: "rgba(16, 185, 129, 0.1)" },
+      'PAID': { label: "Đã trả đủ", color: "#10b981", bgcolor: "rgba(16, 185, 129, 0.1)" },
       'DEPOSITED': { label: "Đã cọc 30%", color: "#0288d1", bgcolor: "rgba(2, 136, 209, 0.1)" },
       'REFUND_PENDING': { label: "Chờ hoàn tiền", color: "#f57c00", bgcolor: "rgba(245, 124, 0, 0.1)" },
-      'REFUNDED': { label: "Đã hoàn trả", color: "#7b1fa2", bgcolor: "rgba(123, 31, 162, 0.1)" }
+      'REFUNDED': { label: "Đã hoàn tiền", color: "#7b1fa2", bgcolor: "rgba(123, 31, 162, 0.1)" }
     };
-    return map[s] || { label: "Chờ cọc", color: "#C2A56D", bgcolor: "rgba(194, 165, 109, 0.1)" };
+    return map[s] || { label: "Chưa thanh toán", color: "#C2A56D", bgcolor: "rgba(194, 165, 109, 0.1)" };
   };
 
   const payInfo = getPaymentBadge(paymentStatus);
 
-  // 2. LOGIC FIX: Tag trạng thái chính (Ưu tiên hiển thị Cọc)
+  // 2. Status Tag (Logic phân cấp rõ ràng)
   const getStatusTag = () => {
-    if (isExpired) return { text: "Hết hạn", bg: "#ef4444" };
-    if (paymentStatus === 'REFUNDED') return { text: "Đã kết thúc", bg: "#7b1fa2" };
-    if (status === 'cancelled') return { text: "Đã hủy", bg: "#94a3b8" };
-    
-    // Nếu khách mới cọc 30%, hiện màu xanh dương để phân biệt với "Thành công" (đã trả hết)
-    if (paymentStatus === 'DEPOSITED') return { text: "Đã đặt cọc", bg: "#0288d1" };
-    
-    // Chỉ hiện "Thành công" khi trạng thái là confirmed VÀ đã trả đủ tiền (PAID)
+    if (status === 'cancelled' || isExpired) return { text: "Đã hủy/Hết hạn", bg: "#ef4444" };
+    if (paymentStatus === 'REFUNDED') return { text: "Đã hoàn tiền", bg: "#7b1fa2" };
+    if (paymentStatus === 'DEPOSITED') return { text: "Đã giữ chỗ", bg: "#0288d1" };
     if (status === 'confirmed' && paymentStatus === 'PAID') return { text: "Thành công", bg: "#1C1B19" };
-    
-    return { text: "Sắp tới", bg: "#C2A56D" };
+    return { text: "Chờ xử lý", bg: "#C2A56D" };
   };
 
   const tagInfo = getStatusTag();
@@ -57,18 +52,21 @@ export default function BookingCard({ booking, onView }) {
   return (
     <MotionCard 
       layout
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
       sx={{ 
         mb: 3, borderRadius: "20px", border: '1px solid #EAE9E2',
-        bgcolor: '#fff', position: 'relative', overflow: 'hidden'
+        bgcolor: '#fff', position: 'relative', overflow: 'hidden',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
       }}
     >
       <CardContent sx={{ p: isMobile ? 2 : 3 }}>
         <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 2 : 3}>
           
+          {/* Ảnh và Tag */}
           <Box sx={{ 
-            width: isMobile ? "100%" : 160, 
+            width: isMobile ? "100%" : 180, 
             height: isMobile ? 180 : 160, 
             borderRadius: "16px", overflow: "hidden", flexShrink: 0, position: 'relative'
           }}>
@@ -79,8 +77,7 @@ export default function BookingCard({ booking, onView }) {
             />
             <Box sx={{ 
               position: 'absolute', top: 12, left: 12, bgcolor: tagInfo.bg, color: "#fff",
-              px: 1.2, py: 0.4, borderRadius: "6px", fontSize: 9, fontWeight: 900, textTransform: 'uppercase',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+              px: 1.2, py: 0.4, borderRadius: "6px", fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
             }}>
               {tagInfo.text}
             </Box>
@@ -88,58 +85,76 @@ export default function BookingCard({ booking, onView }) {
 
           <Box flex={1} display="flex" flexDirection="column">
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
-              <Box sx={{ maxWidth: '70%' }}>
+              <Box>
                 <Typography sx={{ 
                   fontSize: isMobile ? "1.1rem" : "1.25rem", fontWeight: 800, 
-                  color: "#1C1B19", fontFamily: "'Playfair Display', serif",
-                  lineHeight: 1.2, mb: 0.5
+                  color: "#1C1B19", fontFamily: "'Playfair Display', serif", mb: 0.5
                 }}>
-                  {roomSnapshot?.hotelName || "Hotel Name"}
+                  {roomSnapshot?.hotelName || "Luxstay Hotel"}
                 </Typography>
-                <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                  <Hotel sx={{ fontSize: 14, mr: 0.5, color: '#C2A56D' }} /> {roomSnapshot?.name || "Room Type"}
-                </Typography>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Hotel sx={{ fontSize: 14, color: '#C2A56D' }} />
+                  <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 600 }}>
+                    {roomSnapshot?.name || "Premium Suite"}
+                  </Typography>
+                </Stack>
               </Box>
-              <Chip label={payInfo.label} size="small" sx={{ bgcolor: payInfo.bgcolor, color: payInfo.color, fontWeight: 800, fontSize: 9 }} />
+              <Chip label={payInfo.label} size="small" sx={{ bgcolor: payInfo.bgcolor, color: payInfo.color, fontWeight: 800, fontSize: 10 }} />
             </Stack>
 
-            <Box sx={{ bgcolor: "#F9F8F6", p: 1.5, borderRadius: "12px", my: isMobile ? 1.5 : 2 }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
+            {/* Thông tin ngày tháng */}
+            <Box sx={{ bgcolor: "#F9F8F6", p: 1.5, borderRadius: "12px", my: 1.5 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
                 <CalendarToday sx={{ fontSize: 14, color: '#C2A56D' }} />
                 <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#1C1B19' }}>
-                  {new Date(booking.checkIn).toLocaleDateString("vi-VN")} - {new Date(booking.checkOut).toLocaleDateString("vi-VN")}
+                  {new Date(booking.checkIn).toLocaleDateString("vi-VN")} — {new Date(booking.checkOut).toLocaleDateString("vi-VN")}
                 </Typography>
               </Stack>
             </Box>
 
-            <Stack direction={isMobile ? "column" : "row"} justifyContent="space-between" alignItems={isMobile ? "stretch" : "center"} spacing={2} mt="auto">
+            {/* Footer: Giá và Nút bấm */}
+            <Stack direction={isMobile ? "column" : "row"} justifyContent="space-between" alignItems={isMobile ? "stretch" : "flex-end"} spacing={2}>
               <Box>
-                <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 700, textTransform: "uppercase", fontSize: 9 }}>Tổng thanh toán</Typography>
-                <Typography sx={{ fontSize: "1.3rem", fontWeight: 900, color: "#1C1B19", lineHeight: 1 }}>
-                  {Number(totalPrice || 0).toLocaleString("vi-VN")} <span style={{ fontSize: 12, fontWeight: 700 }}>VND</span>
+                <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 700, textTransform: "uppercase", fontSize: 10 }}>
+                  {paymentStatus === 'DEPOSITED' ? 'Tổng tiền (Đã cọc 30%)' : 'Tổng giá trị'}
                 </Typography>
+                <Typography sx={{ fontSize: "1.4rem", fontWeight: 900, color: "#1C1B19", lineHeight: 1 }}>
+                  {Number(totalPrice || 0).toLocaleString("vi-VN")} <span style={{ fontSize: 12 }}>VND</span>
+                </Typography>
+                {paymentStatus === 'DEPOSITED' && (
+                  <Typography variant="caption" sx={{ color: "#0288d1", fontWeight: 600 }}>
+                    Cần trả thêm: {(totalPrice - depositAmount).toLocaleString("vi-VN")} VND
+                  </Typography>
+                )}
               </Box>
 
               <Stack direction="row" spacing={1}>
-                {paymentStatus === 'UNPAID' && !isExpired && (
+                {paymentStatus === 'UNPAID' && !isExpired && status !== 'cancelled' && (
                   <Button 
-                    variant="contained" fullWidth={isMobile}
+                    variant="contained"
                     onClick={() => {
                       const roomId = room?._id || room || roomSnapshot?._id;
-                      navigate(`/checkout/${roomId}`, { state: booking });
+                      // Truyền toàn bộ booking state để Checkout có dữ liệu ngay
+                      navigate(`/checkout/${roomId}`, { 
+                        state: { 
+                          ...booking,
+                          roomName: roomSnapshot?.name,
+                          hotelName: roomSnapshot?.hotelName
+                        } 
+                      });
                     }}
-                    sx={{ bgcolor: "#C2A56D", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', px: 3 }}
+                    sx={{ bgcolor: "#C2A56D", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', px: 2 }}
                   >
-                    Thanh toán
+                    Thanh toán ngay
                   </Button>
                 )}
                 <Button 
-                  variant="contained" fullWidth={isMobile}
+                  variant="outlined"
                   onClick={() => onView(booking)}
-                  endIcon={!isMobile && <ChevronRight />}
                   sx={{ 
-                    bgcolor: "#1C1B19", color: "#C2A56D", borderRadius: "10px", 
-                    fontWeight: 700, textTransform: 'none', px: 3, whiteSpace: 'nowrap'
+                    borderColor: "#1C1B19", color: "#1C1B19", borderRadius: "10px", 
+                    fontWeight: 700, textTransform: 'none', px: 2,
+                    '&:hover': { borderColor: "#C2A56D", color: "#C2A56D" }
                   }}
                 >
                   Chi tiết
