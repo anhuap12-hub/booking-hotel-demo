@@ -36,16 +36,18 @@ if (alreadyReviewed) {
 
     // 3. Tạo Review với dữ liệu "Sạch"
     const newReview = await Review.create({
-      hotelId,
-      userId,
-      rating,
-      comment,
-      roomName: booking.roomSnapshot?.name || "Phòng đã đặt", // Lấy từ snapshot
-      stayDuration: booking.nights, // Lấy từ field nights của bạn
-      numberOfGuests: booking.guestsCount, // Lấy từ field guestsCount của bạn
-      stayMonth: stayMonthLabel,
-      isVerified: true
-    });
+  hotelId,
+  userId,
+  bookingId, 
+  rating,
+  comment,
+  roomName: booking.roomSnapshot?.name || "Phòng đã đặt",
+  stayDuration: booking.nights,
+  numberOfGuests: booking.guestsCount,
+  stayMonth: stayMonthLabel,
+  isVerified: true
+});
+
 
     // 4. Đồng bộ điểm Hotel (Aggregation - Giữ nguyên logic cũ của bạn)
     const stats = await Review.aggregate([
