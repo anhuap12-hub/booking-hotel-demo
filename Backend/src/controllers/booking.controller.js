@@ -44,22 +44,19 @@ export const createBooking = async (req, res) => {
     const depositAmount = Math.round(totalPrice * DEPOSIT_RATE);
     const remainingAmount = totalPrice - depositAmount;
 
-    // [UPDATE] Chỉnh sửa conflict để chính xác hơn với luồng hoàn tiền
     const conflict = await Booking.findOne({
-  room,
-  status: { $in: ["pending", "confirmed"] },
-  // SỬA DÒNG NÀY: Loại bỏ cả đơn đã hoàn tiền VÀ đơn đang chờ hoàn tiền
-  paymentStatus: { $nin: ["REFUNDED", "REFUND_PENDING"] }, 
-  checkIn: { $lt: checkOutDate },
-  checkOut: { $gt: checkInDate },
-});
+      room,
+      status: { $in: ["pending", "confirmed"] },
+      paymentStatus: { $nin: ["REFUNDED", "REFUND_PENDING"] }, 
+      checkIn: { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate },
+    });
 
-if (conflict) {
-  return res.status(400).json({ message: "Phòng này đang có đơn đặt hoặc đang chờ thanh toán." });
-}
+    if (conflict) {
+      return res.status(400).json({ message: "Phòng này đang có đơn đặt hoặc đang chờ thanh toán." });
+    }
 
-    const expiryTime = new Date(Date.now() + 30 * 60 * 1000); 
-
+    // Vì khách đã trả cọc thành công mới chạy hàm này, expireAt nên là null
     const booking = await Booking.create({
       user: userId,
       hotel: roomExists.hotel._id,
@@ -78,23 +75,23 @@ if (conflict) {
         cancellationPolicy: roomExists.cancellationPolicy,
       },
       nights,
-      totalPrice,
+      totalPrice, // Đã xóa dòng lặp totalPrice ở đây
       depositAmount,    
       remainingAmount,  
-      status: "pending",
-      paymentStatus: "UNPAID",
+      status: "confirmed",      
+      paymentStatus: "DEPOSITED", 
       contactStatus: "NEW",
-      expireAt: expiryTime,
+      expireAt: null, // Không tự động xóa vì đã thanh toán cọc
       paymentLogs: [{
         at: new Date(),
-        action: "CREATED",
-        note: `Đơn hàng được tạo. Hết hạn thanh toán lúc: ${expiryTime.toLocaleTimeString('vi-VN')}`
+        action: "DEPOSITED",
+        note: `Khách đã thanh toán cọc thành công: ${depositAmount.toLocaleString()}đ`
       }]
     });
 
     return res.status(201).json({ 
       success: true,
-      message: "Tạo đơn hàng thành công. Vui lòng thanh toán trong 30 phút.", 
+      message: "Đặt phòng thành công. Đã ghi nhận thanh toán tiền cọc.", 
       booking 
     });
 

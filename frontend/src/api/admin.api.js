@@ -18,7 +18,11 @@ export const getFollowUpBookings = () =>
 
 // Xác nhận khách đã trả tiền (thanh toán tại quầy hoặc chuyển khoản)
 export const markBookingPaid = (id, note = "") =>
-  instance.put(`/admin/bookings/${id}/pay`, { note }); // Gửi kèm note nếu có
+  instance.put(`/admin/bookings/${id}/pay`, { note });
+
+// Đánh dấu khách không đến (No-show) - KHỚP VỚI ROUTE PATCH
+export const markNoShow = (id) => 
+  instance.patch(`/admin/bookings/${id}/no-show`);
 
 // Sơ đồ phòng thực tế
 export const getAdminRoomMap = (params) => 
@@ -28,30 +32,24 @@ export const getAdminRoomMap = (params) =>
 export const updateRoomStatus = (id, status) => 
   instance.put(`/admin/rooms-status/${id}`, { status });
 
-// XÁC NHẬN HOÀN TIỀN: Quan trọng để khớp với logic refund
+// XÁC NHẬN HOÀN TIỀN
 export const confirmRefunded = (id, data = {}) => 
   instance.put(`/admin/bookings/${id}/confirm-refund`, data);
 
 
 /* ========= USERS (Quản lý người dùng) ========= */
 
-// Lấy toàn bộ danh sách người dùng cho bảng quản trị
 export const getAllUsers = () => 
   instance.get("/admin/users");
 
-// Lấy thông tin chi tiết một người dùng
 export const getUserById = (id) => 
   instance.get(`/admin/users/${id}`);
 
-// Admin sửa thông tin cơ bản (Username, Email) của người dùng
 export const updateUserByAdmin = (id, data) => 
   instance.put(`/admin/users/${id}`, data);
 
-// Cập nhật riêng quyền hạn (Role: admin hoặc user)
-// Sử dụng PATCH để khớp với route router.patch trong admin.route.js
 export const updateUserRole = (id, role) => 
   instance.patch(`/admin/users/${id}/role`, { role });
 
-// Xóa vĩnh viễn tài khoản người dùng
 export const deleteUser = (id) => 
   instance.delete(`/admin/users/${id}`);

@@ -82,7 +82,7 @@ const bookingSchema = new mongoose.Schema(
       {
         at: { type: Date, default: Date.now },
         by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        action: { type: String, enum: ["CREATED","DEPOSITED", "PAID", "REFUNDED","CANCELLED","SYSTEM_AUTO_CANCEL"] },
+        action: { type: String, enum: ["CREATED","DEPOSITED", "PAID", "REFUNDED","CANCELLED","SYSTEM_AUTO_CANCEL","DATA_CLEANUP"] },
         note: String,
       },
     ],
@@ -121,7 +121,6 @@ bookingSchema.pre("validate", function () {
 
 // Tính toán số tiền khách SẼ nhận được nếu hủy ngay lúc này
 bookingSchema.virtual('potentialRefundAmount').get(function() {
-  // 1. Chỉ tính nếu đã nộp tiền (Cọc hoặc Đủ) và đơn chưa bị hủy/hết hạn
   const validPaymentStatus = ['DEPOSITED', 'PAID'];
   const invalidBookingStatus = ['cancelled', 'expired', 'no_show'];
   
@@ -131,25 +130,20 @@ bookingSchema.virtual('potentialRefundAmount').get(function() {
 
   const now = new Date();
   const checkIn = new Date(this.checkIn);
-  
-  // 2. Tính số giờ còn lại từ bây giờ tới lúc check-in
   const hoursUntilCheckIn = (checkIn - now) / (1000 * 60 * 60);
 
   const policy = this.roomSnapshot?.cancellationPolicy;
   if (!policy) return 0;
 
-  // 3. Xác định số tiền gốc để tính hoàn (Cọc hoặc Toàn bộ)
-  // Nếu đã PAID thì tính trên totalPrice, nếu mới DEPOSITED thì tính trên depositAmount
-  const amountPaid = this.paymentStatus === 'PAID' ? this.totalPrice : this.depositAmount;
+  // SỬA TẠI ĐÂY: Sử dụng trực tiếp depositAmount vì đây là số tiền thực tế hệ thống đã ghi nhận thu được
+  const amountPaid = this.depositAmount || 0;
 
-  // 4. Kiểm tra điều kiện thời gian của chính sách hủy
   if (hoursUntilCheckIn >= policy.freeCancelBeforeHours) {
-    // Tính toán và làm tròn để không bị số lẻ (Ví dụ: 123456.789 -> 123457)
     return Math.round((amountPaid * (policy.refundPercent || 0)) / 100);
   }
 
-  // Quá hạn hủy hoặc không thỏa chính sách
   return 0;
 });
+
 
 export default mongoose.model("Booking", bookingSchema);

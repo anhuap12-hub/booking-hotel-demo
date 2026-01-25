@@ -93,31 +93,33 @@ export const confirmPayment = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (booking.paymentStatus === "PAID") {
-      return res
-        .status(400)
-        .json({ message: "Booking already paid" });
+    // Nếu đã PAID và tiền đã đủ -> Báo lỗi để Admin biết đơn này thực sự xong rồi
+    if (booking.paymentStatus === "PAID" && booking.remainingAmount === 0) {
+      return res.status(400).json({ message: "Booking already paid and cleared" });
     }
 
+    // Cập nhật trạng thái và ÉP số tiền về trạng thái hoàn tất
     booking.paymentStatus = "PAID";
+    booking.depositAmount = booking.totalPrice; // Ép tiền đã thu bằng tổng tiền
+    booking.remainingAmount = 0;                 // Xóa nợ hoàn toàn
     booking.paidAt = new Date();
     booking.paidBy = req.user.id;
+    booking.status = "confirmed";
 
     booking.paymentLogs.push({
+      at: new Date(),
       by: req.user.id,
       action: "PAID",
-      note: "Admin xác nhận thanh toán",
+      note: "Admin xác nhận thanh toán & chuẩn hóa dữ liệu tài chính",
     });
 
     await booking.save();
-
     res.json(booking);
   } catch (err) {
     console.error("CONFIRM PAYMENT ERROR:", err);
     res.status(500).json({ message: "Confirm payment failed" });
   }
 };
-
 /* ======================
    FOLLOW UP BOOKINGS
 ====================== */
@@ -141,24 +143,26 @@ export const markBookingPaid = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     
-    // Nếu đã PAID rồi thì không cho bấm nữa
-    if (booking.paymentStatus === "PAID") return res.status(400).json({ message: "Already paid" });
+    // Nếu status là PAID nhưng tiền vẫn nợ (lỗi logic cũ) -> Cho phép chạy tiếp để thu nốt tiền
+    if (booking.paymentStatus === "PAID" && (booking.depositAmount >= booking.totalPrice)) {
+        return res.status(400).json({ message: "Đơn hàng này đã hoàn tất thanh toán." });
+    }
 
     // Lấy amount từ body, nếu không có thì mặc định là thu nốt số tiền còn lại
     const amountToPay = req.body.amount ? Number(req.body.amount) : (booking.totalPrice - booking.depositAmount);
 
-    // Cập nhật số tiền đã thu
+    // Cập nhật số tiền thực tế
     booking.depositAmount = (booking.depositAmount || 0) + amountToPay;
-    booking.remainingAmount = Math.max(0, booking.totalPrice - booking.depositAmount);
-
-    // Nếu đã trả đủ hoặc gần đủ (tránh sai số nhỏ)
+    
+    // Kiểm tra để set status cuối cùng
     if (booking.depositAmount >= booking.totalPrice) {
       booking.paymentStatus = "PAID";
-      booking.depositAmount = booking.totalPrice; // Chuẩn hóa lại cho đẹp tròn tiền
+      booking.depositAmount = booking.totalPrice; // Tránh sai số
       booking.remainingAmount = 0;
-      booking.status = "confirmed"; // Đã trả đủ thì chắc chắn đơn thành công
+      booking.status = "confirmed";
     } else {
       booking.paymentStatus = "DEPOSITED";
+      booking.remainingAmount = booking.totalPrice - booking.depositAmount;
       booking.status = "confirmed";
     }
 
@@ -168,7 +172,7 @@ export const markBookingPaid = async (req, res) => {
     booking.paymentLogs.push({
       at: new Date(),
       by: req.user.id,
-      action: booking.paymentStatus,
+      action: booking.paymentStatus === "PAID" ? "PAID" : "DEPOSITED", // Dùng Enum chuẩn
       note: req.body.note || `Admin thu tiền mặt: ${amountToPay.toLocaleString()}đ`,
     });
 
@@ -177,5 +181,30 @@ export const markBookingPaid = async (req, res) => {
   } catch (err) {
     console.error("PAY BOOKING ERROR:", err);
     res.status(500).json({ message: "Payment update failed" });
+  }
+};
+export const markNoShow = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt phòng" });
+
+    // Chỉ cho phép chuyển sang No-show từ trạng thái pending hoặc confirmed
+    if (!["pending", "confirmed"].includes(booking.status)) {
+      return res.status(400).json({ message: "Không thể đánh dấu No-show cho đơn hàng này" });
+    }
+
+    booking.status = "no_show";
+    
+    booking.paymentLogs.push({
+      at: new Date(),
+      by: req.user.id,
+      action: "CANCELLED", // Hoặc "DATA_CLEANUP" tùy bạn, dùng CANCELLED là chuẩn nhất
+      note: "Admin đánh dấu khách không đến (No-show). Giữ tiền cọc."
+    });
+
+    await booking.save();
+    res.json({ success: true, message: "Đã đánh dấu khách không đến", data: booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
