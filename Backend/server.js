@@ -14,7 +14,7 @@ import roomRoutes from "./src/routes/room.route.js";
 import uploadRoutes from "./src/routes/upload.route.js";
 import bookingRoutes from "./src/routes/booking.route.js";
 import adminRoutes from "./src/routes/admin.route.js";
-import reviewRoutes from "./src/routes/review.routes.js";
+import reviewRoutes from "./src/routes/review.route.js";
 const app = express();
 
 /* ===================== MIDDLEWARE ===================== */
