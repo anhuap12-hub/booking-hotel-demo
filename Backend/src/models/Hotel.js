@@ -34,7 +34,6 @@ const hotelSchema = new mongoose.Schema(
       lat: Number,
       lng: Number,
     },
-  
 
     photos: { type: [photoSchema], default: [] },
 
@@ -56,7 +55,6 @@ const hotelSchema = new mongoose.Schema(
       enum: ["active", "inactive"],
       default: "active",
     },
-
     checkInTime: { type: String, default: "14:00" },
     checkOutTime: { type: String, default: "12:00" },
   },

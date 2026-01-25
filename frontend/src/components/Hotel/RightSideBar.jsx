@@ -40,7 +40,7 @@ export default function RightSideBar({ hotel }) {
 
       <Stack spacing={2.5}>
         {/* TRẠNG THÁI */}
-        <Box>
+        <Box >
           <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
             Trạng thái
           </Typography>

@@ -1,11 +1,11 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { 
-  Container, Grid, Divider, Skeleton, Box, Fade, Stack , Typography
+  Container, Grid, Divider, Skeleton, Box, Fade, Stack, Typography
 } from "@mui/material";
 import { getHotelById } from "../../api/hotel.api";
 
-// Lazy components
+// Lazy components giữ nguyên...
 const HotelGallery = lazy(() => import("../../components/Hotel/HotelGallery"));
 const HotelHeaderSummary = lazy(() => import("../../components/Hotel/HotelHeaderSummary"));
 const HotelDescription = lazy(() => import("../../components/Hotel/HotelDescription"));
@@ -16,7 +16,6 @@ const RightSideBar = lazy(() => import("../../components/Hotel/RightSideBar"));
 
 const LoadingSkeleton = () => (
     <Box sx={{ mt: 4 }}>
-      {/* Gallery Skeleton */}
       <Skeleton variant="rectangular" height={500} sx={{ borderRadius: "32px", mb: 6 }} />
       <Grid container spacing={6}>
         <Grid item xs={12} md={8}>
@@ -35,24 +34,44 @@ const LoadingSkeleton = () => (
 export default function HotelDetail() {
   const { id } = useParams();
   const [hotel, setHotel] = useState(null);
+  const isInitialMount = useRef(true); // Dùng ref để kiểm soát lần mount đầu tiên
 
-  useEffect(() => {
+  // 1. Dùng useCallback để bọc hàm fetch, giúp truyền xuống ReviewsSection ổn định
+  const fetchHotelData = useCallback(async () => {
     if (!id) return;
-    const fetchHotel = async () => {
-      try {
-        const res = await getHotelById(id);
-        setHotel(res.data?.data);
-      } catch (err) {
-        console.error("❌ Get hotel failed:", err);
+    try {
+      const res = await getHotelById(id);
+      if (res.data?.data) {
+        setHotel(res.data.data);
+      }
+    } catch (err) {
+      console.error("❌ Get hotel failed:", err);
+    }
+  }, [id]);
+
+  // 2. useEffect để thực thi fetching và scrolling
+  useEffect(() => {
+    // Tách việc gọi hàm vào một scope async để tránh lỗi "synchronous setState"
+    const initData = async () => {
+      await fetchHotelData();
+      
+      // Chỉ scroll smooth ở lần load đầu tiên của ID này
+      if (isInitialMount.current) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        isInitialMount.current = false;
       }
     };
-    fetchHotel();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [id]);
+
+    initData();
+
+    // Cleanup khi ID thay đổi (reset ref)
+    return () => {
+      isInitialMount.current = true;
+    };
+  }, [id, fetchHotelData]); // Dependency rõ ràng
 
   return (
     <Box sx={{ bgcolor: "#FFFFFF", minHeight: "100vh", pb: 12 }}>
-      {/* 1. Full-width Gallery bọc trong Container lớn hơn để ảnh trông cinematic */}
       <Container maxWidth="xl" sx={{ pt: 2 }}>
         {!hotel ? (
           <LoadingSkeleton />
@@ -63,7 +82,6 @@ export default function HotelDetail() {
                 <HotelGallery photos={hotel.photos || []} />
               </Suspense>
 
-              {/* 2. Nội dung chính - Thu hẹp về Container lg để dễ đọc */}
               <Container maxWidth="lg" sx={{ px: { xs: 2, md: 0 } }}>
                 <Box sx={{ mt: 6 }}>
                   <Suspense fallback={<Skeleton height={100} />}>
@@ -74,7 +92,6 @@ export default function HotelDetail() {
                 <Divider sx={{ my: 6, opacity: 0.6 }} />
 
                 <Grid container spacing={8}>
-                  {/* Left Side: Information */}
                   <Grid item xs={12} md={7.5}>
                     <Stack spacing={8}>
                       <Suspense fallback={<Skeleton height={200} />}>
@@ -91,27 +108,34 @@ export default function HotelDetail() {
                         <ReviewsSection
                           rating={hotel.rating}
                           reviews={hotel.reviews}
+                          hotelId={hotel._id}
+                          onReviewSuccess={fetchHotelData} 
                         />
                       </Suspense>
 
                       <Divider />
 
                       <Box>
-                         <Typography variant="h5" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, mb: 3 }}>
+                         <Typography variant="h5" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, mb: 1 }}>
                             Vị trí điểm đến
                          </Typography>
+                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            {hotel.address}
+                         </Typography>
                          <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
-                            <HotelMap hotel={hotel} />
+                            <HotelMap 
+                              location={hotel.location} 
+                              address={hotel.address} 
+                              hotelName={hotel.name}
+                            />
                          </Suspense>
                       </Box>
                     </Stack>
                   </Grid>
 
-                  {/* Right Side: Sticky Booking Card */}
                   <Grid item xs={12} md={4.5}>
-                    <Box sx={{ position: "sticky", top: 120, mb: 4 }}>
+                    <Box sx={{ position: "sticky", top: 100 }}>
                       <Suspense fallback={<Skeleton variant="rectangular" height={500} sx={{ borderRadius: "32px" }} />}>
-                        {/* Lưu ý: Card này nên có Shadow đậm và Border mảnh mờ */}
                         <RightSideBar hotel={hotel} />
                       </Suspense>
                     </Box>

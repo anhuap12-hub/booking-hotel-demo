@@ -1,25 +1,20 @@
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 import fetch from "node-fetch";
-
+import Transaction from "../models/Transaction.js";
 export const sepayWebhook = async (req, res) => {
   try {
     console.log("📦 SEPAY DATA:", JSON.stringify(req.body));
-
     const { content, transferAmount, amount, referenceCode } = req.body;
     const finalAmount = transferAmount || amount;
 
-    // 1. Regex tối ưu: Tìm chữ DH sau đó lấy 6-10 ký tự mã đơn
-    // Nó sẽ bỏ qua chữ "SEVQR " ở đầu và chỉ tập trung vào mã DH
+    // 1. Regex tìm mã đơn DH...
     const match = content.match(/DH([a-zA-Z0-9]{6,10})/i);
     const orderCode = match ? match[1] : null;
 
-    if (!orderCode) {
-      console.warn("⚠️ Bỏ qua: Nội dung không có mã DH (Content: " + content + ")");
-      return res.status(200).json({ message: "No DH code found" });
-    }
+    if (!orderCode) return res.status(200).json({ message: "No DH code found" });
 
-    // 2. Tìm đơn hàng có ID kết thúc bằng orderCode
+    // 2. Tìm đơn hàng bằng 6-10 ký tự cuối của ID
     const booking = await Booking.findOne({
       $expr: {
         $regexMatch: {
@@ -30,49 +25,53 @@ export const sepayWebhook = async (req, res) => {
       }
     });
 
-    if (!booking) {
-      console.error(`❌ Không tìm thấy đơn hàng: ${orderCode}`);
-      return res.status(200).json({ message: "Booking not found" });
-    }
+    if (!booking) return res.status(200).json({ message: "Booking not found" });
 
-    // 3. Xử lý thanh toán nếu trạng thái là UNPAID
+    // 3. Xử lý thanh toán nếu trạng thái chưa cọc (UNPAID)
     if (booking.paymentStatus === "UNPAID") {
-      booking.paymentStatus = "PAID";
+      // --- TẠO GIAO DỊCH TÀI CHÍNH ---
+      await Transaction.create({
+        bookingId: booking._id,
+        amount: finalAmount,
+        type: "INFLOW",
+        method: "BANK_TRANSFER",
+        description: `Khách cọc qua SePay. Ref: ${referenceCode}`
+      });
+
+      // --- CẬP NHẬT TRẠNG THÁI BOOKING ---
+      booking.paymentStatus = "DEPOSITED"; // Chuyển sang Đã cọc
+      booking.depositAmount = finalAmount;
+      booking.remainingAmount = booking.totalPrice - finalAmount;
       booking.status = "confirmed";
       booking.paidAt = new Date();
       
       booking.paymentLogs.push({
         at: new Date(),
         action: "DEPOSITED",
-        note: `Đã nhận ${finalAmount.toLocaleString()}đ. Ref: ${referenceCode}`
+        note: `Đã nhận cọc ${finalAmount.toLocaleString()}đ qua SePay.`
       });
 
       await booking.save();
 
-      // Cập nhật trạng thái phòng thành 'booked'
+      // Cập nhật trạng thái phòng
       if (booking.room) {
         await Room.findByIdAndUpdate(booking.room, { displayStatus: "booked" });
       }
-      
-      console.log(`✅ Đã xác nhận đơn hàng: ${booking._id}`);
 
-      // 4. GỬI EMAIL THÔNG BÁO (Bọc trong try-catch để không làm treo Webhook)
+      // Gửi email xác nhận
       try {
         await sendBookingEmail(booking);
-        console.log("📧 Email xác nhận đã được gửi.");
-      } catch (emailErr) {
-        console.error("⚠️ Lỗi gửi email:", emailErr.message);
+      } catch (e) {
+        console.error("📧 Email error:", e.message);
       }
     }
 
     return res.status(200).json({ success: true });
-
   } catch (error) {
-    console.error("💥 Lỗi Webhook:", error);
+    console.error("💥 Webhook Error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 // --- HÀM GỬI EMAIL ---
 const sendBookingEmail = async (booking) => {
   if (!booking.guest?.email) return;

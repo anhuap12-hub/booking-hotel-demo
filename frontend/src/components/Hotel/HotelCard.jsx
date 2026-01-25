@@ -164,14 +164,28 @@ function HotelCard({ hotel, compact = false }) {
             </Typography>
           </Stack>
           {typeof hotel.rating === "number" && (
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <StarIcon sx={{ fontSize: 16, color: "#C2A56D" }} />
-              <Typography fontSize="0.85rem" fontWeight={800} color="#1C1B19">
-                {hotel.rating}
-              </Typography>
-              <Typography fontSize="0.75rem" color="#A8A7A1">/10</Typography>
-            </Stack>
-          )}
+  <Stack direction="row" spacing={0.5} alignItems="center">
+    <Box sx={{ 
+      bgcolor: "#1C1B19", 
+      color: "#C2A56D", 
+      px: 0.8, 
+      py: 0.2, 
+      borderRadius: "6px 6px 6px 0", 
+      fontWeight: 900, 
+      fontSize: "0.85rem" 
+    }}>
+      {hotel.rating > 0 ? hotel.rating.toFixed(1) : "NEW"}
+    </Box>
+    <Stack sx={{ ml: 0.5 }}>
+      <Typography fontSize="0.75rem" fontWeight={800} color="#1C1B19" lineHeight={1}>
+        {hotel.rating >= 9 ? "Tuyệt vời" : hotel.rating >= 8 ? "Rất tốt" : "Hài lòng"}
+      </Typography>
+      <Typography fontSize="0.65rem" color="#A8A7A1">
+        {hotel.reviews || 0} đánh giá
+      </Typography>
+    </Stack>
+  </Stack>
+)}
         </Stack>
 
         <Box sx={{ mt: "auto" }}>

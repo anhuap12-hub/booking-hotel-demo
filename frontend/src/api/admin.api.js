@@ -9,8 +9,11 @@ export const updateContactStatus = (id, data) =>
   instance.put(`/admin/bookings/${id}/action`, data);
 
 // Thống kê doanh thu, số lượng đơn
-export const getAdminStats = () =>
-  instance.get("/admin/stats");
+export const getAdminStats = (startDate, endDate) => {
+  return instance.get("/admin/stats", {
+    params: { startDate, endDate }
+  });
+};
 
 // Lấy các đơn cần theo dõi (quá hạn cọc, sắp check-in...)
 export const getFollowUpBookings = () =>

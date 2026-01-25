@@ -14,7 +14,7 @@ import roomRoutes from "./src/routes/room.route.js";
 import uploadRoutes from "./src/routes/upload.route.js";
 import bookingRoutes from "./src/routes/booking.route.js";
 import adminRoutes from "./src/routes/admin.route.js";
-
+import reviewRoutes from "./src//routes/review.routes.js";
 const app = express();
 
 /* ===================== MIDDLEWARE ===================== */
@@ -56,6 +56,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 /* ===================== STATIC ===================== */
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

@@ -1,150 +1,220 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Box, Typography, Stack, Paper, CircularProgress, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Alert
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Alert, Button, TextField, Divider
 } from "@mui/material";
 import {
   TrendingUp as TrendingUpIcon,
-  AccountBalanceWallet as AccountBalanceWalletIcon, Paid as PaidIcon,
-  History as HistoryIcon, ArrowUpward as ArrowUpwardIcon, ArrowDownward as ArrowDownwardIcon
+  AccountBalanceWallet as AccountBalanceWalletIcon, 
+  Paid as PaidIcon,
+  History as HistoryIcon, 
+  ArrowUpward as ArrowUpwardIcon, 
+  ArrowDownward as ArrowDownwardIcon,
+  Download as DownloadIcon,
+  FilterAlt as FilterIcon,
+  Refresh as RefreshIcon
 } from "@mui/icons-material";
 import { getAdminStats } from "../../api/admin.api";
+import * as XLSX from 'xlsx';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        setError(null);
-        const res = await getAdminStats();
+  // Mặc định: Lọc từ đầu tháng hiện tại đến ngày hôm nay
+  const [dateFilter, setDateFilter] = useState({
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+
+  // --- 1. HÀM LẤY DỮ LIỆU (Dùng useCallback để tránh render thừa) ---
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Gửi tham số lọc vào API
+      const res = await getAdminStats(dateFilter.startDate, dateFilter.endDate);
+      
+      if (res.data && res.data.success) {
+        setStats(res.data.data);
+      } else {
         setStats(res.data);
-      } catch (e) {
-        console.error(e);
-        // Lưu thông báo lỗi nếu bị 403 hoặc lỗi server
-        setError(e.response?.status === 403 
-          ? "Bạn không có quyền truy cập báo cáo này (403 Forbidden)." 
-          : "Không thể tải dữ liệu báo cáo tài chính.");
-      } finally {
-        setLoading(false);
       }
-    };
-    fetch();
-  }, []);
+    } catch (e) {
+      console.error("Stats Error:", e);
+      setError("Không thể kết nối đến máy chủ hoặc bạn không có quyền truy cập.");
+    } finally {
+      setLoading(false);
+    }
+  }, [dateFilter]);
 
-  if (loading) return (
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // --- 2. XUẤT EXCEL THEO DỮ LIỆU ĐÃ LỌC ---
+  const handleExportExcel = () => {
+    if (!stats?.paymentHistory?.length) return;
+
+    const excelData = stats.paymentHistory.map((p) => ({
+      "Ngày giao dịch": new Date(p.createdAt).toLocaleDateString('vi-VN'),
+      "Mã đơn": p.bookingId ? `#${p.bookingId.slice(-6).toUpperCase()}` : 'N/A',
+      "Khách hàng": p.guestName || "N/A",
+      "Loại": p.type === 'INFLOW' ? "Thu tiền" : "Hoàn tiền",
+      "Phương thức": p.method === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt',
+      "Số tiền (VNĐ)": p.amount,
+      "Trạng thái": "Thành công"
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Báo cáo tài chính");
+    
+    XLSX.writeFile(wb, `Bao_cao_${dateFilter.startDate}_den_${dateFilter.endDate}.xlsx`);
+  };
+
+  if (loading && !stats) return (
     <Box py={10} textAlign="center"><CircularProgress sx={{ color: '#C2A56D' }} /></Box>
-  );
-
-  // Nếu có lỗi (như 403), hiển thị thông báo thay vì sập giao diện
-  if (error) return (
-    <Box p={3}><Alert severity="error" sx={{ borderRadius: '12px' }}>{error}</Alert></Box>
   );
 
   return (
     <Box sx={{ p: 1 }}>
-      <Typography variant="h4" fontWeight={800} mb={1} sx={{ fontFamily: "'Playfair Display', serif" }}>
-        Báo cáo Tài chính
-      </Typography>
-      <Typography variant="body2" color="text.secondary" mb={4}>
-        Theo dõi biến động dòng tiền và lịch sử giao dịch thực tế
-      </Typography>
+      {/* TIÊU ĐỀ & NÚT XUẤT */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={4} spacing={2}>
+        <Box>
+          <Typography variant="h4" fontWeight={800} sx={{ fontFamily: "'Playfair Display', serif" }}>
+            Quản trị Tài chính
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Phân tích dòng tiền thực tế theo thời gian
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<DownloadIcon />} 
+          onClick={handleExportExcel}
+          disabled={!stats?.paymentHistory?.length}
+          sx={{ bgcolor: '#1C1B19', borderRadius: '10px', px: 3, fontWeight: 700, '&:hover': { bgcolor: '#333' } }}
+        >
+          Xuất Báo Cáo
+        </Button>
+      </Stack>
 
-      {/* TỔNG QUAN TÀI CHÍNH (CARDS) - Đã thêm Optional Chaining để tránh lỗi null */}
+      {/* BỘ LỌC THỜI GIAN */}
+      <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: '16px', border: '1px solid #E5E2DC', bgcolor: '#FDFCFB' }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={4} md={3}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Từ ngày"
+              size="small"
+              value={dateFilter.startDate}
+              InputLabelProps={{ shrink: true }}
+              onChange={(e) => setDateFilter({ ...dateFilter, startDate: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4} md={3}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Đến ngày"
+              size="small"
+              value={dateFilter.endDate}
+              InputLabelProps={{ shrink: true }}
+              onChange={(e) => setDateFilter({ ...dateFilter, endDate: e.target.value })}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4} md={3}>
+            <Button 
+              fullWidth
+              variant="contained" 
+              startIcon={<RefreshIcon />}
+              onClick={fetchData}
+              sx={{ bgcolor: '#C2A56D', height: '40px', borderRadius: '8px', fontWeight: 700 }}
+            >
+              Cập nhật dữ liệu
+            </Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>{error}</Alert>}
+
+      {/* CÁC CHỈ SỐ TỔNG QUAN */}
       <Grid container spacing={3} mb={5}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Tổng tiền cọc (30%)" 
-            value={`${(stats?.totalDeposited || 0).toLocaleString()}đ`} 
-            icon={<AccountBalanceWalletIcon />} 
-            color="#0288d1" 
-          />
+          <StatCard title="Tiền cọc (Bank)" value={`${stats?.totalDeposited?.toLocaleString()}đ`} icon={<AccountBalanceWalletIcon />} color="#0288d1" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Tiền mặt đã thu" 
-            value={`${(stats?.totalCashCollected || 0).toLocaleString()}đ`} 
-            icon={<PaidIcon />} 
-            color="#2e7d32" 
-          />
+          <StatCard title="Tiền mặt (Cash)" value={`${stats?.totalCashCollected?.toLocaleString()}đ`} icon={<PaidIcon />} color="#2e7d32" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Tổng doanh thu" 
-            value={`${(stats?.totalRevenue || 0).toLocaleString()}đ`} 
-            icon={<TrendingUpIcon />} 
-            color="#ed6c02" 
-          />
+          <StatCard title="Tổng doanh thu" value={`${stats?.totalRevenue?.toLocaleString()}đ`} icon={<TrendingUpIcon />} color="#ed6c02" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Tiền đã hoàn (Refund)" 
-            value={`-${(stats?.totalRefunded || 0).toLocaleString()}đ`} 
-            icon={<HistoryIcon />} 
-            color="#d32f2f" 
-          />
+          <StatCard title="Đã hoàn trả" value={`-${stats?.totalRefunded?.toLocaleString()}đ`} icon={<HistoryIcon />} color="#d32f2f" />
         </Grid>
       </Grid>
 
-      {/* BẢNG LỊCH SỬ THANH TOÁN */}
+      {/* BẢNG CHI TIẾT GIAO DỊCH */}
       <Typography variant="h6" fontWeight={700} mb={2} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <HistoryIcon fontSize="small" /> Lịch sử giao dịch gần đây
+        <HistoryIcon fontSize="small" /> Lịch sử giao dịch trong kỳ
       </Typography>
       
-      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: "16px", border: "1px solid #E5E2DC" }}>
+      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: "16px", border: "1px solid #E5E2DC", overflow: 'hidden' }}>
         <Table>
           <TableHead sx={{ bgcolor: "#F9F8F6" }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Ngày giao dịch</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Ngày & Giờ</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Mã đơn</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Loại giao dịch</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Khách hàng</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Loại</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Phương thức</TableCell>
               <TableCell sx={{ fontWeight: 700 }} align="right">Số tiền</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {/* Sử dụng stats?.paymentHistory || [] để tránh lỗi map trên null */}
-            {(stats?.paymentHistory || []).map((payment, idx) => (
-              <TableRow key={idx} hover>
-                <TableCell>
-                  <Typography variant="body2">{new Date(payment.createdAt).toLocaleDateString('vi-VN')}</Typography>
-                  <Typography variant="caption" color="text.secondary">{new Date(payment.createdAt).toLocaleTimeString('vi-VN')}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={700}>#{payment.bookingId?.slice(-6).toUpperCase() || 'N/A'}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip 
-                    size="small" 
-                    icon={payment.type === 'INFLOW' ? <ArrowUpwardIcon fontSize="small"/> : <ArrowDownwardIcon fontSize="small"/>}
-                    label={payment.type === 'INFLOW' ? "Thu tiền" : "Hoàn tiền"} 
-                    color={payment.type === 'INFLOW' ? "success" : "error"}
-                    variant="outlined"
-                    sx={{ fontWeight: 700, fontSize: 11 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#72716E' }}>
-                    {payment.method === 'BANK_TRANSFER' ? 'Chuyển khoản (SePay)' : 'Tiền mặt tại quầy'}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" fontWeight={800} color={payment.type === 'INFLOW' ? "success.main" : "error.main"}>
-                    {payment.type === 'INFLOW' ? '+' : '-'}{(payment.amount || 0).toLocaleString()}đ
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip label="Thành công" size="small" sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', fontWeight: 700, fontSize: 10 }} />
-                </TableCell>
-              </TableRow>
-            ))}
-            {(!stats?.paymentHistory || stats.paymentHistory.length === 0) && (
+            {stats?.paymentHistory?.length > 0 ? (
+              stats.paymentHistory.map((p, idx) => (
+                <TableRow key={idx} hover>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={500}>{new Date(p.createdAt).toLocaleDateString('vi-VN')}</Typography>
+                    <Typography variant="caption" color="text.secondary">{new Date(p.createdAt).toLocaleTimeString('vi-VN')}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={700} color="primary.main">
+                        #{p.bookingId ? p.bookingId.slice(-6).toUpperCase() : 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell><Typography variant="body2">{p.guestName || "---"}</Typography></TableCell>
+                  <TableCell>
+                    <Chip 
+                      size="small" 
+                      icon={p.type === 'INFLOW' ? <ArrowUpwardIcon sx={{fontSize: '14px !important'}}/> : <ArrowDownwardIcon sx={{fontSize: '14px !important'}}/>}
+                      label={p.type === 'INFLOW' ? "Thu tiền" : "Hoàn tiền"} 
+                      color={p.type === 'INFLOW' ? "success" : "error"}
+                      variant="outlined"
+                      sx={{ fontWeight: 700, fontSize: 11 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#555' }}>
+                      {p.method === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2" fontWeight={800} color={p.type === 'INFLOW' ? "success.main" : "error.main"}>
+                      {p.type === 'INFLOW' ? '+' : '-'}{(p.amount || 0).toLocaleString()}đ
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                  Chưa có lịch sử giao dịch.
+                <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
+                  <Typography variant="body1" color="text.secondary">Không tìm thấy giao dịch nào trong khoảng thời gian này.</Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -157,14 +227,17 @@ export default function AdminDashboard() {
 
 function StatCard({ title, value, icon, color }) {
   return (
-    <Paper elevation={0} sx={{ p: 2.5, borderRadius: "16px", border: "1px solid #E5E2DC", bgcolor: '#fff' }}>
+    <Paper elevation={0} sx={{ 
+      p: 2.5, borderRadius: "16px", border: "1px solid #E5E2DC", bgcolor: '#fff', transition: '0.3s', 
+      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.05)' } 
+    }}>
       <Stack direction="row" spacing={2} alignItems="center">
-        <Box sx={{ width: 48, height: 48, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: `${color}10`, color }}>
+        <Box sx={{ width: 48, height: 48, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: `${color}12`, color }}>
           {icon}
         </Box>
         <Box>
-          <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>{title}</Typography>
-          <Typography variant="h5" fontWeight={900} color="#1C1B19">{value}</Typography>
+          <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>{title}</Typography>
+          <Typography variant="h5" fontWeight={900} color="#1C1B19">{value || '0đ'}</Typography>
         </Box>
       </Stack>
     </Paper>
