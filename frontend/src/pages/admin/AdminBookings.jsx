@@ -7,7 +7,7 @@ import { getAdminBookings, updateContactStatus, markBookingPaid, confirmRefunded
 import AdminBookingLogsDialog from "./AdminBookingLogsDialog";
 import { 
   CheckCircle, Cancel, Payment, 
-  CurrencyExchange
+  CurrencyExchange 
 } from "@mui/icons-material";
 
 /* ================= HELPERS ================= */
@@ -21,14 +21,11 @@ const bookingColor = (status) => {
   }
 };
 
-const paymentStatusConfig = (status, isPaidFull, isOnlyDeposited) => {
+const paymentStatusConfig = (status, isPaidFull, hasPaidSomething) => {
   if (status === "REFUND_PENDING") return { label: "CHỜ HOÀN TIỀN", color: "error" };
   if (status === "REFUNDED") return { label: "ĐÃ HOÀN TIỀN", color: "secondary" };
-  
-  // Logic ưu tiên số tiền thực tế
   if (isPaidFull) return { label: "ĐÃ THANH TOÁN", color: "success" };
-  if (isOnlyDeposited) return { label: "ĐÃ CỌC 30%", color: "primary" };
-  
+  if (hasPaidSomething) return { label: "THANH TOÁN MỘT PHẦN", color: "primary" };
   return { label: "CHƯA THANH TOÁN", color: "warning" };
 };
 
@@ -55,31 +52,33 @@ export default function AdminBookings() {
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
   const handleConfirm = async (id) => {
-    await updateContactStatus(id, { contactStatus: "CLOSED", result: "CONFIRMED" });
-    fetchBookings();
+    if (window.confirm("Xác nhận chuyển trạng thái đơn hàng sang THÀNH CÔNG?")) {
+      await updateContactStatus(id, { contactStatus: "CLOSED", result: "CONFIRMED" });
+      fetchBookings();
+    }
   };
 
   const handleCancel = async (id) => {
-    if (window.confirm("Xác nhận HỦY đơn hàng này? Hệ thống sẽ giải phóng phòng.")) {
+    if (window.confirm("Xác nhận HỦY đơn hàng? Phòng sẽ được giải phóng ngay lập tức.")) {
       await updateContactStatus(id, { contactStatus: "CLOSED", result: "CANCELLED" });
       fetchBookings();
     }
   };
 
   const handlePaid = async (id) => {
-    if (window.confirm("Xác nhận đã thu TIỀN MẶT số tiền còn lại từ khách?")) {
+    if (window.confirm("Xác nhận khách đã thanh toán đủ số tiền còn lại bằng TIỀN MẶT?")) {
       await markBookingPaid(id);
       fetchBookings();
     }
   };
 
   const handleConfirmRefund = async (id) => {
-    if (window.confirm("Xác nhận BẠN ĐÃ CHUYỂN KHOẢN hoàn tiền cho khách? Trạng thái sẽ chuyển thành ĐÃ HOÀN TIỀN.")) {
+    if (window.confirm("Bạn xác nhận đã hoàn trả tiền cọc cho khách qua ngân hàng?")) {
       try {
         await confirmRefunded(id);
         fetchBookings();
       } catch (err) {
-        alert("Lỗi: " + (err.response?.data?.message || "Không thể xác nhận hoàn tiền"));
+        alert("Lỗi: " + (err.response?.data?.message || "Không thể hoàn tiền"));
       }
     }
   };
@@ -91,7 +90,7 @@ export default function AdminBookings() {
       <Stack spacing={3} sx={{ p: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h5" fontWeight={800} color="#1C1B19">Quản lý Đặt phòng & Thu ngân</Typography>
-          <Button variant="outlined" size="small" onClick={fetchBookings}>Làm mới dữ liệu</Button>
+          <Button variant="outlined" size="small" onClick={fetchBookings} sx={{ borderRadius: '8px' }}>Làm mới dữ liệu</Button>
         </Box>
 
         <Paper sx={{ borderRadius: "16px", border: "1px solid #E5E2DC", overflow: "hidden", boxShadow: 'none' }}>
@@ -111,65 +110,50 @@ export default function AdminBookings() {
                 const total = b.totalPrice || 0;
                 const paid = b.depositAmount || 0;
                 
-                // Logic so sánh chuẩn
                 const isPaidFull = b.paymentStatus === "PAID" && paid >= total;
-                const isOnlyDeposited = (b.paymentStatus === "DEPOSITED") || (b.paymentStatus === "PAID" && paid < total && paid > 0);
-                
-                const bStatus = bookingColor(b.status);
-                const pStatus = paymentStatusConfig(b.paymentStatus, isPaidFull, isOnlyDeposited);
+                const hasPaidSomething = (paid > 0 && paid < total);
                 const isCancelled = b.status === "cancelled";
+                const isConfirmed = b.status === "confirmed";
                 const isRefundPending = b.paymentStatus === "REFUND_PENDING";
 
+                const bStatus = bookingColor(b.status);
+                const pStatus = paymentStatusConfig(b.paymentStatus, isPaidFull, hasPaidSomething);
+
                 return (
-                  <TableRow 
-                    key={b._id} 
-                    sx={{ 
-                      opacity: isCancelled ? 0.7 : 1,
-                      bgcolor: isRefundPending ? "rgba(239, 68, 68, 0.02)" : "inherit",
-                      "&:hover": { bgcolor: "#FDFDFD" }
-                    }}
-                  >
+                  <TableRow key={b._id} sx={{ opacity: isCancelled ? 0.6 : 1, "&:hover": { bgcolor: "#FDFDFD" } }}>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={700}>{b.guest?.name}</Typography>
+                      <Typography variant="body2" fontWeight={700}>{b.guest?.name || "N/A"}</Typography>
                       <Typography variant="caption" color="text.secondary" display="block">{b.guest?.phone}</Typography>
-                      <Chip label={`#${b._id.slice(-6).toUpperCase()}`} size="small" sx={{ fontSize: 10, height: 18, mt: 0.5 }} />
+                      <Chip label={`#${b._id.slice(-6).toUpperCase()}`} size="small" sx={{ fontSize: 10, height: 18, mt: 0.5, fontWeight: 700 }} />
                     </TableCell>
 
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>
                         {new Date(b.checkIn).toLocaleDateString('vi-VN')} → {new Date(b.checkOut).toLocaleDateString('vi-VN')}
                       </Typography>
-                      <Typography variant="caption" color="primary">{b.roomSnapshot?.name || b.room?.name}</Typography>
+                      <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>{b.roomSnapshot?.name || b.room?.name}</Typography>
                     </TableCell>
 
                     <TableCell>
                       <Stack spacing={0.5}>
-                        <Box display="flex" justifyContent="space-between" width={180}>
+                        <Box display="flex" justifyContent="space-between" width={190}>
                           <Typography variant="caption">Tổng cộng:</Typography>
                           <Typography variant="caption" fontWeight={700}>{total.toLocaleString()} đ</Typography>
                         </Box>
                         
                         {isRefundPending ? (
-                          <Box width={180} sx={{ p: 1.5, bgcolor: '#FFF5F5', borderRadius: '8px', border: '1px solid #FEB2B2', mt: 1 }}>
-                            <Typography variant="caption" color="error" fontWeight={900} display="block">
-                              CẦN HOÀN: {b.refundInfo?.amount?.toLocaleString() || paid.toLocaleString()} đ
-                            </Typography>
-                            <Typography variant="caption" sx={{ fontSize: 10, color: '#555', fontWeight: 600 }}>
-                              {b.refundInfo?.bankName} - {b.refundInfo?.accountNumber}
-                            </Typography>
-                            <Typography variant="caption" sx={{ fontSize: 10, color: '#555', display: 'block', fontStyle: 'italic' }}>
-                              Chủ: {b.refundInfo?.accountHolder}
-                            </Typography>
+                          <Box width={190} sx={{ p: 1, bgcolor: '#FFF5F5', borderRadius: '8px', border: '1px solid #FEB2B2', mt: 0.5 }}>
+                            <Typography variant="caption" color="error" fontWeight={900}>CẦN HOÀN: {paid.toLocaleString()} đ</Typography>
                           </Box>
                         ) : (
                           <>
-                            <Box display="flex" justifyContent="space-between" width={180} color="primary.main">
-                              <Typography variant="caption">Đã thu (Cọc):</Typography>
+                            <Box display="flex" justifyContent="space-between" width={190} color="primary.main">
+                              <Typography variant="caption">Đã thu:</Typography>
                               <Typography variant="caption" fontWeight={700}>-{paid.toLocaleString()} đ</Typography>
                             </Box>
-                            <Divider />
-                            <Box display="flex" justifyContent="space-between" width={180} color={isPaidFull ? "success.main" : "error.main"}>
-                              <Typography variant="caption" fontWeight={700}>{isPaidFull ? "Đã thu đủ:" : "Còn phải thu:"}</Typography>
+                            <Divider sx={{ my: 0.5 }} />
+                            <Box display="flex" justifyContent="space-between" width={190} color={isPaidFull ? "success.main" : "error.main"}>
+                              <Typography variant="caption" fontWeight={700}>{isPaidFull ? "Đã tất toán:" : "Còn phải thu:"}</Typography>
                               <Typography variant="body2" fontWeight={900}>
                                 {isPaidFull ? total.toLocaleString() : (total - paid).toLocaleString()} đ
                               </Typography>
@@ -190,26 +174,21 @@ export default function AdminBookings() {
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
                         
                         {isRefundPending && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="error"
-                            startIcon={<CurrencyExchange />}
-                            onClick={() => handleConfirmRefund(b._id)}
-                            sx={{ fontWeight: 700 }}
-                          >
-                            Xác nhận đã hoàn tiền
+                          <Button size="small" variant="contained" color="error" startIcon={<CurrencyExchange />} onClick={() => handleConfirmRefund(b._id)} sx={{ fontWeight: 700 }}>
+                            Hoàn tiền
                           </Button>
                         )}
 
-                        {!isCancelled && !isPaidFull && !isRefundPending && (
+                        {!isCancelled && !isRefundPending && (
                           <>
-                            <Tooltip title="Xác nhận đơn hàng">
-                              <Button size="small" variant="contained" color="success" sx={{ minWidth: 40 }} onClick={() => handleConfirm(b._id)}>
-                                <CheckCircle fontSize="small" />
-                              </Button>
-                            </Tooltip>
-                            <Tooltip title="Hủy đơn hàng">
+                            {!isConfirmed && (
+                              <Tooltip title="Xác nhận thành công">
+                                <Button size="small" variant="contained" color="success" sx={{ minWidth: 40 }} onClick={() => handleConfirm(b._id)}>
+                                  <CheckCircle fontSize="small" />
+                                </Button>
+                              </Tooltip>
+                            )}
+                            <Tooltip title="Hủy đơn">
                               <Button size="small" variant="outlined" color="error" sx={{ minWidth: 40 }} onClick={() => handleCancel(b._id)}>
                                 <Cancel fontSize="small" />
                               </Button>
@@ -217,24 +196,19 @@ export default function AdminBookings() {
                           </>
                         )}
 
-                        {!isPaidFull && !isCancelled && !isRefundPending && (paid > 0) && (
+                        {!isPaidFull && !isCancelled && !isRefundPending && (
                           <Button
                             size="small"
                             variant="contained"
                             startIcon={<Payment />}
                             onClick={() => handlePaid(b._id)}
-                            sx={{ bgcolor: "#FF9800", "&:hover": { bgcolor: "#F57C00" }, fontWeight: 700 }}
+                            sx={{ bgcolor: "#FF9800", "&:hover": { bgcolor: "#F57C00" }, fontWeight: 700, textTransform: 'none' }}
                           >
                             Thu tiền mặt
                           </Button>
                         )}
 
-                        <Button 
-                          size="small" 
-                          variant="text" 
-                          sx={{ color: '#72716E' }}
-                          onClick={() => { setSelectedBooking(b); setOpenLogs(true); }}
-                        >
+                        <Button size="small" variant="text" sx={{ color: '#72716E', fontWeight: 600 }} onClick={() => { setSelectedBooking(b); setOpenLogs(true); }}>
                           Logs
                         </Button>
                       </Stack>
