@@ -1,6 +1,6 @@
 // controllers/review.controller.js
 import Booking from "../models/Booking.js"; 
-import Review from "../models/Review.js";
+import Review from "../models/Review.js"; // Chữ R phải viết hoa đúng như trong thư mục models
 import Hotel from "../models/Hotel.js";
 import mongoose from "mongoose";
 
