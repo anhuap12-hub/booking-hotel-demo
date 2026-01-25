@@ -66,11 +66,19 @@ export default function AdminBookings() {
   };
 
   const handlePaid = async (id) => {
-    if (window.confirm("Xác nhận khách đã thanh toán đủ số tiền còn lại bằng TIỀN MẶT?")) {
-      await markBookingPaid(id);
-      fetchBookings();
+  if (window.confirm("Xác nhận đã thu đủ số tiền còn lại bằng TIỀN MẶT?")) {
+    try {
+      // Không cần truyền body nếu bạn muốn thu nốt phần còn lại (theo logic Backend mới ở trên)
+      await markBookingPaid(id); 
+      alert("Cập nhật thanh toán thành công!");
+      fetchBookings(); // Tải lại danh sách
+    } catch (err) {
+      const msg = err.response?.data?.message || "Lỗi cập nhật";
+      alert("Không thể thanh toán: " + msg);
+      console.error(err);
     }
-  };
+  }
+};
 
   const handleConfirmRefund = async (id) => {
     if (window.confirm("Bạn xác nhận đã hoàn trả tiền cọc cho khách qua ngân hàng?")) {

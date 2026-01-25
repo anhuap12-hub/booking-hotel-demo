@@ -138,28 +138,28 @@ export const getFollowUpBookings = async (req, res) => {
 };
 export const markBookingPaid = async (req, res) => {
   try {
-    const { amount, note } = req.body; // Lấy số tiền Admin nhập từ Frontend
     const booking = await Booking.findById(req.params.id);
-
     if (!booking) return res.status(404).json({ message: "Booking not found" });
+    
+    // Nếu đã PAID rồi thì không cho bấm nữa
     if (booking.paymentStatus === "PAID") return res.status(400).json({ message: "Already paid" });
 
-    // --- LOGIC QUAN TRỌNG TẠI ĐÂY ---
-    // Nếu số tiền nhập vào < tổng tiền phòng => Trạng thái là ĐÃ CỌC (DEPOSITED)
-    // Nếu số tiền >= tổng tiền phòng => Trạng thái là ĐÃ THANH TOÁN (PAID)
-    
-    const isFullPayment = amount >= booking.totalPrice;
+    // Lấy amount từ body, nếu không có thì mặc định là thu nốt số tiền còn lại
+    const amountToPay = req.body.amount ? Number(req.body.amount) : (booking.totalPrice - booking.depositAmount);
 
-    if (isFullPayment) {
+    // Cập nhật số tiền đã thu
+    booking.depositAmount = (booking.depositAmount || 0) + amountToPay;
+    booking.remainingAmount = Math.max(0, booking.totalPrice - booking.depositAmount);
+
+    // Nếu đã trả đủ hoặc gần đủ (tránh sai số nhỏ)
+    if (booking.depositAmount >= booking.totalPrice) {
       booking.paymentStatus = "PAID";
-      booking.depositAmount = booking.totalPrice; // Đã trả đủ
+      booking.depositAmount = booking.totalPrice; // Chuẩn hóa lại cho đẹp tròn tiền
       booking.remainingAmount = 0;
-      booking.status = "confirmed"; // Xác nhận đơn luôn khi trả đủ
+      booking.status = "confirmed"; // Đã trả đủ thì chắc chắn đơn thành công
     } else {
       booking.paymentStatus = "DEPOSITED";
-      booking.depositAmount = (booking.depositAmount || 0) + Number(amount); // Cộng dồn tiền cọc
-      booking.remainingAmount = booking.totalPrice - booking.depositAmount;
-      booking.status = "confirmed"; // Trả cọc cũng cho phép xác nhận đơn
+      booking.status = "confirmed";
     }
 
     booking.paidAt = new Date();
@@ -168,8 +168,8 @@ export const markBookingPaid = async (req, res) => {
     booking.paymentLogs.push({
       at: new Date(),
       by: req.user.id,
-      action: isFullPayment ? "PAID" : "DEPOSITED",
-      note: note || (isFullPayment ? "Xác nhận thanh toán đủ" : `Xác nhận nhận cọc: ${amount.toLocaleString()}đ`),
+      action: booking.paymentStatus,
+      note: req.body.note || `Admin thu tiền mặt: ${amountToPay.toLocaleString()}đ`,
     });
 
     await booking.save();
