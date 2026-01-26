@@ -146,10 +146,20 @@ export default function AdminBookings() {
 
                 return (
                   <TableRow key={b._id} sx={{ opacity: (isCancelled || isNoShow) ? 0.6 : 1 }}>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={700}>{b.guest?.name || "N/A"}</Typography>
-                      <Typography variant="caption" color="text.secondary">{b.guest?.phone}</Typography>
-                    </TableCell>
+                   <TableCell>
+  <Typography variant="body2" fontWeight={700}>
+    {b.guest?.name || "N/A"}
+  </Typography>
+  <Stack spacing={0}>
+    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+      {b.guest?.phone}
+    </Typography>
+
+    <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+      {b.guest?.email || b.user?.email || ""}
+    </Typography>
+  </Stack>
+</TableCell>
 
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>

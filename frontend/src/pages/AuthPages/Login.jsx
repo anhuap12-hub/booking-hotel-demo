@@ -159,22 +159,6 @@ export default function Login() {
               ),
             }}
           />
-
-          <Box sx={{ textAlign: "right" }}>
-            <Typography
-              component={Link}
-              to="/forgot-password"
-              sx={{
-                fontSize: 13,
-                color: "#C2A56D",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Quên mật khẩu?
-            </Typography>
-          </Box>
-
           <Button
             type="submit"
             fullWidth
