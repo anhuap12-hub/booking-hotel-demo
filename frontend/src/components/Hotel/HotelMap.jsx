@@ -1,7 +1,7 @@
 import { Box, Typography, Skeleton } from "@mui/material";
 
 export default function HotelMap({ hotel }) {
-  // 1. Chống crash khi dữ liệu chưa load xong
+  // 1. Chống crash khi dữ liệu chưa load xong hoặc thiếu location
   if (!hotel || !hotel.location) {
     return (
       <Box sx={{ width: "100%", mb: 4 }}>
@@ -14,7 +14,8 @@ export default function HotelMap({ hotel }) {
   // 2. Lấy tọa độ từ object location
   const { lat, lng } = hotel.location;
   
-  // URL chuẩn để nhúng Google Maps theo tọa độ (lat, lng)
+  // URL chuẩn để nhúng Google Maps theo tọa độ (Đã sửa lỗi cú pháp {lat})
+  // Sử dụng maps.google.com/maps với tham số q=lat,lng
   const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
 
   return (
@@ -58,7 +59,7 @@ export default function HotelMap({ hotel }) {
           height="100%"
           style={{
             border: 0,
-            filter: "grayscale(0.1) contrast(1.02)", // Chỉnh nhẹ để map trông sang hơn
+            filter: "grayscale(0.1) contrast(1.02)",
           }}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"

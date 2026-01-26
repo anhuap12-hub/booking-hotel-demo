@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import { getHotelById } from "../../api/hotel.api";
 
-// Lazy components giữ nguyên...
+// Lazy components
 const HotelGallery = lazy(() => import("../../components/Hotel/HotelGallery"));
 const HotelHeaderSummary = lazy(() => import("../../components/Hotel/HotelHeaderSummary"));
 const HotelDescription = lazy(() => import("../../components/Hotel/HotelDescription"));
@@ -34,9 +34,8 @@ const LoadingSkeleton = () => (
 export default function HotelDetail() {
   const { id } = useParams();
   const [hotel, setHotel] = useState(null);
-  const isInitialMount = useRef(true); // Dùng ref để kiểm soát lần mount đầu tiên
+  const isInitialMount = useRef(true);
 
-  // 1. Dùng useCallback để bọc hàm fetch, giúp truyền xuống ReviewsSection ổn định
   const fetchHotelData = useCallback(async () => {
     if (!id) return;
     try {
@@ -49,26 +48,17 @@ export default function HotelDetail() {
     }
   }, [id]);
 
-  // 2. useEffect để thực thi fetching và scrolling
   useEffect(() => {
-    // Tách việc gọi hàm vào một scope async để tránh lỗi "synchronous setState"
     const initData = async () => {
       await fetchHotelData();
-      
-      // Chỉ scroll smooth ở lần load đầu tiên của ID này
       if (isInitialMount.current) {
         window.scrollTo({ top: 0, behavior: "smooth" });
         isInitialMount.current = false;
       }
     };
-
     initData();
-
-    // Cleanup khi ID thay đổi (reset ref)
-    return () => {
-      isInitialMount.current = true;
-    };
-  }, [id, fetchHotelData]); // Dependency rõ ràng
+    return () => { isInitialMount.current = true; };
+  }, [id, fetchHotelData]);
 
   return (
     <Box sx={{ bgcolor: "#FFFFFF", minHeight: "100vh", pb: 12 }}>
@@ -115,21 +105,10 @@ export default function HotelDetail() {
 
                       <Divider />
 
-                      <Box>
-                         <Typography variant="h5" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, mb: 1 }}>
-                            Vị trí điểm đến
-                         </Typography>
-                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            {hotel.address}
-                         </Typography>
-                         <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
-                            <HotelMap 
-                              location={hotel.location} 
-                              address={hotel.address} 
-                              hotelName={hotel.name}
-                            />
-                         </Suspense>
-                      </Box>
+                      {/* PHẦN MAP: Đã đồng bộ truyền nguyên object hotel */}
+                      <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
+                         <HotelMap hotel={hotel} />
+                      </Suspense>
                     </Stack>
                   </Grid>
 
