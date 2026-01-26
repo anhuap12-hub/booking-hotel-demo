@@ -87,6 +87,7 @@ export default function BookingCard({ booking, onView }) {
   };
 
   const payInfo = (() => {
+    if (status === 'no_show') return { label: "Mất cọc (No-show)", color: "#991b1b", bgcolor: "rgba(153, 27, 27, 0.1)" };
     if (paymentStatus === 'REFUNDED') return { label: "Đã hoàn tiền", color: "#7b1fa2", bgcolor: "rgba(123, 31, 162, 0.1)" };
     if (paymentStatus === 'REFUND_PENDING') return { label: "Chờ hoàn tiền", color: "#f57c00", bgcolor: "rgba(245, 124, 0, 0.1)" };
     if (isPaidFull) return { label: "Đã trả đủ", color: "#10b981", bgcolor: "rgba(16, 185, 129, 0.1)" };
@@ -96,7 +97,11 @@ export default function BookingCard({ booking, onView }) {
 
   const tagInfo = (() => {
     if (status === 'cancelled') return { text: "Đã hủy", bg: "#ef4444" };
+    // BỔ SUNG TRƯỜNG HỢP NO_SHOW (KHỚP VỚI DATABASE CỦA BẠN)
+    if (status === 'no_show') return { text: "Khách không đến", bg: "#991b1b" }; 
+    
     if (isExpired) return { text: "Hết hạn thanh toán", bg: "#6b7280" };
+    if (status === 'completed') return { text: "Đã hoàn thành", bg: "#10b981" };
     if (isPaidFull) return { text: "Thành công", bg: "#1C1B19" };
     if (isOnlyDeposited) return { text: "Đã giữ chỗ", bg: "#0288d1" };
     return { text: "Chờ xử lý", bg: "#C2A56D" };

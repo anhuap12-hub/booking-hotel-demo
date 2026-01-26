@@ -60,30 +60,47 @@ export default function Checkout() {
   }, [roomId, checkIn, checkOut, guestName, guestPhone, guestsCount, navigate]);
 
   // 2. KIỂM TRA TRẠNG THÁI TỰ ĐỘNG
+ // 2. KIỂM TRA TRẠNG THÁI TỰ ĐỘNG (Đã fix logic nhận diện status mới)
   useEffect(() => {
     let interval;
+
+    // Chỉ bắt đầu polling nếu đã có bookingId và chưa thanh toán
     if (booking?._id && !['PAID', 'DEPOSITED'].includes(booking?.paymentStatus)) {
       interval = setInterval(async () => {
         try {
           const res = await getBookingStatus(booking._id); 
-          const currentStatus = res?.data?.booking?.paymentStatus;
+          const latestBooking = res?.data?.booking;
+          const currentStatus = latestBooking?.paymentStatus;
+
+          console.log("🔍 Checking status:", currentStatus); // Để bạn debug trên Console
+
           if (currentStatus === 'PAID' || currentStatus === 'DEPOSITED') {
             clearInterval(interval); 
+            
+            // Cập nhật state để giao diện (nếu có dùng) cũng thay đổi
+            setBooking(latestBooking);
+
             Swal.fire({
               title: 'Thành công!',
               text: currentStatus === 'DEPOSITED' ? 'Bạn đã đặt cọc thành công 30%.' : 'Thanh toán hoàn tất!',
               icon: 'success',
-              timer: 3000,
+              timer: 2000,
               showConfirmButton: false,
-            }).then(() => navigate('/my-bookings'));
+            }).then(() => {
+              // Chuyển hướng về trang quản lý đặt phòng
+              navigate('/profile/bookings', { replace: true });
+            });
           }
         } catch (err) {
           console.warn("Đang kiểm tra giao dịch..."),err;
         }
       }, 3000); 
     }
-    return () => clearInterval(interval);
-  }, [booking, navigate]);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [booking?._id, booking?.paymentStatus, navigate]); // Cập nhật dependency chính xác hơn
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
