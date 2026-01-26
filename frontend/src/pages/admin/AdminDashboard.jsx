@@ -28,7 +28,7 @@ export default function AdminDashboard() {
     endDate: new Date().toISOString().split('T')[0]
   });
 
-  // --- 1. HÀM LẤY DỮ LIỆU (Dùng useCallback để tránh render thừa) ---
+  // --- 1. HÀM LẤY DỮ LIỆU ---
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -39,7 +39,8 @@ export default function AdminDashboard() {
       if (res.data && res.data.success) {
         setStats(res.data.data);
       } else {
-        setStats(res.data);
+        // Dự phòng trường hợp cấu trúc trả về khác
+        setStats(res.data || null);
       }
     } catch (e) {
       console.error("Stats Error:", e);
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
       "Mã đơn": p.bookingId ? `#${p.bookingId.slice(-6).toUpperCase()}` : 'N/A',
       "Khách hàng": p.guestName || "N/A",
       "Loại": p.type === 'INFLOW' ? "Thu tiền" : "Hoàn tiền",
-      "Phương thức": p.method === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt',
+      "Phương thức": (p.method || "").toUpperCase().includes("CASH") ? 'Tiền mặt' : 'Chuyển khoản',
       "Số tiền (VNĐ)": p.amount,
       "Trạng thái": "Thành công"
     }));
@@ -73,6 +74,9 @@ export default function AdminDashboard() {
     
     XLSX.writeFile(wb, `Bao_cao_${dateFilter.startDate}_den_${dateFilter.endDate}.xlsx`);
   };
+
+  // Hàm helper định dạng tiền tệ an toàn
+  const formatMoney = (amount) => `${(amount || 0).toLocaleString()}đ`;
 
   if (loading && !stats) return (
     <Box py={10} textAlign="center"><CircularProgress sx={{ color: '#C2A56D' }} /></Box>
@@ -145,16 +149,16 @@ export default function AdminDashboard() {
       {/* CÁC CHỈ SỐ TỔNG QUAN */}
       <Grid container spacing={3} mb={5}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tiền cọc (Bank)" value={`${stats?.totalDeposited?.toLocaleString()}đ`} icon={<AccountBalanceWalletIcon />} color="#0288d1" />
+          <StatCard title="Tiền cọc (Bank)" value={formatMoney(stats?.totalDeposited)} icon={<AccountBalanceWalletIcon />} color="#0288d1" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tiền mặt (Cash)" value={`${stats?.totalCashCollected?.toLocaleString()}đ`} icon={<PaidIcon />} color="#2e7d32" />
+          <StatCard title="Tiền mặt (Cash)" value={formatMoney(stats?.totalCashCollected)} icon={<PaidIcon />} color="#2e7d32" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Tổng doanh thu" value={`${stats?.totalRevenue?.toLocaleString()}đ`} icon={<TrendingUpIcon />} color="#ed6c02" />
+          <StatCard title="Tổng doanh thu" value={formatMoney(stats?.totalRevenue)} icon={<TrendingUpIcon />} color="#ed6c02" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Đã hoàn trả" value={`-${stats?.totalRefunded?.toLocaleString()}đ`} icon={<HistoryIcon />} color="#d32f2f" />
+          <StatCard title="Đã hoàn trả" value={`-${formatMoney(stats?.totalRefunded)}`} icon={<HistoryIcon />} color="#d32f2f" />
         </Grid>
       </Grid>
 
@@ -201,7 +205,7 @@ export default function AdminDashboard() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="caption" sx={{ fontWeight: 700, color: '#555' }}>
-                      {p.method === 'BANK_TRANSFER' ? 'BANK' : 'CASH'}
+                      {(p.method || "").toUpperCase().includes("CASH") ? 'CASH' : 'BANK'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
