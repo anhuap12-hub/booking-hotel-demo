@@ -1,7 +1,21 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Skeleton } from "@mui/material";
 
 export default function HotelMap({ hotel }) {
-  const query = encodeURIComponent(`${hotel.address}, ${hotel.city}`);
+  // 1. Chống crash khi dữ liệu chưa load xong
+  if (!hotel || !hotel.location) {
+    return (
+      <Box sx={{ width: "100%", mb: 4 }}>
+        <Skeleton variant="text" width="40%" height={30} sx={{ mb: 1 }} />
+        <Skeleton variant="rectangular" width="100%" height={320} sx={{ borderRadius: 3 }} />
+      </Box>
+    );
+  }
+
+  // 2. Lấy tọa độ từ object location
+  const { lat, lng } = hotel.location;
+  
+  // URL chuẩn để nhúng Google Maps theo tọa độ (lat, lng)
+  const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
 
   return (
     <Box>
@@ -44,11 +58,11 @@ export default function HotelMap({ hotel }) {
           height="100%"
           style={{
             border: 0,
-            filter: "grayscale(0.2) contrast(1.05)",
+            filter: "grayscale(0.1) contrast(1.02)", // Chỉnh nhẹ để map trông sang hơn
           }}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
-          src={`https://www.google.com/maps?q=${query}&output=embed`}
+          src={mapUrl}
         />
       </Box>
     </Box>
