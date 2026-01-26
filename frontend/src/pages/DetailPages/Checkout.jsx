@@ -63,22 +63,19 @@ export default function Checkout() {
  // 2. KIỂM TRA TRẠNG THÁI TỰ ĐỘNG (Đã fix logic nhận diện status mới)
   useEffect(() => {
     let interval;
-
-    // Chỉ bắt đầu polling nếu đã có bookingId và chưa thanh toán
-    if (booking?._id && !['PAID', 'DEPOSITED'].includes(booking?.paymentStatus)) {
+    
+    // Nếu đơn hàng tồn tại và chưa được xác nhận thanh toán trên UI
+    if (booking?._id && booking?.paymentStatus === 'UNPAID') {
       interval = setInterval(async () => {
         try {
           const res = await getBookingStatus(booking._id); 
           const latestBooking = res?.data?.booking;
           const currentStatus = latestBooking?.paymentStatus;
 
-          console.log("🔍 Checking status:", currentStatus); // Để bạn debug trên Console
-
+          // Nếu trạng thái đã chuyển sang Đã cọc hoặc Đã trả đủ
           if (currentStatus === 'PAID' || currentStatus === 'DEPOSITED') {
             clearInterval(interval); 
-            
-            // Cập nhật state để giao diện (nếu có dùng) cũng thay đổi
-            setBooking(latestBooking);
+            setBooking(latestBooking); // Cập nhật state local
 
             Swal.fire({
               title: 'Thành công!',
@@ -87,8 +84,7 @@ export default function Checkout() {
               timer: 2000,
               showConfirmButton: false,
             }).then(() => {
-              // Chuyển hướng về trang quản lý đặt phòng
-              navigate('/profile/bookings', { replace: true });
+              navigate('/my-bookings', { replace: true });
             });
           }
         } catch (err) {
@@ -96,12 +92,8 @@ export default function Checkout() {
         }
       }, 3000); 
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [booking?._id, booking?.paymentStatus, navigate]); // Cập nhật dependency chính xác hơn
-
+    return () => clearInterval(interval);
+  }, [booking?._id, booking?.paymentStatus, navigate]);
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     // Có thể dùng Toast nhẹ ở đây nếu muốn

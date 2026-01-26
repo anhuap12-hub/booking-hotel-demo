@@ -75,25 +75,25 @@ export const createBooking = async (req, res) => {
         cancellationPolicy: roomExists.cancellationPolicy,
       },
       nights,
-      totalPrice, // Đã xóa dòng lặp totalPrice ở đây
-      depositAmount,    
-      remainingAmount,  
-      status: "confirmed",      
-      paymentStatus: "DEPOSITED", 
-      contactStatus: "NEW",
-      expireAt: null, // Không tự động xóa vì đã thanh toán cọc
-      paymentLogs: [{
-        at: new Date(),
-        action: "DEPOSITED",
-        note: `Khách đã thanh toán cọc thành công: ${depositAmount.toLocaleString()}đ`
-      }]
-    });
+  totalPrice,
+  depositAmount,    
+  remainingAmount,  
+  status: "pending",          // Để pending để khách còn phải thanh toán
+  paymentStatus: "UNPAID",     // Chưa thanh toán
+  contactStatus: "NEW",
+  expireAt: new Date(Date.now() + 15 * 60 * 1000), // Hết hạn sau 15p nếu không cọc
+  paymentLogs: [{
+    at: new Date(),
+    action: "CREATED",
+    note: `Đơn hàng được tạo, chờ thanh toán cọc: ${depositAmount.toLocaleString()}đ`
+  }]
+});
 
-    return res.status(201).json({ 
-      success: true,
-      message: "Đặt phòng thành công. Đã ghi nhận thanh toán tiền cọc.", 
-      booking 
-    });
+return res.status(201).json({ 
+  success: true,
+  message: "Đơn hàng đã khởi tạo, vui lòng thanh toán cọc.", 
+  booking 
+});
 
   } catch (error) {
     console.error("❌ CREATE BOOKING ERROR:", error);
@@ -241,9 +241,22 @@ export const updateBooking = async (req, res) => {
     const { status, paymentStatus } = req.body;
     const updateData = {};
     if (status) updateData.status = status;
-    if (paymentStatus) updateData.paymentStatus = paymentStatus.toUpperCase();
+    
+    if (paymentStatus) {
+      updateData.paymentStatus = paymentStatus.toUpperCase();
+      
+      // NẾU ĐÃ THANH TOÁN: Xóa expireAt để đơn không bị tự động xóa sau 15p
+      if (["DEPOSITED", "PAID"].includes(updateData.paymentStatus)) {
+        updateData.$unset = { expireAt: "" }; 
+      }
+    }
 
-    const booking = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id, 
+      updateData, 
+      { new: true }
+    );
+    
     return res.json({ message: "Booking updated successfully", booking });
   } catch (error) {
     return res.status(500).json({ message: error.message });
