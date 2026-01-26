@@ -71,3 +71,16 @@ if (alreadyReviewed) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// Thêm hàm này vào cuối file src/controllers/review.controller.js
+export const getHotelReviews = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    const reviews = await Review.find({ hotelId })
+      .populate('userId', 'name avatar')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: reviews });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
