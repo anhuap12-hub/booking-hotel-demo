@@ -4,7 +4,7 @@ import {
   TableBody, Chip, Button, CircularProgress, Tooltip, Divider
 } from "@mui/material";
 // THÊM: markNoShow vào phần import
-import { getAdminBookings, updateContactStatus, markBookingPaid, confirmRefunded, markNoShow } from "../../api/admin.api";
+import { getAdminBookings, updateContactStatus, markBookingPaid, confirmRefunded, markNoShow, cancelBookingByAdmin } from "../../api/admin.api";
 import AdminBookingLogsDialog from "./AdminBookingLogsDialog";
 import { 
   CheckCircle, Cancel, Payment, 
@@ -61,11 +61,18 @@ export default function AdminBookings() {
   };
 
   const handleCancel = async (id) => {
-    if (window.confirm("Xác nhận HỦY đơn? Tiền cọc sẽ được xử lý hoàn lại sau (nếu cần).")) {
-      await updateContactStatus(id, { contactStatus: "CLOSED", result: "CANCELLED" });
-      fetchBookings();
+  if (window.confirm("Xác nhận HỦY đơn này? Phòng sẽ được giải phóng ngay lập tức.")) {
+    try {
+      await cancelBookingByAdmin(id); // Gọi đúng hàm API admin
+      
+      alert("Đã hủy đơn thành công!");
+      fetchBookings(); // Tải lại danh sách
+    } catch (err) {
+      console.error("Lỗi khi hủy đơn:", err);
+      alert("Không thể hủy đơn: " + (err.response?.data?.message || "Lỗi server"));
     }
-  };
+  }
+};
 
   // THÊM: Hàm xử lý khách không đến
   const handleNoShow = async (id) => {

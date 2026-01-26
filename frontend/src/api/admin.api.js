@@ -14,6 +14,8 @@ export const getAdminStats = (startDate, endDate) => {
     params: { startDate, endDate }
   });
 };
+export const cancelBookingByAdmin = (id) => 
+  instance.put(`/admin/bookings/${id}/cancel`);
 
 // Lấy các đơn cần theo dõi (quá hạn cọc, sắp check-in...)
 export const getFollowUpBookings = () =>
