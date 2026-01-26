@@ -2,7 +2,7 @@ import User from "../models/User.js";
 
 export const requireEmailVerified = async (req, res, next) => {
   try {
-    // 🔒 guard bắt buộc
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -18,8 +18,6 @@ export const requireEmailVerified = async (req, res, next) => {
         message: "Please verify your email before continuing",
       });
     }
-
-    // ✅ rất quan trọng
     next();
   } catch (error) {
     console.error("requireEmailVerified error:", error);

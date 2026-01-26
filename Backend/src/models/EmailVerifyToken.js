@@ -1,4 +1,3 @@
-// models/EmailVerifyToken.js
 import mongoose from "mongoose";
 
 const emailVerifyTokenSchema = new mongoose.Schema(
@@ -20,7 +19,7 @@ const emailVerifyTokenSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      index: { expires: 0 }, // 🔥 TTL index – Mongo tự xoá khi hết hạn
+      index: { expires: 0 },
     },
   },
   { timestamps: true }

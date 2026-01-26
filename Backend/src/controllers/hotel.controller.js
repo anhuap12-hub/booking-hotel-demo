@@ -2,11 +2,9 @@ import Hotel from "../models/Hotel.js";
 import { v2 as cloudinary } from "cloudinary";
 import slugify from "slugify";
 
-/* ================== UTILS ================== */
 const normalize = (text = "") =>
   slugify(text, { lower: true, strict: true, locale: "vi" });
 
-/* ================== GET ALL HOTELS ================== */
 export const getAllHotels = async (req, res) => {
   try {
     const {
@@ -21,22 +19,18 @@ export const getAllHotels = async (req, res) => {
 
     const query = {};
 
-    // 🔍 Keyword search
     if (keyword) {
       query.name = { $regex: keyword, $options: "i" };
     }
 
-    // 🌍 City (slug)
     if (city) {
       query.citySlug = city;
     }
 
-    // 🏨 Types
     if (types) {
       query.type = { $in: types.split(",") };
     }
 
-    // 🧰 Amenities
     if (amenities) {
       const amenityArr = Array.isArray(amenities)
         ? amenities
@@ -44,16 +38,14 @@ export const getAllHotels = async (req, res) => {
       query.amenities = { $all: amenityArr };
     }
 
-    // 📦 Query DB
     const hotels = await Hotel.find(query)
       .populate({
         path: "rooms",
         select: "price discount",
-        options: { strictPopulate: false }, // ⭐ FIX CRASH
+        options: { strictPopulate: false },
       })
       .lean();
 
-    // 🧮 Price & discount calculation
     const result = hotels
       .map((hotel) => {
         let minP = null;
@@ -95,12 +87,10 @@ export const getAllHotels = async (req, res) => {
 
     res.json({ success: true, data: result });
   } catch (err) {
-    console.error("❌ getAllHotels error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/* ================== GET HOTEL BY ID ================== */
 export const getHotelById = async (req, res) => {
   try {
     const hotel = await Hotel.findById(req.params.id)
@@ -133,18 +123,15 @@ export const getHotelById = async (req, res) => {
       data: { ...hotel, cheapestPrice },
     });
   } catch (error) {
-    console.error("❌ getHotelById error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/* ================== CREATE HOTEL ================== */
 export const createHotel = async (req, res) => {
   try {
     const hotelData = req.body;
     const photos = [];
 
-    // Slugs
     if (hotelData.city) {
       hotelData.citySlug = normalize(hotelData.city);
     }
@@ -152,7 +139,6 @@ export const createHotel = async (req, res) => {
       hotelData.name_normalized = normalize(hotelData.name);
     }
 
-    // Upload images
     if (req.files?.length) {
       for (const file of req.files) {
         const upload = await cloudinary.uploader.upload(file.path, {
@@ -170,12 +156,10 @@ export const createHotel = async (req, res) => {
     const newHotel = await Hotel.create(hotelData);
     res.status(201).json({ success: true, data: newHotel });
   } catch (error) {
-    console.error("❌ createHotel error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/* ================== UPDATE HOTEL ================== */
 export const updateHotel = async (req, res) => {
   try {
     const hotel = await Hotel.findById(req.params.id);
@@ -185,7 +169,6 @@ export const updateHotel = async (req, res) => {
         .json({ success: false, message: "Hotel not found" });
     }
 
-    // Update slugs
     if (req.body.city) {
       req.body.citySlug = normalize(req.body.city);
     }
@@ -193,7 +176,6 @@ export const updateHotel = async (req, res) => {
       req.body.name_normalized = normalize(req.body.name);
     }
 
-    // Replace images
     if (req.files?.length) {
       for (const photo of hotel.photos || []) {
         await cloudinary.uploader.destroy(photo.public_id);
@@ -217,12 +199,10 @@ export const updateHotel = async (req, res) => {
 
     res.json({ success: true, data: hotel });
   } catch (error) {
-    console.error("❌ updateHotel error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/* ================== DELETE HOTEL ================== */
 export const deleteHotel = async (req, res) => {
   try {
     const hotel = await Hotel.findById(req.params.id);
@@ -239,7 +219,6 @@ export const deleteHotel = async (req, res) => {
     await hotel.deleteOne();
     res.json({ success: true, message: "Hotel deleted" });
   } catch (error) {
-    console.error("❌ deleteHotel error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

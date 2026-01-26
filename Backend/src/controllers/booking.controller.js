@@ -1,14 +1,8 @@
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 
-/**
- * ==============================
- * CREATE BOOKING (USER)
- * ==============================
- */
 export const createBooking = async (req, res) => {
   try {
-    console.log("📥 CREATE BOOKING REQUEST:", req.body);
     const { room, checkIn, checkOut, guest, guestsCount } = req.body;
 
     const userId = req.user?._id || req.user?.id;
@@ -56,7 +50,6 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "Phòng này đang có đơn đặt hoặc đang chờ thanh toán." });
     }
 
-    // Vì khách đã trả cọc thành công mới chạy hàm này, expireAt nên là null
     const booking = await Booking.create({
       user: userId,
       hotel: roomExists.hotel._id,
@@ -75,37 +68,31 @@ export const createBooking = async (req, res) => {
         cancellationPolicy: roomExists.cancellationPolicy,
       },
       nights,
-  totalPrice,
-  depositAmount,    
-  remainingAmount,  
-  status: "pending",          // Để pending để khách còn phải thanh toán
-  paymentStatus: "UNPAID",     // Chưa thanh toán
-  contactStatus: "NEW",
-  expireAt: new Date(Date.now() + 15 * 60 * 1000), // Hết hạn sau 15p nếu không cọc
-  paymentLogs: [{
-    at: new Date(),
-    action: "CREATED",
-    note: `Đơn hàng được tạo, chờ thanh toán cọc: ${depositAmount.toLocaleString()}đ`
-  }]
-});
+      totalPrice,
+      depositAmount,    
+      remainingAmount,  
+      status: "pending",          
+      paymentStatus: "UNPAID",     
+      contactStatus: "NEW",
+      expireAt: new Date(Date.now() + 15 * 60 * 1000), 
+      paymentLogs: [{
+        at: new Date(),
+        action: "CREATED",
+        note: `Đơn hàng được tạo, chờ thanh toán cọc: ${depositAmount.toLocaleString()}đ`
+      }]
+    });
 
-return res.status(201).json({ 
-  success: true,
-  message: "Đơn hàng đã khởi tạo, vui lòng thanh toán cọc.", 
-  booking 
-});
+    return res.status(201).json({ 
+      success: true,
+      message: "Đơn hàng đã khởi tạo, vui lòng thanh toán cọc.", 
+      booking 
+    });
 
   } catch (error) {
-    console.error("❌ CREATE BOOKING ERROR:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-/**
- * ==============================
- * CANCEL BOOKING (USER / ADMIN)
- * ==============================
- */
 export const cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -116,7 +103,6 @@ export const cancelBooking = async (req, res) => {
     }
 
     booking.status = "cancelled";
-    // [UPDATE] Ghi log khi hủy đơn trực tiếp
     booking.paymentLogs.push({
       at: new Date(),
       by: req.user._id,
@@ -131,11 +117,6 @@ export const cancelBooking = async (req, res) => {
   }
 };
 
-/**
- * ==============================
- * REQUEST REFUND (USER)
- * ==============================
- */
 export const requestRefund = async (req, res) => {
   try {
     const { id } = req.params;
@@ -144,7 +125,6 @@ export const requestRefund = async (req, res) => {
     const booking = await Booking.findById(id);
     if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt phòng" });
 
-    // [UPDATE] Bảo mật: Kiểm tra quyền sở hữu đơn
     if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Bạn không có quyền thực hiện yêu cầu này" });
     }
@@ -153,12 +133,11 @@ export const requestRefund = async (req, res) => {
       return res.status(400).json({ message: "Đơn hàng này chưa có giao dịch thanh toán để hoàn tiền" });
     }
 
-    // [UPDATE] Sử dụng virtual field potentialRefundAmount để lấy số tiền chính xác
     const refundAmount = booking.potentialRefundAmount;
 
     booking.paymentStatus = "REFUND_PENDING";
     booking.status = "cancelled";
-    booking.expireAt = undefined; // [UPDATE] QUAN TRỌNG: Gỡ TTL Index để đơn không bị xóa tự động
+    booking.expireAt = undefined; 
     
     booking.refundInfo = {
       bankName,
@@ -176,7 +155,6 @@ export const requestRefund = async (req, res) => {
       note: `Khách yêu cầu hủy & hoàn tiền. Số tiền dự kiến: ${refundAmount.toLocaleString()} VNĐ`
     });
 
-    // [UPDATE] Tự động cộng lại phòng trống khi khách hủy
     await Room.findByIdAndUpdate(booking.room, { $inc: { availableCount: 1 } });
 
     await booking.save();
@@ -186,13 +164,6 @@ export const requestRefund = async (req, res) => {
   }
 };
 
-
-
-/**
- * ==============================
- * GET MY BOOKINGS (USER)
- * ==============================
- */
 export const getUserBookings = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -203,12 +174,10 @@ export const getUserBookings = async (req, res) => {
       .populate("hotel", "name city address photos")
       .sort({ createdAt: -1 });
 
-    // CHỐNG CRASH: Lọc bỏ các đơn hàng mà Hotel hoặc Room đã bị xóa khỏi DB
     const validBookings = bookings.filter(b => b.hotel && b.room);
 
-    // [UPDATE] Giữ lại .map để format nhưng bỏ .lean() để Virtual field hoạt động
     const formattedBookings = validBookings.map((b) => {
-      const bookingObj = b.toObject({ virtuals: true }); // [UPDATE] Đảm bảo virtual field xuất hiện
+      const bookingObj = b.toObject({ virtuals: true }); 
       return {
         ...bookingObj,
         status: b.status || "pending",
@@ -224,7 +193,6 @@ export const getUserBookings = async (req, res) => {
   }
 };
 
-// Các hàm khác giữ nguyên...
 export const getAllBookings = async (req, res) => {
   try {
     const filter = {};
@@ -245,7 +213,6 @@ export const updateBooking = async (req, res) => {
     if (paymentStatus) {
       updateData.paymentStatus = paymentStatus.toUpperCase();
       
-      // NẾU ĐÃ THANH TOÁN: Xóa expireAt để đơn không bị tự động xóa sau 15p
       if (["DEPOSITED", "PAID"].includes(updateData.paymentStatus)) {
         updateData.$unset = { expireAt: "" }; 
       }
@@ -279,7 +246,6 @@ export const checkAvailability = async (req, res) => {
 
     const conflict = await Booking.findOne({
       room: roomId,
-      // CHỈNH SỬA: Chấp nhận cả đơn đã cọc (DEPOSITED) là đơn gây xung đột phòng
       status: { $in: ["confirmed", "pending"] }, 
       paymentStatus: { $in: ["PAID", "DEPOSITED"] }, 
       checkIn: { $lt: new Date(checkOutDate) }, 

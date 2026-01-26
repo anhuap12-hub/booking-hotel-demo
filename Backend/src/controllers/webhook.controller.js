@@ -2,19 +2,17 @@ import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 import fetch from "node-fetch";
 import Transaction from "../models/Transaction.js";
+
 export const sepayWebhook = async (req, res) => {
   try {
-    console.log("📦 SEPAY DATA:", JSON.stringify(req.body));
     const { content, transferAmount, amount, referenceCode } = req.body;
     const finalAmount = transferAmount || amount;
 
-    // 1. Regex tìm mã đơn DH...
     const match = content.match(/DH([a-zA-Z0-9]{6,10})/i);
     const orderCode = match ? match[1] : null;
 
     if (!orderCode) return res.status(200).json({ message: "No DH code found" });
 
-    // 2. Tìm đơn hàng bằng 6-10 ký tự cuối của ID
     const booking = await Booking.findOne({
       $expr: {
         $regexMatch: {
@@ -27,9 +25,7 @@ export const sepayWebhook = async (req, res) => {
 
     if (!booking) return res.status(200).json({ message: "Booking not found" });
 
-    // 3. Xử lý thanh toán nếu trạng thái chưa cọc (UNPAID)
     if (booking.paymentStatus === "UNPAID") {
-      // --- TẠO GIAO DỊCH TÀI CHÍNH ---
       await Transaction.create({
         bookingId: booking._id,
         amount: finalAmount,
@@ -38,8 +34,7 @@ export const sepayWebhook = async (req, res) => {
         description: `Khách cọc qua SePay. Ref: ${referenceCode}`
       });
 
-      // --- CẬP NHẬT TRẠNG THÁI BOOKING ---
-      booking.paymentStatus = "DEPOSITED"; // Chuyển sang Đã cọc
+      booking.paymentStatus = "DEPOSITED";
       booking.depositAmount = finalAmount;
       booking.remainingAmount = booking.totalPrice - finalAmount;
       booking.status = "confirmed";
@@ -53,12 +48,10 @@ export const sepayWebhook = async (req, res) => {
 
       await booking.save();
 
-      // Cập nhật trạng thái phòng
       if (booking.room) {
         await Room.findByIdAndUpdate(booking.room, { displayStatus: "booked" });
       }
 
-      // Gửi email xác nhận
       try {
         await sendBookingEmail(booking);
       } catch (e) {
@@ -68,11 +61,10 @@ export const sepayWebhook = async (req, res) => {
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("💥 Webhook Error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-// --- HÀM GỬI EMAIL ---
+
 const sendBookingEmail = async (booking) => {
   if (!booking.guest?.email) return;
 

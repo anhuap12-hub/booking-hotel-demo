@@ -1,8 +1,6 @@
 import Booking from "../models/Booking.js";
 import Transaction from "../models/Transaction.js";
-/* ======================
-   GET ALL BOOKINGS (ADMIN)
-====================== */
+
 export const getAdminBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
@@ -13,16 +11,10 @@ export const getAdminBookings = async (req, res) => {
 
     res.json(bookings);
   } catch (err) {
-    console.error("ADMIN GET BOOKINGS ERROR:", err);
     res.status(500).json({ message: "Fetch bookings failed" });
   }
 };
 
-/**
- * ==============================
- * ADMIN: CONFIRM REFUNDED
- * ==============================
- */
 export const confirmRefunded = async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,9 +40,7 @@ export const confirmRefunded = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-/* ======================
-   UPDATE CONTACT STATUS
-====================== */
+
 export const updateContactStatus = async (req, res) => {
   try {
     const { contactStatus, result, note } = req.body;
@@ -74,10 +64,8 @@ export const updateContactStatus = async (req, res) => {
     }
 
     await booking.save();
-
     res.json(booking);
   } catch (err) {
-    console.error("UPDATE CONTACT ERROR:", err);
     res.status(500).json({ message: "Update failed" });
   }
 };
@@ -98,9 +86,6 @@ export const getFollowUpBookings = async (req, res) => {
   }
 };
 
-/* ======================
-   CONFIRM PAYMENT (ADMIN)
-====================== */
 export const confirmPayment = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -112,7 +97,6 @@ export const confirmPayment = async (req, res) => {
 
     const amountToCollect = booking.totalPrice - (booking.depositAmount || 0);
 
-    // GHI GIAO DỊCH NẾU CÓ THU THÊM TIỀN
     if (amountToCollect > 0) {
       await Transaction.create({
         bookingId: booking._id,
@@ -144,7 +128,6 @@ export const confirmPayment = async (req, res) => {
   }
 };
 
-// 2. THU TIỀN MẶT (Cập nhật số tiền thực tế)
 export const markBookingPaid = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -156,7 +139,6 @@ export const markBookingPaid = async (req, res) => {
 
     const amountToPay = req.body.amount ? Number(req.body.amount) : (booking.totalPrice - booking.depositAmount);
 
-    // TẠO GIAO DỊCH THU TIỀN MẶT
     await Transaction.create({
       bookingId: booking._id,
       amount: amountToPay,
@@ -194,7 +176,6 @@ export const markBookingPaid = async (req, res) => {
   }
 };
 
-// 3. ĐÁNH DẤU KHÁCH KHÔNG ĐẾN (Giữ nguyên tiền, không tạo Transaction mới vì không phát sinh dòng tiền)
 export const markNoShow = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -218,11 +199,7 @@ export const markNoShow = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-/**
- * ==============================
- * ADMIN: CANCEL BOOKING
- * ==============================
- */
+
 export const cancelBooking = async (req, res) => {
   try {
     const { id } = req.params;
@@ -232,15 +209,12 @@ export const cancelBooking = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn đặt phòng" });
     }
 
-    // Nếu đã hủy rồi thì không cho hủy nữa
     if (booking.status === "cancelled") {
       return res.status(400).json({ message: "Đơn hàng này đã được hủy trước đó" });
     }
 
-    // Cập nhật trạng thái đơn hàng
     booking.status = "cancelled";
     
-    // Ghi log bảo mật
     booking.paymentLogs.push({
       at: new Date(),
       by: req.user._id,
@@ -248,7 +222,6 @@ export const cancelBooking = async (req, res) => {
       note: "Quản trị viên thực hiện hủy đơn hàng trực tiếp."
     });
 
-    // Quan trọng: Gỡ bỏ ngày hết hạn (TTL Index) nếu có để tránh đơn bị xóa mất khỏi DB
     booking.expireAt = undefined;
 
     await booking.save();
@@ -259,7 +232,6 @@ export const cancelBooking = async (req, res) => {
       data: booking 
     });
   } catch (error) {
-    console.error("ADMIN CANCEL ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };

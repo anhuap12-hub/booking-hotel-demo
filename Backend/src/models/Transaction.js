@@ -6,6 +6,7 @@ const transactionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Booking",
       required: true,
+      index: true,
     },
     amount: {
       type: Number,
@@ -13,12 +14,12 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["INFLOW", "OUTFLOW"], // INFLOW: Thu vào (Cọc/Thanh toán), OUTFLOW: Chi ra (Refund)
+      enum: ["INFLOW", "OUTFLOW"], 
       required: true,
     },
     method: {
       type: String,
-      enum: ["BANK_TRANSFER", "CASH"], // BANK_TRANSFER: Chuyển khoản (SePay), CASH: Tiền mặt tại quầy
+      enum: ["BANK_TRANSFER", "CASH"], 
       required: true,
     },
     description: {
@@ -28,5 +29,7 @@ const transactionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+transactionSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Transaction", transactionSchema);

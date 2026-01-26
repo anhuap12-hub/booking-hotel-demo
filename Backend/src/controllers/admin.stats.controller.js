@@ -6,7 +6,6 @@ export const getAdminStats = async (req, res) => {
     const { startDate, endDate } = req.query;
     let query = {};
 
-    // 1. Thiết lập bộ lọc thời gian chính xác
     if (startDate && endDate) {
       query.createdAt = {
         $gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
@@ -14,7 +13,6 @@ export const getAdminStats = async (req, res) => {
       };
     }
 
-    // 2. Lấy dữ liệu đồng bộ (Dùng Promise.all để tối ưu tốc độ)
     const [total, confirmed, cancelled, noShow, transactions] = await Promise.all([
       Booking.countDocuments(query),
       Booking.countDocuments({ ...query, status: "confirmed" }),
@@ -29,7 +27,6 @@ export const getAdminStats = async (req, res) => {
     let totalCashCollected = 0;  
     let totalRefunded = 0;       
 
-    // 3. Logic phân loại dòng tiền
     transactions.forEach(t => {
       const method = (t.method || "").toUpperCase();
       const amount = Number(t.amount) || 0;
@@ -38,7 +35,6 @@ export const getAdminStats = async (req, res) => {
         if (method === "CASH") {
           totalCashCollected += amount;
         } else {
-          // Mọi phương thức khác (BANK, VNPAY, v.v.) đều tính là Tiền cọc/Chuyển khoản
           totalDeposited += amount;
         }
       } else if (t.type === "OUTFLOW") {
@@ -46,7 +42,6 @@ export const getAdminStats = async (req, res) => {
       }
     });
 
-    // Tổng doanh thu thực thu = Tiền cọc + Tiền mặt
     const totalRevenue = totalDeposited + totalCashCollected;
     const conversionRate = total ? Math.round((confirmed / total) * 100) : 0;
 
@@ -69,7 +64,6 @@ export const getAdminStats = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("STATS_ERROR:", err);
     res.status(500).json({ success: false, message: "Lỗi lấy thống kê tài chính" });
   }
 };

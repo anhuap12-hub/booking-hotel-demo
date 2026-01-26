@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
 });
 
 transporter.verify((err) => {
-  if (err) console.error("❌ Mail error:", err);
-  else console.log("✅ Mail service ready");
+  if (err) console.error(" Mail error:", err);
+  else console.log(" Mail service ready");
 });
 
 export const sendMail = async ({ to, subject, html }) => {
@@ -22,9 +22,7 @@ export const sendMail = async ({ to, subject, html }) => {
   });
 };
 
-// Hàm helper để gửi mail xác thực (Dùng SERVER_URL từ .env)
 export const sendVerificationEmail = async (email, token) => {
-  // Link này sẽ trỏ về Backend để xử lý logic verify
   const verifyUrl = `${process.env.SERVER_URL}/api/auth/verify-email?token=${token}`;
 
   const html = `
@@ -32,7 +30,7 @@ export const sendVerificationEmail = async (email, token) => {
       <h2 style="color: #8B6F4E;">Chào mừng bạn đến với Coffee Stay!</h2>
       <p>Cảm ơn bạn đã đăng ký. Vui lòng nhấn vào nút bên dưới để xác thực tài khoản của mình:</p>
       <a href="${verifyUrl}" 
-         style="display: inline-block; padding: 12px 24px; background-color: #8B6F4E; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0;">
+          style="display: inline-block; padding: 12px 24px; background-color: #8B6F4E; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0;">
         Xác thực tài khoản
       </a>
       <p style="font-size: 12px; color: #666;">Nếu nút trên không hoạt động, bạn có thể copy link này: <br/> ${verifyUrl}</p>

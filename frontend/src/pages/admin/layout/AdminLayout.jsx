@@ -65,7 +65,7 @@ export default function AdminLayout() {
         <Button
           fullWidth
           sx={{ mt: 3, bgcolor: "#374151", color: "white" }}
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/hotels")}
         >
           Back Home
         </Button>

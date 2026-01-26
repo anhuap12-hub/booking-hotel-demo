@@ -6,7 +6,6 @@ import Booking from "../models/Booking.js";
 export const createRoom = async (req, res) => {
   try {
     const { hotelId } = req.params;
-
     const {
       name,
       type,
@@ -45,7 +44,6 @@ export const createRoom = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getAllRooms = async (req, res) => {
   try {
@@ -101,7 +99,6 @@ export const deleteRoom = async (req, res) => {
     );
 
     await room.deleteOne();
-
     res.json({ message: "Room deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -143,11 +140,9 @@ export const getAvailableRooms = async (req, res) => {
 
     res.json({ rooms });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getRoomsByHotel = async (req, res) => {
   try {
@@ -157,12 +152,9 @@ export const getRoomsByHotel = async (req, res) => {
     if (!hotel) return res.status(404).json({ message: "Hotel not found" });
 
     const rooms = await Room.find({ hotel: hotelId })
-  .populate("hotel", "name city address");
+      .populate("hotel", "name city address");
 
-    res.json({
-  hotel,
-  rooms,
-});
+    res.json({ hotel, rooms });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -204,34 +196,29 @@ export const getAdminRoomMap = async (req, res) => {
     const { hotelId } = req.query;
     const now = new Date();
 
-    // 1. Lấy danh sách phòng (Lọc theo hotelId nếu có)
     const query = hotelId ? { hotel: hotelId } : {};
     const rooms = await Room.find(query)
       .populate("hotel", "name")
-      .sort({ name: 1 }); // Sắp xếp theo tên/số phòng cho dễ nhìn
+      .sort({ name: 1 });
 
-    // 2. Lấy danh sách booking đang hiệu lực (Checked-in hoặc sắp Check-in hôm nay)
-   const bookingQuery = {
-  status: { $in: ["pending", "confirmed"] },
-  checkIn: { $lte: now },
-  checkOut: { $gte: now },
-};
-if (hotelId) bookingQuery.hotel = hotelId; // Chỉ lấy booking của hotel đang xem
+    const bookingQuery = {
+      status: { $in: ["pending", "confirmed"] },
+      checkIn: { $lte: now },
+      checkOut: { $gte: now },
+    };
+    if (hotelId) bookingQuery.hotel = hotelId;
 
-const activeBookings = await Booking.find(bookingQuery).populate("user", "name email");
+    const activeBookings = await Booking.find(bookingQuery).populate("user", "name email");
 
-    // 3. Tổ chức lại dữ liệu cho Map
     const roomMap = rooms.map((room) => {
       const currentBooking = activeBookings.find(
         (b) => b.room.toString() === room._id.toString()
       );
 
-      let displayStatus = "available"; // Mặc định
+      let displayStatus = "available";
       
-      // Kiểm tra trạng thái vận hành từ Schema của bạn
       if (room.status === "maintenance") displayStatus = "maintenance";
       else if (room.status === "inactive") displayStatus = "inactive";
-      // Nếu phòng active, mới kiểm tra đến booking
       else if (currentBooking) {
         displayStatus = currentBooking.paymentStatus === "PAID" ? "occupied" : "booked";
       }
@@ -261,7 +248,7 @@ const activeBookings = await Booking.find(bookingQuery).populate("user", "name e
 export const updateRoomStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // active hoặc maintenance
+    const { status } = req.body;
 
     const updatedRoom = await Room.findByIdAndUpdate(
       id,
@@ -278,18 +265,17 @@ export const updateRoomStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 export const getRoomDetail = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Tìm phòng và lấy thêm dữ liệu từ model Hotel đã ref trong Schema
     const room = await Room.findById(id).populate("hotel", "name location address");
 
     if (!room) {
       return res.status(404).json({ message: "Không tìm thấy phòng này" });
     }
 
-    // Nếu phòng đang ở trạng thái 'inactive', có thể chặn không cho khách xem (tùy logic của bạn)
     if (room.status === "inactive") {
       return res.status(400).json({ message: "Phòng hiện tại đã ngừng kinh doanh" });
     }

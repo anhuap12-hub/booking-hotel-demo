@@ -1,4 +1,4 @@
-import instance from "./axios"; // Hoặc đường dẫn đến file config axios của bạn
+import instance from "./axios";
 
 /**
  * Lấy danh sách đánh giá của một khách sạn

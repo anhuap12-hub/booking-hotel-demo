@@ -23,11 +23,11 @@ const roomSchema = new mongoose.Schema(
       type: String, 
       enum: ["single", "double", "suite"], 
       required: true,
-      lowercase: true // Tự động convert về chữ thường để tránh lỗi filter
+      lowercase: true 
     },
     price: { type: Number, required: true, min: 0 },
     maxPeople: { type: Number, required: true, min: 1 },
-    discount: { type: Number, min: 0, max: 100, default: 0 }, // Để default là 0 thay vì null để dễ tính toán
+    discount: { type: Number, min: 0, max: 100, default: 0 },
     status: { 
       type: String, 
       enum: ["active", "inactive", "maintenance"], 
@@ -54,10 +54,6 @@ const roomSchema = new mongoose.Schema(
   }
 );
 
-/**
- * VIRTUAL: Tính giá thực tế (Final Price)
- * Giúp Frontend chỉ việc lấy room.finalPrice thay vì tự tính (price * (1 - discount/100))
- */
 roomSchema.virtual("finalPrice").get(function () {
   if (!this.discount) return this.price;
   return Math.round(this.price * (1 - this.discount / 100));

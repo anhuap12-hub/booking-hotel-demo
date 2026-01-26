@@ -20,10 +20,8 @@ const reviewSchema = new mongoose.Schema({
   
   roomName: { type: String, default: "Phòng Tiêu Chuẩn" }, 
   isVerified: { type: Boolean, default: true },
-
-  // CÁC TRƯỜNG BỔ SUNG ĐỂ HIỂN THỊ CHI TIẾT
-  stayDuration: { type: Number, default: 1 },    // Ví dụ: 6 đêm
-  numberOfGuests: { type: Number, default: 2 },  // Ví dụ: 2 người
+  stayDuration: { type: Number, default: 1 },   
+  numberOfGuests: { type: Number, default: 2 },  
   stayMonth: { 
     type: String, 
     default: () => {

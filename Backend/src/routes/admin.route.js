@@ -26,22 +26,19 @@ import { getAdminStats } from "../controllers/admin.stats.controller.js";
 
 const router = express.Router();
 
-// Áp dụng middleware protect và adminOnly cho TOÀN BỘ route trong file này
-// Giúp code ngắn gọn hơn, không phải viết lại ở từng dòng
 router.use(protect);
 router.use(adminOnly);
 
-/* ========= USERS (Quản lý người dùng) ========= */
-router.get("/users", getAllUsers); // Lấy danh sách
-router.get("/users/:id", getUserById); // Chi tiết 1 user
-router.put("/users/:id", updateUserByAdmin); // Sửa username/email
-router.patch("/users/:id/role", updateUserRole); // Chốt sửa quyền (Role)
-router.delete("/users/:id", deleteUser); // Xóa user
-/* ========= HOTEL (Khách sạn) ========= */
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserById);
+router.put("/users/:id", updateUserByAdmin);
+router.patch("/users/:id/role", updateUserRole);
+router.delete("/users/:id", deleteUser);
+
 router.post("/hotels", async (req, res, next) => {
   try {
     const hotel = await Hotel.create(req.body);
-    res.json(hotel);
+    res.status(201).json(hotel);
   } catch (err) {
     next(err);
   }
@@ -52,28 +49,30 @@ router.put("/hotels/:id", uploadImage.array("images", 10), async (req, res) => {
     const hotel = await Hotel.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(hotel);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: err.message });
   }
 });
 
-/* ========= ROOM (Phòng) ========= */
 router.post("/rooms/:hotelId", async (req, res) => {
-  const room = await Room.create({ ...req.body, hotel: req.params.hotelId });
-  res.json(room);
+  try {
+    const room = await Room.create({ ...req.body, hotel: req.params.hotelId });
+    res.status(201).json(room);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
+
 router.get("/room-map", getAdminRoomMap);
 router.put("/rooms-status/:id", updateRoomStatus);
 
-/* ========= BOOKINGS (Đơn đặt phòng) ========= */
 router.get("/bookings", getAdminBookings);
 router.get("/bookings/follow-up", getFollowUpBookings);
-
 router.put("/bookings/:id/action", updateContactStatus);
 router.put("/bookings/:id/pay", markBookingPaid);
-router.put("/bookings/:id/confirm-refund", confirmRefunded); // Xác nhận hoàn tiền
+router.put("/bookings/:id/confirm-refund", confirmRefunded);
 router.patch("/bookings/:id/no-show", markNoShow);
 router.put("/bookings/:id/cancel", cancelBooking);
-/* ========= STATS (Thống kê) ========= */
+
 router.get("/stats", getAdminStats);
 
 export default router;

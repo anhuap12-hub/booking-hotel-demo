@@ -1,6 +1,5 @@
-// controllers/review.controller.js
 import Booking from "../models/Booking.js"; 
-import Review from "../models/Review.js"; // Chữ R phải viết hoa đúng như trong thư mục models
+import Review from "../models/Review.js";
 import Hotel from "../models/Hotel.js";
 import mongoose from "mongoose";
 
@@ -9,11 +8,10 @@ export const createReview = async (req, res) => {
     const { hotelId, rating, comment, bookingId } = req.body;
     const userId = req.user.id;
 
-    // 1. Tìm Booking thật dựa trên schema của bạn
     const booking = await Booking.findOne({ 
       _id: bookingId, 
-      user: userId, // Kiểm tra đúng chủ nhân booking
-      status: "completed" // Thường thì ở xong (completed) mới cho review
+      user: userId, 
+      status: "completed" 
     });
 
     if (!booking) {
@@ -22,34 +20,31 @@ export const createReview = async (req, res) => {
         message: "Bạn cần hoàn thành kỳ nghỉ để có thể để lại đánh giá." 
       });
     }
-    const alreadyReviewed = await Review.findOne({ bookingId }); // Giả sử bạn lưu thêm field bookingId vào Review
-if (alreadyReviewed) {
-  return res.status(400).json({ 
-    success: false, 
-    message: "Bạn đã để lại đánh giá cho kỳ nghỉ này rồi." 
-  });
-}
 
-    // 2. Trích xuất dữ liệu từ Booking Schema của bạn
+    const alreadyReviewed = await Review.findOne({ bookingId });
+    if (alreadyReviewed) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Bạn đã để lại đánh giá cho kỳ nghỉ này rồi." 
+      });
+    }
+
     const checkInDate = new Date(booking.checkIn);
     const stayMonthLabel = `tháng ${checkInDate.getMonth() + 1}/${checkInDate.getFullYear()}`;
 
-    // 3. Tạo Review với dữ liệu "Sạch"
     const newReview = await Review.create({
-  hotelId,
-  userId,
-  bookingId, 
-  rating,
-  comment,
-  roomName: booking.roomSnapshot?.name || "Phòng đã đặt",
-  stayDuration: booking.nights,
-  numberOfGuests: booking.guestsCount,
-  stayMonth: stayMonthLabel,
-  isVerified: true
-});
+      hotelId,
+      userId,
+      bookingId, 
+      rating,
+      comment,
+      roomName: booking.roomSnapshot?.name || "Phòng đã đặt",
+      stayDuration: booking.nights,
+      numberOfGuests: booking.guestsCount,
+      stayMonth: stayMonthLabel,
+      isVerified: true
+    });
 
-
-    // 4. Đồng bộ điểm Hotel (Aggregation - Giữ nguyên logic cũ của bạn)
     const stats = await Review.aggregate([
       { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
       { $group: { _id: '$hotelId', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
@@ -62,7 +57,6 @@ if (alreadyReviewed) {
       });
     }
 
-    // 5. Populate thông tin User trả về cho Frontend
     const populatedReview = await Review.findById(newReview._id).populate('userId', 'name avatar');
 
     res.status(201).json({ success: true, data: populatedReview });
@@ -71,7 +65,7 @@ if (alreadyReviewed) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// Thêm hàm này vào cuối file src/controllers/review.controller.js
+
 export const getHotelReviews = async (req, res) => {
   try {
     const { hotelId } = req.params;
