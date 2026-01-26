@@ -19,7 +19,8 @@ import {
   updateContactStatus,
   getFollowUpBookings,
   confirmRefunded,
-  markNoShow
+  markNoShow,
+  cancelBooking
 } from "../controllers/admin.booking.controller.js";
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
 
@@ -71,6 +72,7 @@ router.put("/bookings/:id/action", updateContactStatus);
 router.put("/bookings/:id/pay", markBookingPaid);
 router.put("/bookings/:id/confirm-refund", confirmRefunded); // Xác nhận hoàn tiền
 router.patch("/bookings/:id/no-show", markNoShow);
+router.put("/bookings/:id/cancel", cancelBooking);
 /* ========= STATS (Thống kê) ========= */
 router.get("/stats", getAdminStats);
 

@@ -218,3 +218,48 @@ export const markNoShow = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+/**
+ * ==============================
+ * ADMIN: CANCEL BOOKING
+ * ==============================
+ */
+export const cancelBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Không tìm thấy đơn đặt phòng" });
+    }
+
+    // Nếu đã hủy rồi thì không cho hủy nữa
+    if (booking.status === "cancelled") {
+      return res.status(400).json({ message: "Đơn hàng này đã được hủy trước đó" });
+    }
+
+    // Cập nhật trạng thái đơn hàng
+    booking.status = "cancelled";
+    
+    // Ghi log bảo mật
+    booking.paymentLogs.push({
+      at: new Date(),
+      by: req.user._id,
+      action: "CANCELLED",
+      note: "Quản trị viên thực hiện hủy đơn hàng trực tiếp."
+    });
+
+    // Quan trọng: Gỡ bỏ ngày hết hạn (TTL Index) nếu có để tránh đơn bị xóa mất khỏi DB
+    booking.expireAt = undefined;
+
+    await booking.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Admin đã hủy đơn hàng thành công", 
+      data: booking 
+    });
+  } catch (error) {
+    console.error("ADMIN CANCEL ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
