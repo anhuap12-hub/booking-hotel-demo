@@ -1,29 +1,25 @@
-import Transaction from "../models/Transaction.js";
-import Booking from "../models/Booking.js";
-
 export const getAdminStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
-    // Tạo filter mặc định (lấy tất cả nếu không có ngày)
-    let transactionQuery = {};
+    let query = {};
 
-    // Nếu có truyền ngày, thiết lập điều kiện lọc từ 00:00:00 ngày bắt đầu đến 23:59:59 ngày kết thúc
     if (startDate && endDate) {
-      transactionQuery.createdAt = {
+      query.createdAt = {
         $gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
         $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
       };
     }
 
-    // 1. Thống kê số lượng đơn (Thường lấy tổng thể hoặc theo cùng kỳ lọc)
-    const total = await Booking.countDocuments();
-    const confirmed = await Booking.countDocuments({ status: "confirmed" });
-    const cancelled = await Booking.countDocuments({ status: "cancelled" });
-    const noShow = await Booking.countDocuments({ status: "no_show" });
+    // 1. Thống kê số lượng đơn THEO KỲ LỌC (để tỉ lệ conversionRate chính xác)
+    const [total, confirmed, cancelled, noShow] = await Promise.all([
+      Booking.countDocuments(query),
+      Booking.countDocuments({ ...query, status: "confirmed" }),
+      Booking.countDocuments({ ...query, status: "cancelled" }),
+      Booking.countDocuments({ ...query, status: "no_show" })
+    ]);
 
-    // 2. Lấy dữ liệu từ bảng Transaction theo filter ngày
-    const transactions = await Transaction.find(transactionQuery)
+    // 2. Lấy Transaction theo kỳ lọc
+    const transactions = await Transaction.find(query)
       .populate({
         path: 'bookingId',
         select: 'guest roomSnapshot' 
@@ -43,29 +39,26 @@ export const getAdminStats = async (req, res) => {
       }
     });
 
-    const totalRevenue = (totalDeposited + totalCashCollected) - totalRefunded;
+    // 3. TỔNG DOANH THU: Nên là tổng thực thu (Gross Revenue) 
+    // để khớp với ô "Tiền cọc" + "Tiền mặt" trên giao diện Admin của bạn.
+    const totalRevenue = totalDeposited + totalCashCollected;
     const conversionRate = total ? Math.round((confirmed / total) * 100) : 0;
 
     res.json({
       success: true,
       data: {
-        total,
-        confirmed,
-        cancelled,
-        noShow,
-        conversionRate,
+        total, confirmed, cancelled, noShow, conversionRate,
         totalDeposited,
         totalCashCollected,
-        totalRevenue,
+        totalRevenue, // Bây giờ ô này sẽ bằng tổng 2 ô kia cộng lại
         totalRefunded,
-        // Khi đã lọc, chúng ta trả về toàn bộ danh sách đã lọc để hiển thị/xuất Excel
         paymentHistory: transactions.map(t => ({
           createdAt: t.createdAt,
           bookingId: t.bookingId?._id,
           type: t.type,
           method: t.method,
           amount: t.amount,
-          guestName: t.bookingId?.guest?.name
+          guestName: t.bookingId?.guest?.name || "Khách vãng lai"
         }))
       }
     });
