@@ -30,36 +30,28 @@ export default function HotelList() {
   });
 
   useEffect(() => {
-    const handler = setTimeout(() => setSearchTerm(inputValue), 300);
-    return () => clearTimeout(handler);
-  }, [inputValue]);
- 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchHotels = async () => {
-      setLoading(true);
-      try {
-        const res = await getAllHotels(search);
-        if (isMounted) setHotels(res.data?.data || []);
-      } catch (err) {
-        console.error("Lỗi khi tải danh sách khách sạn:", err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    fetchHotels();
-    return () => { isMounted = false; };
-  }, [search]);
+  let isMounted = true;
+  const fetchHotels = async () => {
+    setLoading(true);
+    try {
+      const res = await getAllHotels({}); 
+      if (isMounted) setHotels(res.data?.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách khách sạn:", err);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  };
+  fetchHotels();
+  return () => { isMounted = false; };
+}, []);
 
   
  useEffect(() => {
   if (search.city) {
-    setInputValue(search.city); 
+    setInputValue(search.city);
     setSearchTerm(search.city); 
-    setFilters((prev) => ({ 
-      ...prev, 
-      city: search.city 
-    })); 
+    setFilters((prev) => ({ ...prev, city: "" })); 
   }
 }, [search.city]);
 
