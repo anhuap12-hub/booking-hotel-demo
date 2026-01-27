@@ -1,12 +1,15 @@
 import React from "react";
 import { Box, Typography, Stack, Container } from "@mui/material";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import SupportAgentIcon from "@mui/icons-material/SupportAgent";
-import AutorenewIcon from "@mui/icons-material/Autorenew";
+// Import icons theo kiểu destructing để tối ưu hóa bundle size và tránh lỗi lãng phí tài nguyên
+import { 
+  LocalOffer as LocalOfferIcon, 
+  VisibilityOff as VisibilityOffIcon, 
+  SupportAgent as SupportAgentIcon, 
+  Autorenew as AutorenewIcon 
+} from "@mui/icons-material";
 
 /* ================= COMPONENT CON: REASON ITEM ================= */
-function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
+const ReasonItem = ({ icon, title, desc, iconBg, iconColor }) => {
   return (
     <Box
       sx={{
@@ -18,11 +21,11 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        transition: "all 0.3s ease-in-out", // Thay cho Motion
+        transition: "all 0.3s ease-in-out",
         "&:hover": {
           borderColor: "#C2A56D",
           boxShadow: "0 20px 40px rgba(0,0,0,0.04)",
-          transform: "translateY(-8px)", // Hiệu ứng bay lên
+          transform: "translateY(-8px)",
         },
       }}
     >
@@ -48,7 +51,7 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
           fontSize: "1rem",
           color: "#1C1B19",
           mb: 1,
-          letterSpacing: "-0.01em"
+          letterSpacing: "-0.01em",
         }}
       >
         {title}
@@ -59,14 +62,14 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
           fontSize: "0.85rem",
           color: "#72716E",
           lineHeight: 1.6,
-          fontWeight: 500
+          fontWeight: 500,
         }}
       >
         {desc}
       </Typography>
     </Box>
   );
-}
+};
 
 const REASONS = [
   {
@@ -100,7 +103,7 @@ const REASONS = [
 ];
 
 /* ================= COMPONENT CHÍNH ================= */
-export default function WhyBook() {
+const WhyBook = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 10, mb: 10 }}>
@@ -139,4 +142,7 @@ export default function WhyBook() {
       </Box>
     </Container>
   );
-}
+};
+
+// Export default tách riêng để công cụ build (Vite/Webpack) không bị nhầm lẫn
+export default WhyBook;
