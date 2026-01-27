@@ -61,35 +61,38 @@ export default function HotelList() {
   }, [search]);
 
   // 4. Logic lọc dữ liệu (Client-side)
-  const filteredHotels = useMemo(() => {
-  const term = normalizeText(searchTerm);
-  const activeCity = search.city || filters.city;
-  const filterCity = normalizeText(activeCity);
+ useEffect(() => {
+  if (search.city) {
+    setInputValue(search.city); 
+    setFilters((prev) => ({ ...prev, city: "" })); 
+  }
+}, [search.city]);
 
-  console.log("Thành phố đang lọc:", filterCity); // Xem nó có ra "da lat" không?
+// 4. Logic lọc dữ liệu (Bỏ lọc city riêng lẻ, gộp vào matchesSearch)
+const filteredHotels = useMemo(() => {
+  const term = normalizeText(searchTerm);
 
   return hotels.filter((hotel) => {
     if (hotel.status !== "active") return false;
 
-      const matchesSearch = !term || 
-        normalizeText(hotel.name || "").includes(term) ||
-        normalizeText(hotel.city || "").includes(term);
+    // TÌM KIẾM TỔNG HỢP: Khớp tên HOẶC khớp thành phố
+    const matchesSearch = !term || 
+      normalizeText(hotel.name || "").includes(term) ||
+      normalizeText(hotel.city || "").includes(term);
 
-      const prices = hotel.rooms?.map((r) => (r.price || 0) * (1 - (r.discount || 0) / 100)) || [];
-      const minRoomPrice = prices.length ? Math.min(...prices) : 0;
-      const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
-      const hotelCityNormalized = normalizeText(hotel.city || "");
-      const matchesCity = !activeCity || hotelCityNormalized.includes(filterCity);
-      if (!matchesCity) {
-       console.log(`Khách sạn ${hotel.name} bị loại vì: ${hotelCityNormalized} không khớp ${filterCity}`);
-    }
-      const matchesType = !filters.types.length || filters.types.includes(hotel.type);
-      const matchesAmenities = !filters.amenities.length || 
-        filters.amenities.every((a) => hotel.amenities?.includes(a));
+    // Lọc giá
+    const prices = hotel.rooms?.map((r) => (r.price || 0) * (1 - (r.discount || 0) / 100)) || [];
+    const minRoomPrice = prices.length ? Math.min(...prices) : 0;
+    const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
 
-      return matchesSearch && matchesPrice && matchesCity && matchesType && matchesAmenities;
+    // Lọc loại hình và tiện nghi (giữ nguyên)
+    const matchesType = !filters.types.length || filters.types.includes(hotel.type);
+    const matchesAmenities = !filters.amenities.length || 
+      filters.amenities.every((a) => hotel.amenities?.includes(a));
+
+    return matchesSearch && matchesPrice && matchesType && matchesAmenities;
   });
-}, [hotels, searchTerm, filters, search.city]);
+}, [hotels, searchTerm, filters]);
   // Trích xuất dữ liệu động cho Sidebar
   const uniqueCities = useMemo(() => [...new Set(hotels.map((h) => h.city).filter(Boolean))], [hotels]);
   const allAmenities = useMemo(() => [...new Set(hotels.flatMap((h) => h.amenities || []))].filter(Boolean).sort(), [hotels]);

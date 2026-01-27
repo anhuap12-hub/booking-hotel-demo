@@ -8,7 +8,7 @@ const MotionBox = motion(Box);
 
 const DESTINATIONS = [
   {
-    city: "Hà Nội",
+    city: "Buôn Ma Thuột",
     image: "https://images.unsplash.com/photo-1509021436665-8f07dbf5bf1d?auto=format&fit=crop&w=600&q=80",
     desc: "Cổ kính & Trầm mặc",
   },
@@ -35,7 +35,7 @@ export default function TrendingDestinations() {
 
   const handleClick = (city) => {
   updateSearch({ city: city }); 
-  navigate(`/hotels?city=${encodeURIComponent(city)}`);
+  navigate(`/hotels`); 
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
