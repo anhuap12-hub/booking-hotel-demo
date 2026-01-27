@@ -9,22 +9,18 @@ import {
 import { protect } from "../middleware/auth.js";
 import { adminOnly } from "../middleware/role.js";
 import uploadImage from "../middleware/uploadImage.js";
+import Hotel from "../models/Hotel.js";
 
 const router = express.Router();
 
-router.post("/", protect, adminOnly, uploadImage.array("images", 10), createHotel);
-router.get("/", getAllHotels);
-router.get("/:id", getHotelById);
-router.put("/:id", protect, adminOnly, uploadImage.array("images", 10), updateHotel);
-router.delete("/:id", protect, adminOnly, deleteHotel);
 router.get("/deals", async (req, res) => {
   try {
     const deals = await Hotel.find({
-      isDeal: true,
-      discount: { $gte: 10 },
+      status: "active",
+      cheapestPrice: { $gt: 0 }
     })
-      .sort({ discount: -1 })
-      .limit(20);
+    .sort({ rating: -1 })
+    .limit(20);
 
     res.json({
       success: true,
@@ -37,4 +33,12 @@ router.get("/deals", async (req, res) => {
     });
   }
 });
+
+router.get("/", getAllHotels);
+router.get("/:id", getHotelById);
+
+router.post("/", protect, adminOnly, uploadImage.array("images", 10), createHotel);
+router.put("/:id", protect, adminOnly, uploadImage.array("images", 10), updateHotel);
+router.delete("/:id", protect, adminOnly, deleteHotel);
+
 export default router;

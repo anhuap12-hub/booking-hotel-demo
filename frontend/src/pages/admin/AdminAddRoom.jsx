@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { createRoom } from "../../api/room.api";
+import axios from "../../api/axios";
 import {
   TextField,
   Button,
@@ -11,6 +11,8 @@ import {
   FormControl,
   Box,
   Typography,
+  CircularProgress,
+  Alert
 } from "@mui/material";
 
 export default function AdminAddRoom() {
@@ -22,143 +24,129 @@ export default function AdminAddRoom() {
     type: "single",
     price: "",
     maxPeople: 1,
-    status: "Available",
+    status: "active",
   });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await createRoom(hotelId, {
-      ...form,
-      price: Number(form.price),
-      maxPeople: Number(form.maxPeople),
-    });
-    navigate(`/admin/hotels/${hotelId}/rooms`);
+    setError("");
+
+    if (!form.name || !form.price) {
+      setError("Vui lòng điền tên phòng và giá.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(`/rooms/by-hotel/${hotelId}`, {
+        ...form,
+        price: Number(form.price),
+        maxPeople: Number(form.maxPeople),
+      });
+      
+      navigate(`/admin/hotels/${hotelId}/rooms`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Không thể thêm phòng.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box
       sx={{
-        maxWidth: 440,
-        mx: "auto",
-        mt: 6,
-        p: 4,
-        bgcolor: "#F5F3EF",
-        borderRadius: 2,
+        maxWidth: 440, mx: "auto", mt: 6, p: 4,
+        bgcolor: "#F5F3EF", borderRadius: "16px",
         border: "1px solid #E5E2DC",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.05)"
       }}
     >
       <Typography
-        fontSize={20}
-        fontWeight={600}
-        mb={3}
-        sx={{ color: "#2B2B2B" }}
+        fontSize={22} fontWeight={700} mb={3}
+        sx={{ color: "#3E2C1C", textAlign: "center" }}
       >
-        Add Room
+        Thêm Phòng Mới
       </Typography>
 
-      <Stack spacing={3}>
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: "8px" }}>{error}</Alert>}
+
+      <Stack spacing={3} component="form" onSubmit={handleSubmit}>
         <TextField
-          label="Room Name"
+          label="Tên phòng (Số phòng)"
           name="name"
           value={form.name}
           onChange={handleChange}
-          required
-          fullWidth
-          sx={{
-            "& .MuiInputBase-root": { color: "#2B2B2B" },
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#CFC6BC",
-            },
-          }}
+          required fullWidth
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
         />
 
         <FormControl fullWidth>
-          <InputLabel sx={{ color: "#6B6B6B" }}>Type</InputLabel>
+          <InputLabel>Loại phòng</InputLabel>
           <Select
             name="type"
+            label="Loại phòng"
             value={form.type}
             onChange={handleChange}
-            sx={{
-              color: "#2B2B2B",
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#CFC6BC",
-              },
-            }}
+            sx={{ borderRadius: "10px" }}
           >
-            <MenuItem value="single">Single</MenuItem>
-            <MenuItem value="double">Double</MenuItem>
-            <MenuItem value="suite">Suite</MenuItem>
+            <MenuItem value="single">Single (Phòng đơn)</MenuItem>
+            <MenuItem value="double">Double (Phòng đôi)</MenuItem>
+            <MenuItem value="suite">Suite (Cao cấp)</MenuItem>
           </Select>
         </FormControl>
 
         <TextField
           type="number"
-          label="Price"
+          label="Giá phòng / đêm"
           name="price"
           value={form.price}
           onChange={handleChange}
-          required
-          fullWidth
-          sx={{
-            "& .MuiInputBase-root": { color: "#2B2B2B" },
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#CFC6BC",
-            },
-          }}
+          required fullWidth
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
         />
 
         <TextField
           type="number"
-          label="Max People"
+          label="Số người tối đa"
           name="maxPeople"
           value={form.maxPeople}
           onChange={handleChange}
-          required
-          fullWidth
-          sx={{
-            "& .MuiInputBase-root": { color: "#2B2B2B" },
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "#CFC6BC",
-            },
-          }}
+          required fullWidth
+          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
         />
 
         <FormControl fullWidth>
-          <InputLabel sx={{ color: "#6B6B6B" }}>Status</InputLabel>
+          <InputLabel>Trạng thái ban đầu</InputLabel>
           <Select
             name="status"
+            label="Trạng thái ban đầu"
             value={form.status}
             onChange={handleChange}
-            sx={{
-              color: "#2B2B2B",
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#CFC6BC",
-              },
-            }}
+            sx={{ borderRadius: "10px" }}
           >
-            <MenuItem value="Available">Available</MenuItem>
-            <MenuItem value="Booked">Booked</MenuItem>
+            <MenuItem value="active">Sẵn sàng đón khách</MenuItem>
+            <MenuItem value="maintenance">Đang bảo trì / Sửa chữa</MenuItem>
+            <MenuItem value="inactive">Tạm ngưng sử dụng</MenuItem>
           </Select>
         </FormControl>
 
         <Button
+          type="submit"
           variant="contained"
-          onClick={handleSubmit}
+          disabled={loading}
           sx={{
-            mt: 1,
-            bgcolor: "#3E2C1C",
-            color: "#fff",
-            fontWeight: 600,
-            textTransform: "none",
-            "&:hover": {
-              bgcolor: "#2F2116",
-            },
+            py: 1.5, bgcolor: "#3E2C1C", color: "#fff", fontWeight: 700,
+            textTransform: "none", borderRadius: "10px", fontSize: "1rem",
+            "&:hover": { bgcolor: "#2F2116" },
           }}
         >
-          Add Room
+          {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Tạo phòng và Cập nhật giá"}
         </Button>
       </Stack>
     </Box>

@@ -48,9 +48,8 @@ const hotelSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-hotelSchema.pre("save", function () {
+hotelSchema.pre("save", function (next) {
   const parts = [];
-
   if (this.name) parts.push(this.name);
   if (this.city) parts.push(this.city);
   if (this.address) parts.push(this.address);
@@ -58,8 +57,8 @@ hotelSchema.pre("save", function () {
   if (this.city) {
     this.citySlug = toSlug(this.city);
   }
-
   this.searchText = toSlug(parts.join(" "));
+  next();
 });
 
 hotelSchema.index({ citySlug: 1 });

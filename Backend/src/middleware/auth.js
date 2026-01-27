@@ -19,7 +19,6 @@ req.user = {
   id: decoded.id,  
   role: decoded.role,
 };
-
     next();
   } catch (error) {
     return res.status(401).json({

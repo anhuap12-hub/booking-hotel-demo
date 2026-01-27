@@ -3,41 +3,33 @@ import Room from "../models/Room.js";
 import Hotel from "../models/Hotel.js";
 import Booking from "../models/Booking.js";
 
+const syncHotelPrice = async (hotelId) => {
+  const hotel = await Hotel.findById(hotelId).populate("rooms");
+  if (hotel && hotel.rooms.length > 0) {
+    const validPrices = hotel.rooms
+      .filter(r => r.status === "active")
+      .map(r => r.price)
+      .filter(p => typeof p === "number");
+    
+    hotel.cheapestPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
+    await hotel.save();
+  }
+};
+
 export const createRoom = async (req, res) => {
   try {
     const { hotelId } = req.params;
-    const {
-      name,
-      type,
-      price,
-      maxPeople,
-      status,
-      desc,
-      photos,
-      amenities,
-      cancellationPolicy,
-    } = req.body;
-
     const hotel = await Hotel.findById(hotelId);
-    if (!hotel) {
-      return res.status(404).json({ message: "Hotel not found" });
-    }
+    if (!hotel) return res.status(404).json({ message: "Hotel not found" });
 
     const room = await Room.create({
-      name,
-      type,
-      price,
-      maxPeople,
-      status,
-      desc,
-      photos,
-      amenities,
-      cancellationPolicy,
+      ...req.body,
       hotel: hotelId,
+      status: req.body.status || "active"
     });
 
-    hotel.rooms.push(room._id);
-    await hotel.save();
+    await Hotel.findByIdAndUpdate(hotelId, { $push: { rooms: room._id } });
+    await syncHotelPrice(hotelId);
 
     res.status(201).json(room);
   } catch (error) {
@@ -56,10 +48,7 @@ export const getAllRooms = async (req, res) => {
 
 export const getRoomById = async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id).populate(
-      "hotel",
-      "name city address"
-    );
+    const room = await Room.findById(req.params.id).populate("hotel", "name city address");
     if (!room) return res.status(404).json({ message: "Room not found" });
     res.json(room);
   } catch (error) {
@@ -69,13 +58,10 @@ export const getRoomById = async (req, res) => {
 
 export const updateRoom = async (req, res) => {
   try {
-    const room = await Room.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!room) return res.status(404).json({ message: "Room not found" });
 
+    await syncHotelPrice(room.hotel);
     res.json({ message: "Room updated", room });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -85,20 +71,16 @@ export const updateRoom = async (req, res) => {
 export const deleteRoom = async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid room id" });
-    }
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid room id" });
 
     const room = await Room.findById(id);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    await Hotel.updateMany(
-      { rooms: room._id },
-      { $pull: { rooms: room._id } }
-    );
-
+    const hotelId = room.hotel;
+    await Hotel.findByIdAndUpdate(hotelId, { $pull: { rooms: room._id } });
     await room.deleteOne();
+    await syncHotelPrice(hotelId);
+
     res.json({ message: "Room deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -108,20 +90,13 @@ export const deleteRoom = async (req, res) => {
 export const getAvailableRooms = async (req, res) => {
   try {
     const { checkIn, checkOut, hotelId } = req.query;
-
-    if (!checkIn || !checkOut) {
-      return res.status(400).json({ message: "Thiếu checkIn hoặc checkOut" });
-    }
+    if (!checkIn || !checkOut) return res.status(400).json({ message: "Thiếu checkIn hoặc checkOut" });
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
-    if (isNaN(checkInDate) || isNaN(checkOutDate)) {
+    if (isNaN(checkInDate) || isNaN(checkOutDate) || checkOutDate <= checkInDate) {
       return res.status(400).json({ message: "Ngày không hợp lệ" });
-    }
-
-    if (checkOutDate <= checkInDate) {
-      return res.status(400).json({ message: "Check-out phải sau check-in" });
     }
 
     const bookings = await Booking.find({
@@ -135,7 +110,7 @@ export const getAvailableRooms = async (req, res) => {
     const rooms = await Room.find({
       _id: { $nin: bookedRoomIds },
       ...(hotelId && { hotel: hotelId }),
-      status: { $ne: "Unavailable" },
+      status: "active",
     }).populate("hotel", "name city address");
 
     res.json({ rooms });
@@ -147,13 +122,10 @@ export const getAvailableRooms = async (req, res) => {
 export const getRoomsByHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
-
     const hotel = await Hotel.findById(hotelId).select("name city address");
     if (!hotel) return res.status(404).json({ message: "Hotel not found" });
 
-    const rooms = await Room.find({ hotel: hotelId })
-      .populate("hotel", "name city address");
-
+    const rooms = await Room.find({ hotel: hotelId }).populate("hotel", "name city address");
     res.json({ hotel, rooms });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -163,10 +135,7 @@ export const getRoomsByHotel = async (req, res) => {
 export const getRoomBookedDates = async (req, res) => {
   try {
     const { roomId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(roomId)) {
-      return res.status(400).json({ message: "Invalid room id" });
-    }
+    if (!mongoose.Types.ObjectId.isValid(roomId)) return res.status(400).json({ message: "Invalid room id" });
 
     const bookings = await Booking.find({
       room: roomId,
@@ -174,11 +143,9 @@ export const getRoomBookedDates = async (req, res) => {
     }).select("checkIn checkOut");
 
     const dates = [];
-
     bookings.forEach(b => {
       let current = new Date(b.checkIn);
       const end = new Date(b.checkOut);
-
       while (current < end) {
         dates.push(current.toISOString().split("T")[0]);
         current.setDate(current.getDate() + 1);
@@ -195,11 +162,9 @@ export const getAdminRoomMap = async (req, res) => {
   try {
     const { hotelId } = req.query;
     const now = new Date();
-
     const query = hotelId ? { hotel: hotelId } : {};
-    const rooms = await Room.find(query)
-      .populate("hotel", "name")
-      .sort({ name: 1 });
+    
+    const rooms = await Room.find(query).populate("hotel", "name").sort({ name: 1 });
 
     const bookingQuery = {
       status: { $in: ["pending", "confirmed"] },
@@ -211,10 +176,7 @@ export const getAdminRoomMap = async (req, res) => {
     const activeBookings = await Booking.find(bookingQuery).populate("user", "name email");
 
     const roomMap = rooms.map((room) => {
-      const currentBooking = activeBookings.find(
-        (b) => b.room.toString() === room._id.toString()
-      );
-
+      const currentBooking = activeBookings.find(b => b.room.toString() === room._id.toString());
       let displayStatus = "available";
       
       if (room.status === "maintenance") displayStatus = "maintenance";
@@ -249,17 +211,10 @@ export const updateRoomStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-
-    const updatedRoom = await Room.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
-
-    if (!updatedRoom) {
-      return res.status(404).json({ message: "Không tìm thấy phòng" });
-    }
-
+    const updatedRoom = await Room.findByIdAndUpdate(id, { status }, { new: true });
+    if (!updatedRoom) return res.status(404).json({ message: "Không tìm thấy phòng" });
+    
+    await syncHotelPrice(updatedRoom.hotel);
     res.status(200).json(updatedRoom);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -268,20 +223,11 @@ export const updateRoomStatus = async (req, res) => {
 
 export const getRoomDetail = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const room = await Room.findById(id).populate("hotel", "name location address");
-
-    if (!room) {
-      return res.status(404).json({ message: "Không tìm thấy phòng này" });
-    }
-
-    if (room.status === "inactive") {
-      return res.status(400).json({ message: "Phòng hiện tại đã ngừng kinh doanh" });
-    }
-
+    const room = await Room.findById(req.params.id).populate("hotel", "name location address");
+    if (!room) return res.status(404).json({ message: "Không tìm thấy phòng này" });
+    if (room.status === "inactive") return res.status(400).json({ message: "Phòng hiện tại đã ngừng kinh doanh" });
     res.status(200).json(room);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi hệ thống: " + error.message });
+    res.status(500).json({ message: error.message });
   }
 };
