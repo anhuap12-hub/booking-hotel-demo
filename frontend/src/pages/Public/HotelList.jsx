@@ -8,9 +8,18 @@ import {
   Button,
   Container,
   Fade,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { LocationOn, Star, FilterList, SearchOff, CalendarMonth } from "@mui/icons-material";
+import { 
+  LocationOn, 
+  Star, 
+  FilterList, 
+  SearchOff, 
+  CalendarMonth, 
+  Search 
+} from "@mui/icons-material";
 
 import HeroBanner from "../../components/Home/HeroBanner";
 import FilterSidebar from "../../components/Common/FilterSidebar";
@@ -128,19 +137,19 @@ const HotelRow = ({ hotel }) => {
 
 /* ================= MAIN COMPONENT ================= */
 export default function HotelList() {
-  const { search } = useSearch();
+  const { search, handleSearch } = useSearch(); // Thêm handleSearch
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState({
-  minPrice: 0,
-  maxPrice: 10000000, 
-  city: "",
-  types: [],
-  rating: null,
-  amenities: [],
-  onlyDiscount: false,
-});
+    minPrice: 0,
+    maxPrice: 10000000, 
+    city: "",
+    types: [],
+    rating: null,
+    amenities: [],
+    onlyDiscount: false,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -164,40 +173,35 @@ export default function HotelList() {
     fetchHotels();
 
     return () => { isMounted = false; };
-  }, [search]); // Tự động fetch lại khi thanh tìm kiếm thay đổi
+  }, [search]); 
 
- const filteredHotels = useMemo(() => {
-  const keyword = normalizeText(search.keyword || "");
-  const cityFilter = normalizeText(filters.city || "");
+  const filteredHotels = useMemo(() => {
+    const keyword = normalizeText(search.keyword || "");
+    const cityFilter = normalizeText(filters.city || "");
 
-  return hotels.filter((h) => {
-    if (h.status !== "active") return false;
+    return hotels.filter((h) => {
+      if (h.status !== "active") return false;
 
-    // 1. TÍNH GIÁ PHÒNG THẤP NHẤT (Đã trừ discount)
-    const prices = h.rooms?.map((r) => {
-      const basePrice = Number(r.price) || 0;
-      const discount = Number(r.discount) || 0;
-      return basePrice * (1 - discount / 100);
-    }) || [];
-    
-    const minRoomPrice = prices.length ? Math.min(...prices) : 0;
+      const prices = h.rooms?.map((r) => {
+        const basePrice = Number(r.price) || 0;
+        const discount = Number(r.discount) || 0;
+        return basePrice * (1 - discount / 100);
+      }) || [];
+      
+      const minRoomPrice = prices.length ? Math.min(...prices) : 0;
+      const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
+      const matchesKeyword = !keyword || 
+        normalizeText(h.name).includes(keyword) || 
+        normalizeText(h.city).includes(keyword);
 
-    // 2. SO SÁNH VỚI BỘ LỌC (Khớp hoàn toàn với Sidebar)
-    const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
+      const matchesCity = !cityFilter || normalizeText(h.city).includes(cityFilter);
+      const matchesType = !filters.types.length || filters.types.includes(h.type);
+      const matchesAmenities = !filters.amenities.length || 
+        filters.amenities.every((a) => h.amenities?.includes(a));
 
-    // 3. CÁC ĐIỀU KIỆN KHÁC
-    const matchesKeyword = !keyword || 
-      normalizeText(h.name).includes(keyword) || 
-      normalizeText(h.city).includes(keyword);
-
-    const matchesCity = !cityFilter || normalizeText(h.city).includes(cityFilter);
-    const matchesType = !filters.types.length || filters.types.includes(h.type);
-    const matchesAmenities = !filters.amenities.length || 
-      filters.amenities.every((a) => h.amenities?.includes(a));
-
-    return matchesKeyword && matchesCity && matchesPrice && matchesType && matchesAmenities;
-  });
-}, [hotels, filters, search.keyword]);
+      return matchesKeyword && matchesCity && matchesPrice && matchesType && matchesAmenities;
+    });
+  }, [hotels, filters, search.keyword]);
 
   const cities = useMemo(() => [...new Set(hotels.map((h) => h.city).filter(Boolean))], [hotels]);
   const amenities = useMemo(() => [...new Set(hotels.flatMap((h) => h.amenities || []))], [hotels]);
@@ -207,21 +211,55 @@ export default function HotelList() {
       <HeroBanner />
 
       <Container maxWidth="xl" sx={{ mt: { xs: 4, md: 8 }, pb: 10 }}>
+        {/* HEADER & SEARCH BAR */}
         <Box sx={{ mb: { xs: 4, md: 6 } }}>
-          <Typography variant="h3" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: { xs: "2rem", md: "3rem" } }}>
-            {search.keyword ? `Kết quả cho "${search.keyword}"` : "Điểm Đến Lý Tưởng"}
-          </Typography>
-          
-          {search.checkIn && search.checkOut && (
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, color: "#C2A56D" }}>
-              <CalendarMonth sx={{ fontSize: 20 }} />
-              <Typography variant="subtitle1" fontWeight={600}>
-                {search.checkIn} — {search.checkOut}
+          <Stack 
+            direction={{ xs: "column", md: "row" }} 
+            justifyContent="space-between" 
+            alignItems={{ xs: "flex-start", md: "center" }}
+            spacing={3}
+          >
+            <Box>
+              <Typography variant="h3" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: { xs: "2rem", md: "3rem" } }}>
+                {search.keyword ? `Kết quả cho "${search.keyword}"` : "Điểm Đến Lý Tưởng"}
               </Typography>
-            </Stack>
-          )}
+              
+              {search.checkIn && search.checkOut && (
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, color: "#C2A56D" }}>
+                  <CalendarMonth sx={{ fontSize: 20 }} />
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {search.checkIn} — {search.checkOut}
+                  </Typography>
+                </Stack>
+              )}
+            </Box>
 
-          <Typography variant="body1" sx={{ color: "#72716E", mt: 1 }}>
+            {/* THANH TÌM KIẾM MỚI THÊM VÀO */}
+            <TextField
+              variant="outlined"
+              placeholder="Tìm theo tên khách sạn hoặc địa điểm..."
+              value={search.keyword || ""}
+              onChange={(e) => handleSearch({ ...search, keyword: e.target.value })}
+              sx={{
+                width: { xs: "100%", md: "400px" },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                  bgcolor: "#fff",
+                  "& fieldset": { borderColor: "rgba(194, 165, 109, 0.3)" },
+                  "&:hover fieldset": { borderColor: "#C2A56D" },
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: "#C2A56D" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Stack>
+
+          <Typography variant="body1" sx={{ color: "#72716E", mt: 2 }}>
             Tìm thấy <b style={{color: '#1C1B19'}}>{filteredHotels.length}</b> lựa chọn cho hành trình của bạn.
           </Typography>
         </Box>
@@ -263,10 +301,13 @@ export default function HotelList() {
                 <Typography variant="h6">Không tìm thấy kết quả</Typography>
                 <Button 
                   sx={{ mt: 2, color: '#C2A56D' }} 
-                  onClick={() => setFilters({
-                    minPrice: 0, maxPrice: 10000000, city: "", types: [], 
-                    rating: null, amenities: [], onlyDiscount: false
-                  })}
+                  onClick={() => {
+                    setFilters({
+                      minPrice: 0, maxPrice: 10000000, city: "", types: [], 
+                      rating: null, amenities: [], onlyDiscount: false
+                    });
+                    handleSearch({ ...search, keyword: "" }); // Reset cả thanh tìm kiếm
+                  }}
                 >
                   Xóa bộ lọc
                 </Button>
