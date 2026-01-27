@@ -34,10 +34,10 @@ export default function TrendingDestinations() {
   const { updateSearch } = useSearch();
 
   const handleClick = (city) => {
-    updateSearch({ city });
-    navigate(`/hotels?city=${encodeURIComponent(city)}`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  updateSearch({ city: city }); 
+  navigate(`/hotels?city=${encodeURIComponent(city)}`);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 6, md: 8 }, mb: 8 }}>
