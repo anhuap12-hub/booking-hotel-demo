@@ -3,12 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline"; // Thêm icon cảnh báo
 
 const MotionBox = motion(Box);
 
 export default function RightSideBar({ hotel }) {
   const navigate = useNavigate();
   const hotelId = hotel?._id;
+  
+  // Logic kiểm tra trạng thái Production
+  const isActive = hotel?.status === "active";
 
   return (
     <MotionBox
@@ -16,13 +20,17 @@ export default function RightSideBar({ hotel }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 0.2 }}
       sx={{
-        border: "1px solid #F1F0EE",
+        // --- PHẦN VIỀN ĐÃ CẬP NHẬT ---
+        border: "2px solid", 
+        borderColor: isActive ? "#C2A56D" : "#FFC1C1", 
         borderRadius: "24px",
         p: 3.5,
         position: "sticky",
         top: 100,
         bgcolor: "#FFFFFF",
-        boxShadow: "0 20px 50px rgba(28, 27, 25, 0.05)",
+        boxShadow: isActive 
+          ? "0 20px 50px rgba(194, 165, 109, 0.15)" 
+          : "0 10px 30px rgba(239, 68, 68, 0.08)",
       }}
     >
       <Typography
@@ -39,25 +47,23 @@ export default function RightSideBar({ hotel }) {
       </Typography>
 
       <Stack spacing={2.5}>
-        {/* TRẠNG THÁI */}
-        <Box >
+        <Box>
           <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-            Trạng thái
+            Trạng thái vận hành
           </Typography>
           <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
-            <Box sx={{ width: 8, height: 8, bgcolor: "#00b14f", borderRadius: "50%" }} />
+            <Box sx={{ width: 8, height: 8, bgcolor: isActive ? "#00b14f" : "#ef4444", borderRadius: "50%" }} />
             <Typography sx={{ fontWeight: 600, color: "#1C1B19", fontSize: "0.95rem" }}>
-              {hotel?.status || "Đang hoạt động"}
+              {isActive ? "Đang đón khách" : "Tạm ngưng nhận lịch"}
             </Typography>
           </Stack>
         </Box>
 
         <Divider sx={{ borderColor: "#F1F0EE" }} />
 
-        {/* ĐÁNH GIÁ */}
         <Box>
           <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-            Hạng mức
+            Hạng mức tin cậy
           </Typography>
           <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
             <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.1rem" }}>
@@ -74,41 +80,53 @@ export default function RightSideBar({ hotel }) {
         <Button
           fullWidth
           size="large"
-          disabled={!hotelId}
+          disabled={!hotelId || !isActive}
           onClick={() => navigate(`/hotels/${hotelId}/rooms`)}
           component={motion.button}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={isActive ? { scale: 1.02 } : {}}
+          whileTap={isActive ? { scale: 0.98 } : {}}
+          startIcon={isActive ? <MeetingRoomIcon /> : null} // Thêm icon cho sinh động
           sx={{
             py: 1.8,
             borderRadius: "14px",
             fontWeight: 800,
-            bgcolor: "#1C1B19",
-            color: "#C2A56D",
             textTransform: "none",
             fontSize: "1rem",
+            bgcolor: isActive ? "#1C1B19" : "#F5F5F5",
+            color: isActive ? "#C2A56D" : "#BCBCBC",
+            border: isActive ? "none" : "1px solid #E5E2DC",
             "&:hover": {
-              bgcolor: "#2D2C29",
-              boxShadow: "0 10px 20px rgba(0,0,0,0.15)",
+              bgcolor: isActive ? "#2D2C29" : "#F5F5F5",
+              boxShadow: isActive ? "0 10px 20px rgba(0,0,0,0.15)" : "none",
             },
             "&.Mui-disabled": {
-              bgcolor: "#F1F0EE",
-              color: "#A8A7A1"
+              bgcolor: "#F5F5F5",
+              color: "#BCBCBC",
             }
           }}
         >
-          Xem phòng trống
+          {isActive ? "Xem danh sách phòng" : "Hiện không khả dụng"}
         </Button>
 
-        <Stack direction="row" spacing={1} justifyContent="center" mt={2} alignItems="center" sx={{ opacity: 0.6 }}>
-          <VerifiedUserIcon sx={{ fontSize: 14, color: "#C2A56D" }} />
-          <Typography fontSize={12} fontWeight={500} color="#72716E">
-            Đảm bảo giá tốt nhất
-          </Typography>
-        </Stack>
+        {!isActive && (
+          <Stack direction="row" spacing={0.8} mt={1.5} justifyContent="center" alignItems="center" sx={{ color: "#ef4444" }}>
+            <ErrorOutlineIcon sx={{ fontSize: 15 }} />
+            <Typography fontSize={11.5} fontWeight={600}>
+              Chỗ nghỉ này hiện đang đóng cửa
+            </Typography>
+          </Stack>
+        )}
+
+        {isActive && (
+          <Stack direction="row" spacing={1} justifyContent="center" mt={2.5} alignItems="center" sx={{ opacity: 0.6 }}>
+            <VerifiedUserIcon sx={{ fontSize: 14, color: "#C2A56D" }} />
+            <Typography fontSize={12} fontWeight={500} color="#72716E">
+              Đảm bảo giá trực tiếp từ đối tác
+            </Typography>
+          </Stack>
+        )}
       </Box>
 
-      {/* FOOTER WIDGET */}
       <Box 
         sx={{ 
           mt: 4, pt: 3, 
@@ -118,9 +136,11 @@ export default function RightSideBar({ hotel }) {
           alignItems: "flex-start" 
         }}
       >
-        <InfoOutlinedIcon sx={{ fontSize: 18, color: "#C2A56D", mt: 0.2 }} />
-        <Typography fontSize={12} color="#72716E" lineHeight={1.5}>
-          Giá phòng có thể thay đổi tùy theo thời điểm và hạng phòng bạn chọn.
+        <InfoOutlinedIcon sx={{ fontSize: 18, color: isActive ? "#C2A56D" : "#A8A7A1", mt: 0.2 }} />
+        <Typography fontSize={11.5} color="#72716E" lineHeight={1.6}>
+          {isActive 
+            ? "Giá hiển thị tại danh sách phòng là giá khởi điểm. Tùy chọn hạng phòng và dịch vụ kèm theo sẽ được cập nhật tại bước tiếp theo."
+            : "Lịch đón khách tại chỗ nghỉ này đang được điều chỉnh. Vui lòng quay lại sau hoặc chọn các điểm lưu trú khác."}
         </Typography>
       </Box>
     </MotionBox>
