@@ -4,38 +4,25 @@ import Hotel from "../models/Hotel.js";
 import Booking from "../models/Booking.js";
 
 const syncHotelPrice = async (hotelId) => {
-  const hotel = await Hotel.findById(hotelId).populate("rooms");
-  if (hotel && hotel.rooms.length > 0) {
-    const validPrices = hotel.rooms
-      .filter(r => r.status === "active")
-      .map(r => r.price)
-      .filter(p => typeof p === "number");
-    
-    hotel.cheapestPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
-    await hotel.save();
-  }
-};
-
-export const createRoom = async (req, res) => {
+  if (!hotelId) return;
   try {
-    const { hotelId } = req.params;
-    const hotel = await Hotel.findById(hotelId);
-    if (!hotel) return res.status(404).json({ message: "Hotel not found" });
-
-    const room = await Room.create({
-      ...req.body,
-      hotel: hotelId,
-      status: req.body.status || "active"
-    });
-
-    await Hotel.findByIdAndUpdate(hotelId, { $push: { rooms: room._id } });
-    await syncHotelPrice(hotelId);
-
-    res.status(201).json(room);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const hotel = await Hotel.findById(hotelId).populate("rooms");
+    if (hotel && hotel.rooms.length > 0) {
+      const validPrices = hotel.rooms
+        .filter(r => r.status === "active" && typeof r.price === "number")
+        .map(r => r.price);
+      
+      const cheapest = validPrices.length > 0 ? Math.min(...validPrices) : 0;
+      
+      // CHỐT: Dùng updateOne để bỏ qua Middleware pre('save')
+      await Hotel.updateOne({ _id: hotelId }, { $set: { cheapestPrice: cheapest } });
+    }
+  } catch (err) {
+    console.error("Lỗi đồng bộ giá:", err.message);
   }
 };
+
+
 
 export const getAllRooms = async (req, res) => {
   try {
@@ -58,16 +45,51 @@ export const getRoomById = async (req, res) => {
 
 export const updateRoom = async (req, res) => {
   try {
-    const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    // 1. Tìm phòng hiện tại
+    const room = await Room.findById(req.params.id);
+    if (!room) return res.status(404).json({ success: false, message: "Room not found" });
 
-    await syncHotelPrice(room.hotel);
-    res.json({ message: "Room updated", room });
+    const oldHotelId = room.hotel?.toString();
+    const newHotelId = req.body.hotel;
+
+    // 2. Cập nhật phòng (sử dụng runValidators để đảm bảo dữ liệu chuẩn)
+    const updatedRoom = await Room.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+
+    // 3. Nếu thay đổi khách sạn chủ quản, cập nhật lại mảng rooms ở cả 2 Hotel
+    if (newHotelId && oldHotelId !== newHotelId) {
+      // Xóa ở hotel cũ
+      await Hotel.findByIdAndUpdate(oldHotelId, { $pull: { rooms: req.params.id } });
+      // Thêm vào hotel mới
+      await Hotel.findByIdAndUpdate(newHotelId, { $addToSet: { rooms: req.params.id } });
+    }
+
+    res.status(200).json({ success: true, data: updatedRoom });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Trả về lỗi validation chi tiết nếu có
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
+export const createRoom = async (req, res) => {
+  try {
+    const hotelId = req.params.hotelId;
+    const newRoom = new Room({ ...req.body, hotel: hotelId });
+    const savedRoom = await newRoom.save();
+
+    // Đẩy ID phòng vào mảng rooms của Hotel
+    await Hotel.findByIdAndUpdate(hotelId, {
+      $push: { rooms: savedRoom._id },
+    });
+
+    res.status(201).json({ success: true, data: savedRoom });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 export const deleteRoom = async (req, res) => {
   try {
     const { id } = req.params;

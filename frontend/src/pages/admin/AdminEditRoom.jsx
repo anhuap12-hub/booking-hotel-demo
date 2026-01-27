@@ -126,33 +126,45 @@ export default function AdminEditRoom() {
     setOpenConfirm(false);
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name || !form.hotel) {
+      alert("Vui lòng điền đầy đủ tên phòng và thông tin khách sạn");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const payload = {
-        name: form.name,
+        name: form.name.trim(),
         type: form.type,
+        // Loại bỏ dấu chấm phân cách hàng nghìn trước khi gửi
         price: Number(form.price.toString().replace(/\./g, "")),
         maxPeople: Number(form.maxPeople),
-        discount: form.discount === "" ? null : Number(form.discount),
+        // Chuyển discount về null nếu để trống để tránh lỗi validation min/max
+        discount: form.discount === "" || form.discount === null ? 0 : Number(form.discount),
         status: form.status,
-        desc: form.desc,
+        desc: form.desc.trim(),
         amenities: amenities,
-        photos: existingPhotos, // Gửi mảng Object [{url, public_id}]
+        photos: existingPhotos, 
         cancellationPolicy: {
-          freeCancelBeforeHours: Number(form.freeCancelBeforeHours),
-          refundPercent: Number(form.refundPercent)
+          freeCancelBeforeHours: Number(form.freeCancelBeforeHours) || 0,
+          refundPercent: Number(form.refundPercent) || 0
         },
-        hotel: form.hotel
+        // Đảm bảo gửi một ID hợp lệ, không gửi chuỗi rỗng
+        hotel: form.hotel 
       };
 
+      console.log("Payload gửi đi:", payload); // Debug để kiểm tra trước khi push
+
       await updateRoom(roomId, payload);
+      alert("Cập nhật phòng thành công!");
       navigate(`/admin/hotels/${form.hotel}/rooms`);
     } catch (err) {
-      console.error(err);
-      alert("Cập nhật thất bại");
+      console.error("Update error detail:", err.response?.data);
+      const errorMsg = err.response?.data?.message || "Cập nhật thất bại. Vui lòng kiểm tra lại dữ liệu.";
+      alert(errorMsg);
     } finally {
       setIsSubmitting(false);
     }

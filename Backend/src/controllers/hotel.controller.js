@@ -78,6 +78,15 @@ export const createHotel = async (req, res) => {
     const hotelData = { ...req.body };
     if (hotelData.city) hotelData.citySlug = normalize(hotelData.city);
     
+    // Xử lý tọa độ từ FormData (bọc lại thành object)
+    if (req.body['location[lat]'] && req.body['location[lng]']) {
+      hotelData.location = {
+        lat: Number(req.body['location[lat]']),
+        lng: Number(req.body['location[lng]'])
+      };
+    }
+
+    // Đồng bộ dùng 'photos' thay vì 'images'
     if (req.files?.length) {
       hotelData.photos = req.files.map(file => ({
         url: file.path,
@@ -100,16 +109,22 @@ export const updateHotel = async (req, res) => {
     const updateData = { ...req.body };
     if (updateData.city) updateData.citySlug = normalize(updateData.city);
 
+    // Xử lý tọa độ
+    if (req.body['location[lat]'] && req.body['location[lng]']) {
+      updateData.location = {
+        lat: Number(req.body['location[lat]']),
+        lng: Number(req.body['location[lng]'])
+      };
+    }
+
+    // Quản lý ảnh: Nếu có ảnh mới, ta CỘNG DỒN (hoặc thay thế tùy bạn)
     if (req.files?.length) {
-      await Promise.all(
-        (hotel.photos || []).map(photo => 
-          photo.public_id ? cloudinary.uploader.destroy(photo.public_id) : Promise.resolve()
-        )
-      );
-      updateData.photos = req.files.map(file => ({
+      const newPhotos = req.files.map(file => ({
         url: file.path,
         public_id: file.filename
       }));
+      // Ở đây tôi chọn ghi đè bằng ảnh mới để đúng logic AdminEdit thông thường
+      updateData.photos = newPhotos; 
     }
 
     const updatedHotel = await Hotel.findByIdAndUpdate(
@@ -122,7 +137,6 @@ export const updateHotel = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const deleteHotel = async (req, res) => {
   try {
     const hotel = await Hotel.findById(req.params.id);

@@ -37,8 +37,8 @@ router.get("/deals", async (req, res) => {
 router.get("/", getAllHotels);
 router.get("/:id", getHotelById);
 
-router.post("/", protect, adminOnly, uploadImage.array("images", 10), createHotel);
-router.put("/:id", protect, adminOnly, uploadImage.array("images", 10), updateHotel);
+router.post("/", protect, adminOnly, uploadImage.array("photos", 10), createHotel);
+router.put("/:id", protect, adminOnly, uploadImage.array("photos", 10), updateHotel);
 router.delete("/:id", protect, adminOnly, deleteHotel);
 
 export default router;

@@ -17,6 +17,7 @@ import {
   TextField,
   MenuItem,
   Avatar,
+  Chip,
 } from "@mui/material";
 
 const AdminHotels = () => {
@@ -32,7 +33,6 @@ const AdminHotels = () => {
     const fetchHotels = async () => {
       try {
         const res = await axios.get("/hotels");
-        // Giả định Backend trả về cấu trúc { success: true, data: [...] }
         setHotels(res.data.data || res.data || []);
       } catch (err) {
         console.error("Error fetching hotels:", err);
@@ -45,7 +45,7 @@ const AdminHotels = () => {
 
   const filteredHotels = useMemo(() => {
     return hotels.filter((hotel) => {
-      const matchesName = hotel.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesName = (hotel.name || "").toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === "all" || hotel.type === typeFilter;
       const matchesCity = cityFilter === "all" || hotel.city === cityFilter;
       return matchesName && matchesType && matchesCity;
@@ -53,7 +53,7 @@ const AdminHotels = () => {
   }, [hotels, searchTerm, typeFilter, cityFilter]);
 
   const uniqueCities = useMemo(() => {
-    const cities = hotels.map((h) => h.city);
+    const cities = hotels.map((h) => h.city).filter(Boolean);
     return ["all", ...new Set(cities)];
   }, [hotels]);
 
@@ -84,13 +84,13 @@ const AdminHotels = () => {
           variant="contained"
           component={Link}
           to="/admin/hotels/new"
-          sx={{ bgcolor: "#3E2C1C", "&:hover": { bgcolor: "#2F2116" } }}
+          sx={{ bgcolor: "#3E2C1C", "&:hover": { bgcolor: "#2F2116" }, textTransform: 'none' }}
         >
-          Thêm Khách Sạn
+          Thêm Khách Sạn Mới
         </Button>
       </Stack>
 
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
+      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #E5E2DC' }} elevation={0}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           <TextField
             label="Tìm theo tên..."
@@ -130,14 +130,14 @@ const AdminHotels = () => {
         </Stack>
       </Paper>
 
-      <TableContainer component={Paper} elevation={2} sx={{ borderRadius: 2 }}>
+      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E2DC' }}>
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: "#F5F3EF" }}>
+            <TableRow sx={{ bgcolor: "#F9F8F6" }}>
               <TableCell><b>Thông tin khách sạn</b></TableCell>
               <TableCell><b>Địa điểm</b></TableCell>
-              <TableCell align="center"><b>Giá từ</b></TableCell>
-              <TableCell align="center"><b>Phòng</b></TableCell>
+              <TableCell align="center"><b>Trạng thái</b></TableCell>
+              <TableCell align="center"><b>Quy mô</b></TableCell>
               <TableCell align="center"><b>Hành động</b></TableCell>
             </TableRow>
           </TableHead>
@@ -151,15 +151,15 @@ const AdminHotels = () => {
                       <Avatar
                         src={hotel.photos?.[0]?.url || ""} 
                         variant="rounded"
-                        sx={{ width: 60, height: 60, border: "1px solid #eee" }}
+                        sx={{ width: 55, height: 55, border: "1px solid #eee", bgcolor: '#F0EBE3', color: '#3E2C1C' }}
                       >
-                        H
+                        {hotel.name?.charAt(0)}
                       </Avatar>
                       <Box>
                         <Typography variant="subtitle2" fontWeight="bold">
                           {hotel.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ textTransform: "capitalize", color: "gray" }}>
+                        <Typography variant="caption" sx={{ textTransform: "uppercase", color: "#C2A56D", fontWeight: 600 }}>
                           {hotel.type}
                         </Typography>
                       </Box>
@@ -167,20 +167,27 @@ const AdminHotels = () => {
                   </TableCell>
 
                   <TableCell>
-                    <Typography variant="body2">{hotel.city}</Typography>
-                    <Typography variant="caption" color="text.secondary">{hotel.address}</Typography>
-                  </TableCell>
-
-                  <TableCell align="center">
-                    <Typography fontWeight="bold" color="#2E7D32">
-                      {hotel.cheapestPrice > 0 
-                        ? `${hotel.cheapestPrice.toLocaleString("vi-VN")}đ` 
-                        : "---"}
+                    <Typography variant="body2" fontWeight={500}>{hotel.city}</Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 200 }}>
+                      {hotel.address}
                     </Typography>
                   </TableCell>
 
                   <TableCell align="center">
-                    <Typography variant="body2">{hotel.rooms?.length || 0} phòng</Typography>
+                    <Chip 
+                      label={hotel.status === "active" ? "Hoạt động" : "Tạm ngưng"}
+                      color={hotel.status === "active" ? "success" : "default"}
+                      size="small"
+                      variant="soft"
+                      sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                    />
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <Typography variant="body2" fontWeight={600}>
+                      {hotel.rooms?.length || 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">phòng</Typography>
                   </TableCell>
 
                   <TableCell align="center">
@@ -188,6 +195,7 @@ const AdminHotels = () => {
                       <Button
                         variant="outlined"
                         size="small"
+                        sx={{ color: '#3E2C1C', borderColor: '#3E2C1C' }}
                         onClick={() => navigate(`/admin/hotels/${hotel._id}/edit`)}
                       >
                         Sửa
@@ -195,13 +203,13 @@ const AdminHotels = () => {
                       <Button
                         variant="contained"
                         size="small"
-                        color="success"
+                        sx={{ bgcolor: '#C2A56D', '&:hover': { bgcolor: '#B1945C' } }}
                         onClick={() => navigate(`/admin/hotels/${hotel._id}/rooms`)}
                       >
-                        DS Phòng
+                        Phòng
                       </Button>
                       <Button
-                        variant="outlined"
+                        variant="text"
                         size="small"
                         color="error"
                         onClick={() => handleDelete(hotel._id)}
@@ -214,8 +222,8 @@ const AdminHotels = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                  Không tìm thấy dữ liệu
+                <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                  <Typography color="text.secondary">Không tìm thấy khách sạn nào khớp với bộ lọc</Typography>
                 </TableCell>
               </TableRow>
             )}
