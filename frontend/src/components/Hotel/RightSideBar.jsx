@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline"; // Thêm icon cảnh báo
-
+import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 const MotionBox = motion(Box);
 
 export default function RightSideBar({ hotel }) {
