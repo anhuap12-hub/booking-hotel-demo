@@ -14,7 +14,6 @@ import { LocationOn, Star, FilterList, SearchOff, CalendarMonth } from "@mui/ico
 
 import HeroBanner from "../../components/Home/HeroBanner";
 import FilterSidebar from "../../components/Common/FilterSidebar";
-import WhyBook from "../../components/Home/WhyBook";
 import { getAllHotels } from "../../api/hotel.api";
 import { useSearch } from "../../context/SearchContext";
 import { normalizeText } from "../../utils/normalizeText";
@@ -286,7 +285,6 @@ export default function HotelList() {
             ))}
           </Stack>
         </Box>
-        <Box sx={{ mt: 8 }}><WhyBook /></Box>
       </Container>
     </Box>
   );
