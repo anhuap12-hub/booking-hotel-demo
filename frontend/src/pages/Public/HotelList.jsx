@@ -14,10 +14,9 @@ import { normalizeText } from "../../utils/normalizeText";
 
 export default function HotelList() {
   const navigate = useNavigate();
-  const { search } = useSearch();
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+  const { search, resetSearch } = useSearch();
   // States cho Search Bar
   const [inputValue, setInputValue] = useState(""); 
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,13 +29,20 @@ export default function HotelList() {
     amenities: [],
   });
 
-  // Debounce Search: Giảm tải việc filter liên tục khi đang gõ
+  // 1. Debounce Search
   useEffect(() => {
     const handler = setTimeout(() => setSearchTerm(inputValue), 300);
     return () => clearTimeout(handler);
   }, [inputValue]);
 
-  // Fetch dữ liệu từ API
+  // 2. Đồng bộ city từ Context vào Sidebar khi từ trang chủ sang
+  useEffect(() => {
+    if (search.city) {
+      setFilters((prev) => ({ ...prev, city: search.city }));
+    }
+  }, [search.city]);
+
+  // 3. Fetch dữ liệu từ API
   useEffect(() => {
     let isMounted = true;
     const fetchHotels = async () => {
@@ -54,38 +60,31 @@ export default function HotelList() {
     return () => { isMounted = false; };
   }, [search]);
 
-  // Logic lọc dữ liệu: Đã tối ưu bằng cách đưa chuẩn hóa ra ngoài vòng lặp
+  // 4. Logic lọc dữ liệu (Client-side)
   const filteredHotels = useMemo(() => {
     const term = normalizeText(searchTerm);
-    const filterCity = normalizeText(filters.city);
+    const activeCity = search.city || filters.city;
+    const filterCity = normalizeText(activeCity);
 
     return hotels.filter((hotel) => {
       if (hotel.status !== "active") return false;
 
-      // 1. Lọc theo Search Term (Tên hoặc Thành phố)
       const matchesSearch = !term || 
         normalizeText(hotel.name || "").includes(term) ||
         normalizeText(hotel.city || "").includes(term);
 
-      // 2. Lọc theo Giá (Lấy giá thấp nhất của các phòng)
       const prices = hotel.rooms?.map((r) => (r.price || 0) * (1 - (r.discount || 0) / 100)) || [];
       const minRoomPrice = prices.length ? Math.min(...prices) : 0;
       const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
 
-      // 3. Lọc theo Thành phố (từ Sidebar)
-      const matchesCity = !filters.city || normalizeText(hotel.city).includes(filterCity);
-
-      // 4. Lọc theo Loại hình
+      const matchesCity = !activeCity || normalizeText(hotel.city || "").includes(filterCity);
       const matchesType = !filters.types.length || filters.types.includes(hotel.type);
-
-      // 5. Lọc theo Tiện nghi (Phải thỏa mãn TẤT CẢ tiện nghi đã chọn)
       const matchesAmenities = !filters.amenities.length || 
         filters.amenities.every((a) => hotel.amenities?.includes(a));
 
       return matchesSearch && matchesPrice && matchesCity && matchesType && matchesAmenities;
     });
-  }, [hotels, searchTerm, filters]);
-
+  }, [hotels, searchTerm, filters, search.city]);
   // Trích xuất dữ liệu động cho Sidebar
   const uniqueCities = useMemo(() => [...new Set(hotels.map((h) => h.city).filter(Boolean))], [hotels]);
   const allAmenities = useMemo(() => [...new Set(hotels.flatMap((h) => h.amenities || []))].filter(Boolean).sort(), [hotels]);
@@ -147,11 +146,16 @@ export default function HotelList() {
                 <Typography variant="h6" fontWeight={700}>Rất tiếc!</Typography>
                 <Typography color="text.secondary">Chúng tôi không tìm thấy khách sạn nào khớp với lựa chọn của bạn.</Typography>
                 <Button 
-                  onClick={() => setFilters({ minPrice: 0, maxPrice: 10000000, city: "", types: [], amenities: [] })}
-                  sx={{ mt: 2, color: "#C2A56D" }}
-                >
-                  Xóa tất cả bộ lọc
-                </Button>
+  onClick={() => {
+    setFilters({ minPrice: 0, maxPrice: 10000000, city: "", types: [], amenities: [] });
+    setInputValue(""); 
+    resetSearch();   
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }}
+  sx={{ mt: 2, color: "#C2A56D" }}
+>
+  Xóa tất cả bộ lọc
+</Button>
               </Paper>
             )}
           </Box>
