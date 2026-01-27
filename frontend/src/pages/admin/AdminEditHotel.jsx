@@ -28,8 +28,9 @@ const AdminEditHotel = () => {
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
 
-  const [photos, setPhotos] = useState([]); 
-  const [existingPhotos, setExistingPhotos] = useState([]);
+  const [photos, setPhotos] = useState([]); // File thực tế để upload
+  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // URL để hiển thị preview
+  const [existingPhotos, setExistingPhotos] = useState([]); // Ảnh từ database
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -74,12 +75,26 @@ const AdminEditHotel = () => {
   };
 
   const handleFileChange = (e) => {
-    setPhotos(Array.from(e.target.files));
+    const files = Array.from(e.target.files);
+    // Lưu file để tí nữa upload
+    setPhotos((prev) => [...prev, ...files]);
+
+    // Tạo URL blob để hiển thị ảnh ngay lập tức
+    const previews = files.map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name
+    }));
+    setNewPhotosPreview((prev) => [...prev, ...previews]);
   };
 
   const handleDeletePhoto = (index, type = "new") => {
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn bỏ ảnh này không?");
+    if (!confirmDelete) return;
+
     if (type === "new") {
+      // Xóa ở cả mảng file và mảng preview
       setPhotos((prev) => prev.filter((_, i) => i !== index));
+      setNewPhotosPreview((prev) => prev.filter((_, i) => i !== index));
     } else {
       setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
     }
@@ -99,8 +114,6 @@ const AdminEditHotel = () => {
     setIsSubmitting(true);
     try {
       let uploadedUrls = [];
-      
-      // 1. Upload ảnh mới (Đồng bộ URL: /upload/hotels/ID)
       if (photos.length > 0) {
         const uploadForm = new FormData();
         photos.forEach((file) => uploadForm.append("photos", file));
@@ -110,11 +123,9 @@ const AdminEditHotel = () => {
           uploadForm,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-        // Lấy mảng object {url, public_id} từ data trả về
         uploadedUrls = uploadRes.data.data || []; 
       }
 
-      // 2. Gom dữ liệu cuối cùng
       const finalHotelData = {
         name,
         city,
@@ -127,11 +138,9 @@ const AdminEditHotel = () => {
           lng: Number(location.lng) || 0
         },
         amenities,
-        // Gộp ảnh cũ đã sắp xếp + ảnh mới upload
         photos: [...existingPhotos, ...uploadedUrls],
       };
 
-      // 3. Cập nhật qua API PUT
       await axios.put(`/hotels/${id}`, finalHotelData);
       
       alert("Cập nhật khách sạn thành công!");
@@ -160,7 +169,6 @@ const AdminEditHotel = () => {
         <Divider />
 
         <Grid container spacing={3}>
-          {/* Cột Trái: Thông tin chính */}
           <Grid item xs={12} md={8}>
             <Stack spacing={2.5}>
               <TextField label="Tên khách sạn" value={name} onChange={(e) => setName(e.target.value)} fullWidth />
@@ -177,7 +185,6 @@ const AdminEditHotel = () => {
             </Stack>
           </Grid>
 
-          {/* Cột Phải: Trạng thái & Tọa độ */}
           <Grid item xs={12} md={4}>
             <Stack spacing={3}>
               <TextField select fullWidth label="Trạng thái" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -198,7 +205,6 @@ const AdminEditHotel = () => {
           </Grid>
         </Grid>
 
-        {/* Tiện ích */}
         <Box>
           <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Tiện ích</Typography>
           <TextField 
@@ -214,9 +220,8 @@ const AdminEditHotel = () => {
           </Box>
         </Box>
 
-        {/* Quản lý ảnh */}
         <Box>
-          <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Thư viện ảnh (Kéo thả để sắp xếp)</Typography>
+          <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Thư viện ảnh ({existingPhotos.length + newPhotosPreview.length})</Typography>
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="existingPhotos" direction="horizontal">
               {(provided) => (
@@ -226,22 +231,37 @@ const AdminEditHotel = () => {
                   spacing={2} 
                   flexWrap="wrap" 
                   {...provided.droppableProps} 
-                  sx={{ minHeight: 120, p: 2, border: '1px dashed #ccc', borderRadius: 2, bgcolor: '#fafafa' }}
+                  sx={{ minHeight: 120, p: 2, border: '1px dashed #ccc', borderRadius: 2, bgcolor: '#fafafa', gap: 2 }}
                 >
+                  {/* Render Ảnh cũ từ Server (Cho phép kéo thả sắp xếp) */}
                   {existingPhotos.map((photo, i) => (
                     <Draggable key={photo.public_id || `exist-${i}`} draggableId={photo.public_id || `exist-${i}`} index={i}>
                       {(provided) => (
                         <Box ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} sx={{ position: "relative" }}>
-                          <Box component="img" src={photo.url || photo} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "1px solid #ddd" }} />
+                          <Box component="img" src={photo.url || photo} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px solid #C2A56D" }} />
                           <Button 
                             onClick={() => handleDeletePhoto(i, "existing")}
-                            sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0 }}
+                            sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0, '&:hover': { bgcolor: '#b91c1c' } }}
                           >
                             <CloseIcon sx={{ fontSize: 14 }} />
                           </Button>
                         </Box>
                       )}
                     </Draggable>
+                  ))}
+
+                  {/* Render Ảnh mới chọn từ máy (Chưa upload nên chỉ hiển thị preview) */}
+                  {newPhotosPreview.map((photo, i) => (
+                    <Box key={`new-${i}`} sx={{ position: "relative" }}>
+                      <Box component="img" src={photo.url} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px dashed #2e7d32", opacity: 0.8 }} />
+                      <Chip label="Mới" size="small" color="success" sx={{ position: 'absolute', bottom: 5, left: 5, height: 16, fontSize: 10 }} />
+                      <Button 
+                        onClick={() => handleDeletePhoto(i, "new")}
+                        sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0 }}
+                      >
+                        <CloseIcon sx={{ fontSize: 14 }} />
+                      </Button>
+                    </Box>
                   ))}
                   {provided.placeholder}
                 </Stack>
@@ -250,11 +270,10 @@ const AdminEditHotel = () => {
           </DragDropContext>
         </Box>
 
-        {/* Buttons */}
         <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
-          <Button variant="outlined" component="label" size="large">
-            Chọn thêm ảnh mới
-            <input type="file" hidden multiple onChange={handleFileChange} />
+          <Button variant="outlined" component="label" size="large" sx={{ textTransform: 'none' }}>
+            + Chọn thêm ảnh mới
+            <input type="file" hidden multiple onChange={handleFileChange} accept="image/*" />
           </Button>
 
           <Stack direction="row" spacing={2}>
@@ -266,7 +285,7 @@ const AdminEditHotel = () => {
               size="large" 
               sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', fontWeight: 700, '&:hover': { bgcolor: '#000' } }}
             >
-              {isSubmitting ? "Đang xử lý..." : "Lưu thay đổi"}
+              {isSubmitting ? <CircularProgress size={24} sx={{ color: '#C2A56D' }} /> : "Lưu thay đổi"}
             </Button>
           </Stack>
         </Stack>
