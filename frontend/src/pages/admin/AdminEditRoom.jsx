@@ -6,7 +6,7 @@ import axios from "../../api/axios";
 import {
   Stack, TextField, Button, Select, MenuItem, InputLabel, FormControl,
   Typography, Box, Paper, Divider, Chip, Grid, InputAdornment, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions
+  Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
@@ -30,9 +30,11 @@ export default function AdminEditRoom() {
     refundPercent: 100
   });
 
+  // Khởi tạo là mảng rỗng để tránh lỗi "n is not iterable"
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
-  const [existingPhotos, setExistingPhotos] = useState([]); // [{url, public_id}]
+  const [existingPhotos, setExistingPhotos] = useState([]); 
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State cho Confirm Dialog
@@ -40,23 +42,26 @@ export default function AdminEditRoom() {
   const [deleteTarget, setDeleteTarget] = useState({ type: "", index: null, value: "" });
 
   useEffect(() => {
-    getRoomById(roomId).then((res) => {
-      const room = res.data;
-      setForm({
-        name: room.name || "",
-        type: room.type || "single",
-        price: room.price ? room.price.toLocaleString("vi-VN") : "",
-        maxPeople: room.maxPeople || 1,
-        discount: room.discount !== null ? room.discount : "",
-        status: room.status || "active",
-        desc: room.desc || "",
-        hotel: typeof room.hotel === "string" ? room.hotel : room.hotel?._id || "",
-        freeCancelBeforeHours: room.cancellationPolicy?.freeCancelBeforeHours || 24,
-        refundPercent: room.cancellationPolicy?.refundPercent || 100,
-      });
-      setAmenities(room.amenities || []);
-      setExistingPhotos(room.photos || []);
-    }).catch(err => console.error("Fetch room error:", err));
+    getRoomById(roomId)
+      .then((res) => {
+        const room = res.data;
+        setForm({
+          name: room.name || "",
+          type: room.type || "single",
+          price: room.price ? room.price.toLocaleString("vi-VN") : "",
+          maxPeople: room.maxPeople || 1,
+          discount: room.discount !== null ? room.discount : "",
+          status: room.status || "active",
+          desc: room.desc || "",
+          hotel: typeof room.hotel === "string" ? room.hotel : room.hotel?._id || "",
+          freeCancelBeforeHours: room.cancellationPolicy?.freeCancelBeforeHours || 24,
+          refundPercent: room.cancellationPolicy?.refundPercent || 100,
+        });
+        setAmenities(room.amenities || []);
+        setExistingPhotos(room.photos || []);
+      })
+      .catch(err => console.error("Fetch room error:", err))
+      .finally(() => setLoading(false));
   }, [roomId]);
 
   const handleChange = (e) => {
@@ -80,8 +85,9 @@ export default function AdminEditRoom() {
       const res = await axios.post(`/upload/rooms/${roomId}`, uploadForm, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      // Đưa ảnh mới lên đầu danh sách
-      setExistingPhotos(prev => [...res.data.urls, ...prev]);
+      // Đảm bảo lấy đúng key 'data' từ Backend (Object {url, public_id})
+      const newUploadedPhotos = res.data.data || res.data.urls;
+      setExistingPhotos(prev => [...newUploadedPhotos, ...prev]);
     } catch (err) {
       console.error(err);
       alert("Upload ảnh thất bại");
@@ -89,7 +95,7 @@ export default function AdminEditRoom() {
   };
 
   const handleDragEnd = (result) => {
-    if (!result.destination) return;
+    if (!result.destination || !Array.isArray(existingPhotos)) return;
     const items = Array.from(existingPhotos);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
@@ -134,7 +140,7 @@ export default function AdminEditRoom() {
         status: form.status,
         desc: form.desc,
         amenities: amenities,
-        photos: existingPhotos,
+        photos: existingPhotos, // Gửi mảng Object [{url, public_id}]
         cancellationPolicy: {
           freeCancelBeforeHours: Number(form.freeCancelBeforeHours),
           refundPercent: Number(form.refundPercent)
@@ -151,6 +157,10 @@ export default function AdminEditRoom() {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) return (
+    <Box display="flex" justifyContent="center" py={10}><CircularProgress color="inherit" /></Box>
+  );
 
   return (
     <Paper elevation={0} sx={{ maxWidth: 1000, mx: "auto", p: 4, borderRadius: 4, border: "1px solid #E5E2DC" }}>
@@ -259,8 +269,8 @@ export default function AdminEditRoom() {
                   ref={provided.innerRef}
                   sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', minHeight: 100, p: 1, bgcolor: '#fbfbfb', borderRadius: 2 }}
                 >
-                  {existingPhotos.map((photo, index) => (
-                    <Draggable key={photo.public_id || index} draggableId={photo.public_id || `img-${index}`} index={index}>
+                  {existingPhotos && existingPhotos.map((photo, index) => (
+                    <Draggable key={photo.public_id || `img-${index}`} draggableId={photo.public_id || `img-${index}`} index={index}>
                       {(provided) => (
                         <Box
                           ref={provided.innerRef}
@@ -297,14 +307,13 @@ export default function AdminEditRoom() {
             variant="contained" 
             disabled={isSubmitting} 
             onClick={handleSubmit}
-            sx={{ px: 4, bgcolor: "#1C1B19", "&:hover": { bgcolor: "#000" } }}
+            sx={{ px: 4, bgcolor: "#1C1B19", color: "#C2A56D", fontWeight: 700, "&:hover": { bgcolor: "#000" } }}
           >
             {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </Stack>
       </Stack>
 
-      {/* --- Confirm Delete Dialog --- */}
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
         <DialogTitle sx={{ fontWeight: 700 }}>Xác nhận xóa?</DialogTitle>
         <DialogContent>

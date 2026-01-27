@@ -4,7 +4,7 @@ import axios from "../../api/axios";
 
 import {
   Stack, TextField, Typography, Button, Paper, Box, Divider, 
-  MenuItem, Chip, Grid
+  MenuItem, Chip, Grid, CircularProgress
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
@@ -17,6 +17,7 @@ const AdminEditHotel = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // States cơ bản
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
@@ -28,8 +29,11 @@ const AdminEditHotel = () => {
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
 
+  // States hình ảnh (Khởi tạo mảng rỗng để tránh lỗi iterable)
   const [photos, setPhotos] = useState([]); 
   const [existingPhotos, setExistingPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchHotel = async () => {
@@ -45,9 +49,12 @@ const AdminEditHotel = () => {
         setStatus(hotel.status || "active");
         setLocation(hotel.location || { lat: 0, lng: 0 });
         setAmenities(hotel.amenities || []);
-        setExistingPhotos(hotel.photos || []);
+        // Đảm bảo photos luôn là mảng
+        setExistingPhotos(hotel.photos || []); 
       } catch (err) {
         console.error("Error fetching hotel:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchHotel();
@@ -81,29 +88,43 @@ const AdminEditHotel = () => {
     }
   };
 
-  const handleDragEnd = (result, type = "new") => {
+  const handleDragEnd = (result, type = "existing") => {
     if (!result.destination) return;
-    const items = type === "new" ? Array.from(photos) : Array.from(existingPhotos);
+    
+    // Kiểm tra tính hợp lệ của mảng trước khi thực hiện logic kéo thả
+    const targetArray = type === "new" ? photos : existingPhotos;
+    if (!Array.isArray(targetArray)) return;
+
+    const items = Array.from(targetArray);
     const [moved] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, moved);
-    type === "new" ? setPhotos(items) : setExistingPhotos(items);
+
+    if (type === "new") {
+      setPhotos(items);
+    } else {
+      setExistingPhotos(items);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       let uploadedUrls = [];
+      // 1. Nếu có ảnh mới, upload lên Cloudinary trước
       if (photos.length > 0) {
         const uploadForm = new FormData();
         photos.forEach((file) => uploadForm.append("photos", file));
         const uploadRes = await axios.post(
-          `/upload/hotels/${id}`,
+          `/hotels/upload/${id}`, 
           uploadForm,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-        uploadedUrls = uploadRes.data.urls; 
+        // Nhận mảng object {url, public_id} từ backend
+        uploadedUrls = uploadRes.data.data; 
       }
 
+      // 2. Gộp ảnh cũ (đã sắp xếp) và ảnh mới
       const finalHotelData = {
         name,
         city,
@@ -119,12 +140,22 @@ const AdminEditHotel = () => {
         photos: [...existingPhotos, ...uploadedUrls],
       };
 
-      await axios.put(`/admin/hotels/${id}`, finalHotelData);
+      // 3. Cập nhật thông tin khách sạn
+      await axios.put(`/hotels/${id}`, finalHotelData);
       navigate("/admin/hotels");
     } catch (err) {
-      console.error(err.response?.data || err.message);
+      console.error("Submit Error:", err.response?.data || err.message);
+      alert("Cập nhật thất bại. Vui lòng kiểm tra lại dữ liệu.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (loading) return (
+    <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
+      <CircularProgress />
+    </Box>
+  );
 
   return (
     <Paper elevation={0} sx={{ maxWidth: 850, mx: "auto", p: 4, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
@@ -230,8 +261,14 @@ const AdminEditHotel = () => {
 
           <Stack direction="row" spacing={2}>
             <Button onClick={() => navigate("/admin/hotels")} sx={{ color: 'text.secondary', fontWeight: 700 }}>Hủy</Button>
-            <Button variant="contained" onClick={handleSubmit} size="large" sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#000' } }}>
-              Lưu thay đổi
+            <Button 
+              variant="contained" 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              size="large" 
+              sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: '#000' } }}
+            >
+              {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
           </Stack>
         </Stack>
