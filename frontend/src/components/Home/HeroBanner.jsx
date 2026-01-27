@@ -15,8 +15,8 @@ export default function HeroBanner() {
   });
 
   const onSearchClick = () => {
-    // Đẩy toàn bộ thông tin ngày tháng và từ khóa vào Context
     handleSearch(localSearch);
+    // Nếu đang ở trang chủ thì navigate, nếu đang ở trang /hotels thì context sẽ tự cập nhật
     navigate("/hotels");
   };
 
@@ -27,24 +27,35 @@ export default function HeroBanner() {
   return (
     <Box sx={{ 
       position: "relative", 
-      height: { xs: "auto", md: "500px" }, 
-      py: { xs: 10, md: 0 },
-      width: "100vw", 
-      marginLeft: "calc(-50vw + 50%)", 
+      minHeight: { xs: "400px", md: "500px" }, 
+      width: "100%", // Thay vì 100vw để an toàn hơn
       display: "flex", 
       alignItems: "center",
       justifyContent: "center",
-      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2070')`,
-      backgroundPosition: "center",
-      backgroundSize: "cover"
+      overflow: "hidden",
+      bgcolor: "#1C1B19"
     }}>
+      {/* BACKGROUND IMAGE WITH OVERLAY */}
+      <Box sx={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: `url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2070')`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.4)" // Overlay an toàn
+        }
+      }} />
       
-      <Stack spacing={4} alignItems="center" sx={{ width: "100%", px: 2, zIndex: 1 }}>
+      <Stack spacing={4} alignItems="center" sx={{ width: "100%", px: 2, zIndex: 2 }}>
         <Box sx={{ textAlign: "center" }}>
           <Typography sx={{
             fontFamily: "'Playfair Display', serif",
             fontWeight: 900,
-            fontSize: { xs: "2.2rem", md: "3.5rem" },
+            fontSize: { xs: "2rem", md: "3.5rem" },
             color: "#fff",
             lineHeight: 1.2,
             mb: 1,
@@ -67,7 +78,8 @@ export default function HeroBanner() {
             maxWidth: 950, 
             borderRadius: { xs: "24px", md: "100px" },
             bgcolor: "#fff",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.3)"
+            boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+            border: "1px solid rgba(194, 165, 109, 0.2)"
           }}
         >
           {/* 1. Địa điểm */}
@@ -97,7 +109,7 @@ export default function HeroBanner() {
               variant="standard"
               value={localSearch.checkIn}
               onChange={(e) => setLocalSearch({...localSearch, checkIn: e.target.value})}
-              InputProps={{ disableUnderline: true, sx: { fontSize: "0.9rem" } }}
+              InputProps={{ disableUnderline: true, sx: { fontSize: "0.85rem" } }}
             />
           </Box>
 
@@ -114,7 +126,7 @@ export default function HeroBanner() {
               variant="standard"
               value={localSearch.checkOut}
               onChange={(e) => setLocalSearch({...localSearch, checkOut: e.target.value})}
-              InputProps={{ disableUnderline: true, sx: { fontSize: "0.9rem" } }}
+              InputProps={{ disableUnderline: true, sx: { fontSize: "0.85rem" } }}
             />
           </Box>
 
@@ -130,8 +142,10 @@ export default function HeroBanner() {
               color: "#C2A56D",
               fontWeight: 800,
               textTransform: "none",
+              whiteSpace: "nowrap",
               width: { xs: "100%", md: "auto" },
-              "&:hover": { bgcolor: "#000" }
+              "&:hover": { bgcolor: "#C2A56D", color: "#1C1B19" },
+              transition: "all 0.3s ease"
             }}
           >
             Tìm kiếm

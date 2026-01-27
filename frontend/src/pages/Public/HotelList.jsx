@@ -14,6 +14,7 @@ import { LocationOn, Star, FilterList, SearchOff, CalendarMonth } from "@mui/ico
 
 import HeroBanner from "../../components/Home/HeroBanner";
 import FilterSidebar from "../../components/Common/FilterSidebar";
+import WhyBook from "../../components/Home/WhyBook";
 import { getAllHotels } from "../../api/hotel.api";
 import { useSearch } from "../../context/SearchContext";
 import { normalizeText } from "../../utils/normalizeText";
@@ -133,14 +134,14 @@ export default function HotelList() {
   const [loading, setLoading] = useState(true);
 
   const [filters, setFilters] = useState({
-    minPrice: 0,
-    maxPrice: 10000000,
-    city: "",
-    types: [],
-    rating: null,
-    amenities: [],
-    onlyDiscount: false,
-  });
+  minPrice: 0,
+  maxPrice: 10000000, 
+  city: "",
+  types: [],
+  rating: null,
+  amenities: [],
+  onlyDiscount: false,
+});
 
   useEffect(() => {
     let isMounted = true;
@@ -166,37 +167,38 @@ export default function HotelList() {
     return () => { isMounted = false; };
   }, [search]); // Tự động fetch lại khi thanh tìm kiếm thay đổi
 
-  const filteredHotels = useMemo(() => {
-    const keyword = normalizeText(search.keyword || "");
-    const cityFilter = normalizeText(filters.city || "");
+ const filteredHotels = useMemo(() => {
+  const keyword = normalizeText(search.keyword || "");
+  const cityFilter = normalizeText(filters.city || "");
 
-    return hotels.filter((h) => {
-      if (h.status !== "active") return false;
+  return hotels.filter((h) => {
+    if (h.status !== "active") return false;
 
-      const name = normalizeText(h.name || "");
-      const city = normalizeText(h.city || "");
-      const type = normalizeText(h.type || "");
+    // 1. TÍNH GIÁ PHÒNG THẤP NHẤT (Đã trừ discount)
+    const prices = h.rooms?.map((r) => {
+      const basePrice = Number(r.price) || 0;
+      const discount = Number(r.discount) || 0;
+      return basePrice * (1 - discount / 100);
+    }) || [];
+    
+    const minRoomPrice = prices.length ? Math.min(...prices) : 0;
 
-      const prices = h.rooms?.map((r) => r.price * (1 - (r.discount || 0) / 100)) || [];
-      const minRoomPrice = prices.length ? Math.min(...prices) : 0;
+    // 2. SO SÁNH VỚI BỘ LỌC (Khớp hoàn toàn với Sidebar)
+    const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
 
-      const matchesKeyword = !keyword || 
-        name.includes(keyword) || 
-        city.includes(keyword) || 
-        type.includes(keyword);
+    // 3. CÁC ĐIỀU KIỆN KHÁC
+    const matchesKeyword = !keyword || 
+      normalizeText(h.name).includes(keyword) || 
+      normalizeText(h.city).includes(keyword);
 
-      const matchesCity = !cityFilter || city.includes(cityFilter);
-      const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
-      const matchesType = !filters.types.length || filters.types.includes(h.type);
-      const matchesRating = !filters.rating || h.rating >= filters.rating;
-      const matchesAmenities = !filters.amenities.length || 
-        filters.amenities.every((a) => h.amenities?.includes(a));
-      const matchesDiscount = !filters.onlyDiscount || h.rooms?.some((r) => r.discount > 0);
+    const matchesCity = !cityFilter || normalizeText(h.city).includes(cityFilter);
+    const matchesType = !filters.types.length || filters.types.includes(h.type);
+    const matchesAmenities = !filters.amenities.length || 
+      filters.amenities.every((a) => h.amenities?.includes(a));
 
-      return matchesKeyword && matchesCity && matchesPrice && matchesType && 
-             matchesRating && matchesAmenities && matchesDiscount;
-    });
-  }, [hotels, filters, search.keyword]);
+    return matchesKeyword && matchesCity && matchesPrice && matchesType && matchesAmenities;
+  });
+}, [hotels, filters, search.keyword]);
 
   const cities = useMemo(() => [...new Set(hotels.map((h) => h.city).filter(Boolean))], [hotels]);
   const amenities = useMemo(() => [...new Set(hotels.flatMap((h) => h.amenities || []))], [hotels]);
@@ -239,8 +241,10 @@ export default function HotelList() {
                 <Typography fontWeight={800}>Bộ lọc chi tiết</Typography>
               </Stack>
               <FilterSidebar 
-                filters={filters} setFilters={setFilters} 
-                cities={cities} amenities={amenities} showPrice={true} 
+                filters={filters} 
+                setFilters={setFilters} 
+                cities={cities}
+                amenities={amenities} 
               />
             </Paper>
           </Box>
@@ -285,6 +289,7 @@ export default function HotelList() {
             ))}
           </Stack>
         </Box>
+        <Box sx={{ mt: 8 }}><WhyBook /></Box>
       </Container>
     </Box>
   );

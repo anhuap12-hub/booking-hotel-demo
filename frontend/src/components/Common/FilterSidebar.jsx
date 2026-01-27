@@ -18,11 +18,10 @@ export default function FilterSidebar({
   amenities = [],
 }) {
   // Trích xuất an toàn các giá trị từ filters
-  const price = filters?.priceRange || [0, 2000000];
   const types = filters?.types || [];
   const selectedAmenities = filters?.amenities || [];
   const currentCity = filters?.city || "";
-
+const currentPriceRange = [filters?.minPrice || 0, filters?.maxPrice || 10000000];  
   return (
     <Box width="100%" sx={{ p: 0.5 }}>
       <Typography fontSize={16} fontWeight={800} mb={2} color="primary.main">
@@ -39,22 +38,28 @@ export default function FilterSidebar({
         <Box sx={{ px: 1 }}>
           <Slider
             size="small"
-            value={price}
+            value={currentPriceRange}
             min={0}
-            max={5000000} // Tăng max lên cho thực tế hơn
+            max={10000000} 
             step={100000}
+            // ĐỒNG BỘ Ở ĐÂY: Cập nhật chính xác minPrice và maxPrice
             onChange={(_, v) =>
-              setFilters((f) => ({ ...f, priceRange: v }))
+              setFilters((f) => ({ 
+                ...f, 
+                minPrice: v[0], 
+                maxPrice: v[1] 
+              }))
             }
             valueLabelDisplay="auto"
+            valueLabelFormat={(v) => `${(v / 1000000).toFixed(1)}M`}
           />
         </Box>
-        <Stack direction="row" justifyContent="space-between">
+       <Stack direction="row" justifyContent="space-between">
           <Typography fontSize={11} color="text.secondary">
-            {price[0].toLocaleString()}đ
+            {currentPriceRange[0].toLocaleString()}đ
           </Typography>
-          <Typography fontSize={11} color="text.secondary">
-            {price[1].toLocaleString()}đ
+          <Typography fontSize={11} color="text.secondary">          
+            {currentPriceRange[1].toLocaleString()}đ
           </Typography>
         </Stack>
       </Box>
