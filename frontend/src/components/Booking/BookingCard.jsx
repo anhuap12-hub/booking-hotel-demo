@@ -5,10 +5,10 @@ import {
   IconButton, Alert, Snackbar
 } from "@mui/material";
 import { 
-  CalendarToday, Hotel, Close, StarBorder, CheckCircleOutline, Payment
+  CalendarToday, Hotel, Close, StarBorder, CheckCircleOutline, Payment, LocationOn
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom"; // Thêm lại để dùng cho thanh toán
+import { useNavigate } from "react-router-dom";
 import { createReview } from "../../api/review.api";
 
 const MotionCard = motion(Card);
@@ -16,14 +16,16 @@ const MotionCard = motion(Card);
 export default function BookingCard({ booking, onView }) {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  
+  // sm (600px) là điểm ngắt lý tưởng để chuyển từ hàng ngang sang hàng dọc cho Card
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   /* ================= STATE ================= */
   const [openReview, setOpenReview] = useState(false);
   const [userStars, setUserStars] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [isReviewed, setIsReviewed] = useState(false); 
+  const [isReviewedLocally, setIsReviewedLocally] = useState(false); 
   const [reviewSuccess, setReviewSuccess] = useState(false); 
   const [toast, setToast] = useState({ open: false, message: "", severity: "success" });
 
@@ -44,7 +46,7 @@ export default function BookingCard({ booking, onView }) {
   const isOnlyDeposited = (paymentStatus === 'DEPOSITED') || (paymentStatus === 'PAID' && paid < total && paid > 0);
   const isExpired = status === 'pending' && paymentStatus === 'UNPAID' && expireAt && new Date(expireAt) < new Date();
   
-  const hasBeenReviewed = booking.isReviewed || isReviewed;
+  const hasBeenReviewed = booking.isReviewed || isReviewedLocally;
   const canReview = isConfirmedOrCompleted && isPaidOrDeposited && !hasBeenReviewed;
   const canPay = paymentStatus === 'UNPAID' && !isExpired && status !== 'cancelled';
 
@@ -83,7 +85,7 @@ export default function BookingCard({ booking, onView }) {
       });
 
       setReviewSuccess(true); 
-      setIsReviewed(true); 
+      setIsReviewedLocally(true); 
 
       setTimeout(() => {
         handleCloseReview();
@@ -126,35 +128,69 @@ export default function BookingCard({ booking, onView }) {
         sx={{ 
           mb: 3, borderRadius: "20px", border: '1px solid #EAE9E2',
           bgcolor: '#fff', position: 'relative', overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
+          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+          transition: 'transform 0.2s',
+          '&:hover': { transform: isMobile ? 'none' : 'translateY(-4px)' }
         }}
       >
         <CardContent sx={{ p: isMobile ? 2 : 3 }}>
           <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 2 : 3}>
-            {/* Ảnh */}
-            <Box sx={{ width: isMobile ? "100%" : 180, height: isMobile ? 180 : 160, borderRadius: "16px", overflow: "hidden", position: 'relative' }}>
+            
+            {/* 1. KHỐI ẢNH: Tối ưu kích thước cố định */}
+            <Box sx={{ 
+              width: isMobile ? "100%" : 180, 
+              height: isMobile ? 180 : 160, 
+              borderRadius: "16px", 
+              overflow: "hidden", 
+              position: 'relative',
+              flexShrink: 0 // Không cho phép Desktop bóp méo ảnh
+            }}>
               <img 
                 src={hotel?.photos?.[0]?.url || roomSnapshot?.image || "https://via.placeholder.com/300"} 
                 alt="room" 
                 style={{ width: "100%", height: "100%", objectFit: "cover" }} 
               />
-              <Box sx={{ position: 'absolute', top: 12, left: 12, bgcolor: tagInfo.bg, color: "#fff", px: 1.2, py: 0.4, borderRadius: "6px", fontSize: 10, fontWeight: 800 }}>
+              <Box sx={{ 
+                position: 'absolute', top: 12, left: 12, 
+                bgcolor: tagInfo.bg, color: "#fff", 
+                px: 1.2, py: 0.4, borderRadius: "6px", 
+                fontSize: 10, fontWeight: 800, textTransform: 'uppercase'
+              }}>
                 {tagInfo.text}
               </Box>
             </Box>
 
-            {/* Nội dung */}
-            <Box flex={1}>
+            {/* 2. KHỐI NỘI DUNG: Tự động dãn theo khoảng trống */}
+            <Box flex={1} sx={{ minWidth: 0 }}> {/* minWidth: 0 quan trọng để Text noWrap hoạt động */}
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
-                <Box>
-                  <Typography sx={{ fontSize: isMobile ? "1.1rem" : "1.25rem", fontWeight: 800, color: "#1C1B19", fontFamily: "'Playfair Display', serif" }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography 
+                    noWrap 
+                    sx={{ 
+                      fontSize: isMobile ? "1.1rem" : "1.25rem", 
+                      fontWeight: 800, color: "#1C1B19", 
+                      fontFamily: "'Playfair Display', serif" 
+                    }}
+                  >
                     {hotel?.name || "Luxstay Hotel"}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  
+                  {hotel?.address && (
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: "#72716E", display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.2, 
+                        fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <LocationOn sx={{ fontSize: 14, color: "#C2A56D" }} /> {hotel.address}
+                    </Typography>
+                  )}
+                  <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                     <Hotel sx={{ fontSize: 14 }} /> {room?.name || roomSnapshot?.name}
                   </Typography>
                 </Box>
-                <Chip label={payInfo.label} size="small" sx={{ bgcolor: payInfo.bgcolor, color: payInfo.color, fontWeight: 800, fontSize: 10 }} />
+                <Chip label={payInfo.label} size="small" sx={{ bgcolor: payInfo.bgcolor, color: payInfo.color, fontWeight: 800, fontSize: 10, flexShrink: 0, ml: 1 }} />
               </Stack>
 
               <Box sx={{ bgcolor: "#F9F8F6", p: 1.5, borderRadius: "12px", my: 1.5 }}>
@@ -164,22 +200,28 @@ export default function BookingCard({ booking, onView }) {
                 </Typography>
               </Box>
 
-              <Stack direction={isMobile ? "column" : "row"} justifyContent="space-between" alignItems={isMobile ? "flex-start" : "flex-end"} spacing={2}>
+              {/* 3. KHỐI FOOTER: Responsive Giá & Nút */}
+              <Stack 
+                direction={isMobile ? "column" : "row"} 
+                justifyContent="space-between" 
+                alignItems={isMobile ? "stretch" : "center"} 
+                spacing={2}
+              >
                 <Box>
                   <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 700, fontSize: 10 }}>GIÁ TRỊ</Typography>
-                  <Typography sx={{ fontSize: "1.45rem", fontWeight: 900, color: "#1C1B19" }}>
+                  <Typography sx={{ fontSize: "1.45rem", fontWeight: 900, color: "#1C1B19", lineHeight: 1 }}>
                     {total.toLocaleString("vi-VN")} <span style={{ fontSize: 14 }}>VND</span>
                   </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1} width={isMobile ? "100%" : "auto"}>
+                <Stack direction="row" spacing={1}>
                   {canReview && (
                     <Button 
                       variant="contained" 
                       fullWidth={isMobile}
                       onClick={handleOpenReview}
                       startIcon={<StarBorder />}
-                      sx={{ bgcolor: "#C2A56D", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', "&:hover": { bgcolor: "#A88B4F" } }}
+                      sx={{ bgcolor: "#C2A56D", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', px: 3, "&:hover": { bgcolor: "#A88B4F" } }}
                     >
                       Đánh giá
                     </Button>
@@ -190,7 +232,7 @@ export default function BookingCard({ booking, onView }) {
                       fullWidth={isMobile}
                       onClick={() => navigate(`/checkout/${bookingId}`)}
                       startIcon={<Payment />}
-                      sx={{ bgcolor: "#1C1B19", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', "&:hover": { bgcolor: "#333" } }}
+                      sx={{ bgcolor: "#1C1B19", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', px: 3, "&:hover": { bgcolor: "#333" } }}
                     >
                       Thanh toán
                     </Button>
@@ -199,7 +241,7 @@ export default function BookingCard({ booking, onView }) {
                     variant="outlined" 
                     fullWidth={isMobile}
                     onClick={() => onView(booking)}
-                    sx={{ borderColor: "#1C1B19", color: "#1C1B19", borderRadius: "10px", fontWeight: 700, textTransform: 'none' }}
+                    sx={{ borderColor: "#1C1B19", color: "#1C1B19", borderRadius: "10px", fontWeight: 700, textTransform: 'none', px: 3 }}
                   >
                     Chi tiết
                   </Button>
@@ -210,8 +252,15 @@ export default function BookingCard({ booking, onView }) {
         </CardContent>
       </MotionCard>
 
-      {/* Dialog Review - Giữ nguyên logic của bạn vì nó đã quá tốt */}
-      <Dialog open={openReview} onClose={handleCloseReview} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: "20px" } }}>
+      {/* Dialog Review: Responsive cho màn hình nhỏ */}
+      <Dialog 
+        open={openReview} 
+        onClose={handleCloseReview} 
+        fullWidth 
+        maxWidth="sm" 
+        fullScreen={isMobile} // Toàn màn hình trên mobile để dễ nhập liệu
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : "20px" } }}
+      >
         <DialogTitle sx={{ fontWeight: 800, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {reviewSuccess ? "Hoàn tất" : "Đánh giá kỳ nghỉ"}
           {!reviewSuccess && <IconButton onClick={handleCloseReview} disabled={submitting}><Close /></IconButton>}
@@ -229,7 +278,7 @@ export default function BookingCard({ booking, onView }) {
               <Box component={motion.div} key="form" exit={{ opacity: 0, scale: 0.9 }} sx={{ width: '100%', textAlign: 'center' }}>
                 <Rating size="large" value={userStars} onChange={(e, v) => setUserStars(v)} sx={{ mb: 2, color: '#C2A56D' }} disabled={submitting} />
                 <TextField 
-                  fullWidth multiline rows={4} 
+                  fullWidth multiline rows={isMobile ? 8 : 4} 
                   placeholder="Chia sẻ trải nghiệm của bạn..." 
                   value={comment} 
                   onChange={(e) => setComment(e.target.value)} 
