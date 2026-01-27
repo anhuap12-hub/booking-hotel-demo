@@ -2,54 +2,86 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
 import {
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-  Stack,
-  InputLabel,
-  FormControl,
-  Box,
-  Typography,
-  CircularProgress,
-  Alert
+  TextField, Button, Select, MenuItem, Stack, InputLabel,
+  FormControl, Box, Typography, CircularProgress, Alert,
+  Grid, Divider, Chip, Paper
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function AdminAddRoom() {
   const { hotelId } = useParams();
   const navigate = useNavigate();
 
+  // --- States ---
   const [form, setForm] = useState({
     name: "",
     type: "single",
     price: "",
     maxPeople: 1,
+    desc: "",
     status: "active",
   });
+  
+  const [amenities, setAmenities] = useState([]);
+  const [newAmenity, setNewAmenity] = useState("");
+  const [photos, setPhotos] = useState([]); // File thực tế
+  const [previews, setPreviews] = useState([]); // URL hiển thị
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // --- Handlers ---
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleAddAmenity = (e) => {
+    if (e.key === "Enter" && newAmenity.trim()) {
+      e.preventDefault();
+      if (!amenities.includes(newAmenity.trim())) {
+        setAmenities([...amenities, newAmenity.trim()]);
+      }
+      setNewAmenity("");
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setPhotos((prev) => [...prev, ...files]);
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const handleDeletePhoto = (index) => {
+    setPhotos(photos.filter((_, i) => i !== index));
+    setPreviews(previews.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (!form.name || !form.price) {
-      setError("Vui lòng điền tên phòng và giá.");
-      return;
-    }
-
     setLoading(true);
+
     try {
+      // 1. Upload ảnh trước (nếu có)
+      let uploadedPhotos = [];
+      if (photos.length > 0) {
+        const formData = new FormData();
+        photos.forEach(file => formData.append("photos", file));
+        const res = await axios.post(`/upload/rooms`, formData); // Chỉnh lại route upload tùy backend
+        uploadedPhotos = res.data.data;
+      }
+
+      // 2. Gửi dữ liệu phòng
       await axios.post(`/rooms/by-hotel/${hotelId}`, {
         ...form,
         price: Number(form.price),
         maxPeople: Number(form.maxPeople),
+        amenities,
+        photos: uploadedPhotos,
       });
       
+      alert("Thêm phòng thành công!");
       navigate(`/admin/hotels/${hotelId}/rooms`);
     } catch (err) {
       setError(err.response?.data?.message || "Không thể thêm phòng.");
@@ -59,96 +91,100 @@ export default function AdminAddRoom() {
   };
 
   return (
-    <Box
-      sx={{
-        maxWidth: 440, mx: "auto", mt: 6, p: 4,
-        bgcolor: "#F5F3EF", borderRadius: "16px",
-        border: "1px solid #E5E2DC",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.05)"
-      }}
-    >
-      <Typography
-        fontSize={22} fontWeight={700} mb={3}
-        sx={{ color: "#3E2C1C", textAlign: "center" }}
-      >
-        Thêm Phòng Mới
-      </Typography>
+    <Box sx={{ maxWidth: 800, mx: "auto", mt: 4, mb: 4 }}>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: "16px", border: "1px solid #E5E2DC", bgcolor: "#FDFCFB" }}>
+        <Typography variant="h5" fontWeight={700} mb={1} color="#3E2C1C">
+          Thêm Phòng Mới
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mb={4}>
+          Thiết lập thông tin chi tiết cho hạng phòng của khách sạn
+        </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: "8px" }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      <Stack spacing={3} component="form" onSubmit={handleSubmit}>
-        <TextField
-          label="Tên phòng (Số phòng)"
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          required fullWidth
-          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-        />
+        <Stack spacing={4} component="form" onSubmit={handleSubmit}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={7}>
+              <Stack spacing={3}>
+                <TextField label="Tên phòng / Số phòng" name="name" value={form.name} onChange={handleChange} required fullWidth />
+                <TextField label="Mô tả chi tiết" name="desc" value={form.desc} onChange={handleChange} multiline rows={3} fullWidth />
+                <Stack direction="row" spacing={2}>
+                  <TextField type="number" label="Giá / Đêm" name="price" value={form.price} onChange={handleChange} required fullWidth />
+                  <TextField type="number" label="Sức chứa tối đa" name="maxPeople" value={form.maxPeople} onChange={handleChange} required fullWidth />
+                </Stack>
+              </Stack>
+            </Grid>
 
-        <FormControl fullWidth>
-          <InputLabel>Loại phòng</InputLabel>
-          <Select
-            name="type"
-            label="Loại phòng"
-            value={form.type}
-            onChange={handleChange}
-            sx={{ borderRadius: "10px" }}
+            <Grid item xs={12} md={5}>
+              <Stack spacing={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Loại phòng</InputLabel>
+                  <Select name="type" value={form.type} label="Loại phòng" onChange={handleChange}>
+                    <MenuItem value="single">Phòng đơn (Single)</MenuItem>
+                    <MenuItem value="double">Phòng đôi (Double)</MenuItem>
+                    <MenuItem value="suite">Cao cấp (Suite)</MenuItem>
+                    <MenuItem value="family">Gia đình (Family)</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth>
+                  <InputLabel>Trạng thái</InputLabel>
+                  <Select name="status" value={form.status} label="Trạng thái" onChange={handleChange}>
+                    <MenuItem value="active">Sẵn sàng</MenuItem>
+                    <MenuItem value="maintenance">Bảo trì</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+            </Grid>
+          </Grid>
+
+          <Divider />
+
+          {/* Tiện ích */}
+          <Box>
+            <Typography variant="subtitle2" mb={1} fontWeight={600}>Tiện ích phòng</Typography>
+            <TextField 
+              fullWidth size="small" placeholder="Nhấn Enter để thêm (VD: Wifi, Tủ lạnh...)"
+              value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)}
+              onKeyDown={handleAddAmenity}
+            />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+              {amenities.map((item, idx) => (
+                <Chip key={idx} label={item} onDelete={() => setAmenities(amenities.filter(a => a !== item))} />
+              ))}
+            </Box>
+          </Box>
+
+          {/* Hình ảnh */}
+          <Box>
+            <Typography variant="subtitle2" mb={1} fontWeight={600}>Hình ảnh phòng</Typography>
+            <Button variant="outlined" component="label" sx={{ mb: 2 }}>
+              + Chọn ảnh
+              <input type="file" hidden multiple onChange={handleFileChange} accept="image/*" />
+            </Button>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+              {previews.map((url, i) => (
+                <Box key={i} sx={{ position: "relative", width: 100, height: 80 }}>
+                  <Box component="img" src={url} sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 1 }} />
+                  <Button 
+                    onClick={() => handleDeletePhoto(i)}
+                    sx={{ position: "absolute", top: -5, right: -5, minWidth: 20, height: 20, bgcolor: "red", color: "white", borderRadius: "50%" }}
+                  >
+                    <CloseIcon sx={{ fontSize: 12 }} />
+                  </Button>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+
+          <Button
+            type="submit" variant="contained" disabled={loading}
+            sx={{ py: 1.5, bgcolor: "#3E2C1C", color: "#C2A56D", fontWeight: 700, "&:hover": { bgcolor: "#000" } }}
           >
-            <MenuItem value="single">Single (Phòng đơn)</MenuItem>
-            <MenuItem value="double">Double (Phòng đôi)</MenuItem>
-            <MenuItem value="suite">Suite (Cao cấp)</MenuItem>
-          </Select>
-        </FormControl>
-
-        <TextField
-          type="number"
-          label="Giá phòng / đêm"
-          name="price"
-          value={form.price}
-          onChange={handleChange}
-          required fullWidth
-          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-        />
-
-        <TextField
-          type="number"
-          label="Số người tối đa"
-          name="maxPeople"
-          value={form.maxPeople}
-          onChange={handleChange}
-          required fullWidth
-          sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-        />
-
-        <FormControl fullWidth>
-          <InputLabel>Trạng thái ban đầu</InputLabel>
-          <Select
-            name="status"
-            label="Trạng thái ban đầu"
-            value={form.status}
-            onChange={handleChange}
-            sx={{ borderRadius: "10px" }}
-          >
-            <MenuItem value="active">Sẵn sàng đón khách</MenuItem>
-            <MenuItem value="maintenance">Đang bảo trì / Sửa chữa</MenuItem>
-            <MenuItem value="inactive">Tạm ngưng sử dụng</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={loading}
-          sx={{
-            py: 1.5, bgcolor: "#3E2C1C", color: "#fff", fontWeight: 700,
-            textTransform: "none", borderRadius: "10px", fontSize: "1rem",
-            "&:hover": { bgcolor: "#2F2116" },
-          }}
-        >
-          {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Tạo phòng và Cập nhật giá"}
-        </Button>
-      </Stack>
+            {loading ? <CircularProgress size={24} /> : "Xác nhận thêm phòng mới"}
+          </Button>
+        </Stack>
+      </Paper>
     </Box>
   );
 }
