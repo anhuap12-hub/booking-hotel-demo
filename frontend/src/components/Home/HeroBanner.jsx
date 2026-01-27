@@ -1,98 +1,136 @@
-import {
-  Box, Typography, TextField, Button, Paper, Stack
-} from "@mui/material";
-import { LocationOnOutlined } from "@mui/icons-material";
+import { Box, Typography, TextField, Button, Paper, Stack, Divider } from "@mui/material";
+import { LocationOnOutlined, CalendarMonthOutlined } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSearch } from "../../context/SearchContext";
 
 export default function HeroBanner() {
-  const [keyword, setKeyword] = useState("");
   const navigate = useNavigate();
+  const { handleSearch } = useSearch();
+  
+  const [localSearch, setLocalSearch] = useState({
+    keyword: "",
+    checkIn: "",
+    checkOut: ""
+  });
+
+  const onSearchClick = () => {
+    // Đẩy toàn bộ thông tin ngày tháng và từ khóa vào Context
+    handleSearch(localSearch);
+    navigate("/hotels");
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") onSearchClick();
+  };
 
   return (
     <Box sx={{ 
       position: "relative", 
-      // Chiều cao vừa vặn, không quá cao
-      height: { xs: "400px", md: "480px" }, 
-      width: "100vw", // Ép tràn hết chiều ngang trình duyệt
-      marginLeft: "calc(-50vw + 50%)", // Kỹ thuật để tràn lề nếu component cha có padding
+      height: { xs: "auto", md: "500px" }, 
+      py: { xs: 10, md: 0 },
+      width: "100vw", 
+      marginLeft: "calc(-50vw + 50%)", 
       display: "flex", 
       alignItems: "center",
       justifyContent: "center",
-      overflow: "hidden",
-      // Background bao phủ toàn bộ không gian
-      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2070')`,
+      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2070')`,
       backgroundPosition: "center",
-      backgroundSize: "cover",
-      backgroundRepeat: "no-repeat"
+      backgroundSize: "cover"
     }}>
       
-      {/* Không dùng Container ở đây để nội dung có thể tùy biến tự do */}
       <Stack spacing={4} alignItems="center" sx={{ width: "100%", px: 2, zIndex: 1 }}>
-        
         <Box sx={{ textAlign: "center" }}>
           <Typography sx={{
             fontFamily: "'Playfair Display', serif",
             fontWeight: 900,
-            fontSize: { xs: "2.2rem", md: "3.8rem" },
+            fontSize: { xs: "2.2rem", md: "3.5rem" },
             color: "#fff",
-            lineHeight: 1.1,
-            textShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            lineHeight: 1.2,
             mb: 1,
           }}>
             Tìm nơi dừng chân <Box component="span" sx={{ color: "#C2A56D" }}>hoàn hảo</Box>
           </Typography>
-          
-          <Typography sx={{ 
-            color: "rgba(255,255,255,0.95)", 
-            fontSize: { xs: "0.9rem", md: "1.1rem" }, 
-            fontWeight: 400,
-            letterSpacing: "0.05em"
-          }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: "1.1rem" }}>
             Khám phá không gian nghỉ dưỡng thượng lưu tại Coffee Stay
           </Typography>
         </Box>
 
-        {/* Search Box - Cố định kích thước vừa phải, nằm giữa */}
         <Paper
           elevation={0}
           sx={{
             display: "flex", 
+            flexDirection: { xs: "column", md: "row" },
             alignItems: "center", 
-            p: "4px", 
-            pl: 3,
+            p: { xs: 2, md: 1 }, 
             width: "100%",
-            maxWidth: 800, // Thanh search không nên quá dài, giữ ở mức 800px là đẹp nhất
-            borderRadius: "100px",
+            maxWidth: 950, 
+            borderRadius: { xs: "24px", md: "100px" },
             bgcolor: "#fff",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)"
+            boxShadow: "0 20px 40px rgba(0,0,0,0.3)"
           }}
         >
-          <LocationOnOutlined sx={{ color: "#C2A56D", fontSize: 24, mr: 1.5 }} />
-          <TextField
-            fullWidth
-            placeholder="Bạn muốn đi đâu?"
-            variant="standard"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            InputProps={{ 
-              disableUnderline: true,
-              sx: { fontSize: "1.1rem", fontWeight: 500 } 
-            }}
-          />
+          {/* 1. Địa điểm */}
+          <Box sx={{ display: "flex", alignItems: "center", flex: 1.5, px: 2, width: "100%" }}>
+            <LocationOnOutlined sx={{ color: "#C2A56D", mr: 1 }} />
+            <TextField
+              fullWidth
+              placeholder="Bạn muốn đi đâu?"
+              variant="standard"
+              value={localSearch.keyword}
+              onChange={(e) => setLocalSearch({...localSearch, keyword: e.target.value})}
+              onKeyDown={handleKeyDown}
+              InputProps={{ disableUnderline: true, sx: { fontWeight: 600 } }}
+            />
+          </Box>
+
+          <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", md: "block" }, mx: 1 }} />
+
+          {/* 2. Ngày nhận phòng */}
+          <Box sx={{ display: "flex", alignItems: "center", flex: 1, px: 2, width: "100%", mt: { xs: 2, md: 0 } }}>
+            <CalendarMonthOutlined sx={{ color: "#C2A56D", mr: 1 }} />
+            <TextField
+              fullWidth
+              type="date"
+              label="Nhận phòng"
+              InputLabelProps={{ shrink: true }}
+              variant="standard"
+              value={localSearch.checkIn}
+              onChange={(e) => setLocalSearch({...localSearch, checkIn: e.target.value})}
+              InputProps={{ disableUnderline: true, sx: { fontSize: "0.9rem" } }}
+            />
+          </Box>
+
+          <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", md: "block" }, mx: 1 }} />
+
+          {/* 3. Ngày trả phòng */}
+          <Box sx={{ display: "flex", alignItems: "center", flex: 1, px: 2, width: "100%", mt: { xs: 2, md: 0 } }}>
+            <CalendarMonthOutlined sx={{ color: "#C2A56D", mr: 1 }} />
+            <TextField
+              fullWidth
+              type="date"
+              label="Trả phòng"
+              InputLabelProps={{ shrink: true }}
+              variant="standard"
+              value={localSearch.checkOut}
+              onChange={(e) => setLocalSearch({...localSearch, checkOut: e.target.value})}
+              InputProps={{ disableUnderline: true, sx: { fontSize: "0.9rem" } }}
+            />
+          </Box>
+
           <Button
-            onClick={() => navigate("/hotels")}
+            onClick={onSearchClick}
             variant="contained"
             sx={{
-              height: 54, 
-              px: { xs: 3, md: 6 }, 
+              height: { xs: 50, md: 60 }, 
+              px: { xs: 4, md: 5 }, 
+              mt: { xs: 2, md: 0 },
               borderRadius: "100px",
               bgcolor: "#1C1B19", 
               color: "#C2A56D",
               fontWeight: 800,
-              fontSize: "0.95rem",
               textTransform: "none",
-              whiteSpace: "nowrap",
+              width: { xs: "100%", md: "auto" },
               "&:hover": { bgcolor: "#000" }
             }}
           >

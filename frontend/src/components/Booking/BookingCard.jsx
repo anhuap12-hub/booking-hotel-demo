@@ -48,7 +48,7 @@ export default function BookingCard({ booking, onView }) {
   const isExpired = status === 'pending' && paymentStatus === 'UNPAID' && expireAt && new Date(expireAt) < new Date();
   
   // Chỉ cho phép đánh giá khi trạng thái đơn hàng là completed
-  const canReview = status === 'completed';
+  const canReview = status === 'completed' || isPaidFull;
 
   /* ================= HANDLERS ================= */
   const handleOpenReview = (e) => {

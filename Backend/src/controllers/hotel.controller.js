@@ -7,41 +7,55 @@ const normalize = (text = "") =>
 
 export const getAllHotels = async (req, res) => {
   try {
-    const { city, minPrice, maxPrice, types, amenities, keyword, onlyDiscount } = req.query;
-    const query = {};
+    const { city, minPrice, maxPrice, types, amenities, keyword, onlyDiscount, checkIn, checkOut } = req.query;
+    const query = { status: "active" }; // Chỉ lấy hotel đang hoạt động
 
-    if (keyword) query.name = { $regex: keyword, $options: "i" };
+    // 1. Lọc theo Keyword (Tên, Thành phố, hoặc Loại hình)
+    if (keyword) {
+      query.$or = [
+        { name: { $regex: keyword, $options: "i" } },
+        { city: { $regex: keyword, $options: "i" } },
+        { type: { $regex: keyword, $options: "i" } }
+      ];
+    }
     if (city) query.citySlug = city;
     if (types) query.type = { $in: types.split(",") };
-    if (amenities) {
-      const amenityArr = Array.isArray(amenities) ? amenities : amenities.split(",");
-      query.amenities = { $all: amenityArr };
+
+    // 2. LOGIC LỌC PHÒNG TRỐNG (Nếu có ngày checkIn/checkOut)
+    let unavailableRoomIds = [];
+    if (checkIn && checkOut) {
+      const bookedRooms = await Booking.find({
+        status: { $ne: "cancelled" }, 
+        $or: [
+          { checkIn: { $lt: new Date(checkOut) }, checkOut: { $gt: new Date(checkIn) } }
+        ]
+      }).select("roomId");
+      
+      unavailableRoomIds = bookedRooms.map(b => b.roomId);
     }
 
-    const hotels = await Hotel.find(query)
-      .populate({ path: "rooms", select: "price discount" })
+    // 3. Truy vấn Hotel và Populate Room
+    let hotels = await Hotel.find(query)
+      .populate({ 
+        path: "rooms", 
+        match: checkIn && checkOut ? { _id: { $nin: unavailableRoomIds } } : {},
+        select: "price discount name" 
+      })
       .lean();
+      const result = hotels.map((hotel) => {
+      const availableRooms = hotel.rooms || [];
+      const prices = availableRooms.map(r => r.price * (1 - (r.discount || 0) / 100));
+      const minP = prices.length ? Math.min(...prices) : null;
+      const maxD = availableRooms.reduce((max, r) => Math.max(max, r.discount || 0), 0);
 
-    const result = hotels.map((hotel) => {
-      let minP = null;
-      let maxD = 0;
-      if (Array.isArray(hotel.rooms)) {
-        for (const r of hotel.rooms) {
-          if (typeof r.price === "number") {
-            minP = minP === null ? r.price : Math.min(minP, r.price);
-          }
-          if (typeof r.discount === "number") {
-            maxD = Math.max(maxD, r.discount);
-          }
-        }
-      }
-      return { ...hotel, minPrice: minP, discount: maxD };
+      return { ...hotel, minPrice: minP, discount: maxD, roomCount: availableRooms.length };
     }).filter((hotel) => {
-      if (hotel.minPrice === null) return false;
+      if (checkIn && checkOut && hotel.roomCount === 0) return false;
       const okMin = minPrice ? hotel.minPrice >= Number(minPrice) : true;
       const okMax = maxPrice ? hotel.minPrice <= Number(maxPrice) : true;
       const okDiscount = onlyDiscount === "true" ? hotel.discount > 0 : true;
-      return okMin && okMax && okDiscount;
+      
+      return (hotel.minPrice !== null) && okMin && okMax && okDiscount;
     });
 
     res.json({ success: true, data: result });

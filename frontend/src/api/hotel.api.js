@@ -2,13 +2,21 @@ import instance from "./axios.js";
 
 export const getAllHotels = (params = {}) => {
   const formattedParams = { ...params };
-  
-  // Chuyển mảng thành chuỗi phân cách bằng dấu phẩy
+
+  // Chuẩn hóa mảng cho Backend dễ xử lý (MongoDB $all/$in)
   if (Array.isArray(formattedParams.amenities)) {
     formattedParams.amenities = formattedParams.amenities.join(",");
   }
   if (Array.isArray(formattedParams.types)) {
     formattedParams.types = formattedParams.types.join(",");
+  }
+
+  // Đảm bảo nếu có ngày thì định dạng về YYYY-MM-DD
+  if (formattedParams.checkIn) {
+    formattedParams.checkIn = new Date(formattedParams.checkIn).toISOString().split('T')[0];
+  }
+  if (formattedParams.checkOut) {
+    formattedParams.checkOut = new Date(formattedParams.checkOut).toISOString().split('T')[0];
   }
 
   return instance.get("/hotels", { params: formattedParams });
