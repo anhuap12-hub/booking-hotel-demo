@@ -10,7 +10,6 @@ import PropertiesByType from "../../components/Landing/PropertiesByType";
 import WeekendDeals from "../../components/Landing/WeekendDeals";
 import ContactCTA from "../../components/Landing/ContactCTA";
 import GeniusModal from "../../components/Common/GeniusModal";
-import SearchForm from "../../components/Landing/SearchForm";
 
 import { getAllHotels } from "../../api/hotel.api";
 
@@ -89,15 +88,6 @@ export default function LandingPage() {
             px: { xs: 2, md: 0 }
           }}
         >
-          <Box sx={{ 
-            p: { xs: 1, md: 1.5 }, 
-            bgcolor: "white", 
-            borderRadius: { xs: "16px", md: "24px" }, 
-            boxShadow: "0 30px 60px rgba(28, 27, 25, 0.12)",
-            border: "1px solid rgba(194, 165, 109, 0.15)"
-          }}>
-            <SearchForm />
-          </Box>
         </Container>
       </Box>
 

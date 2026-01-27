@@ -1,12 +1,9 @@
 import React from "react";
 import { Box, Typography, Stack, Container } from "@mui/material";
-// Import icons theo kiểu destructing để tối ưu hóa bundle size và tránh lỗi lãng phí tài nguyên
-import { 
-  LocalOffer as LocalOfferIcon, 
-  VisibilityOff as VisibilityOffIcon, 
-  SupportAgent as SupportAgentIcon, 
-  Autorenew as AutorenewIcon 
-} from "@mui/icons-material";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 
 /* ================= COMPONENT CON: REASON ITEM ================= */
 const ReasonItem = ({ icon, title, desc, iconBg, iconColor }) => {
