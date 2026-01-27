@@ -147,21 +147,25 @@ export default function HotelList() {
     let isMounted = true;
     setLoading(true);
 
-    getAllHotels(search) 
-      .then((res) => {
+    const fetchHotels = async () => {
+      try {
+        const res = await getAllHotels(search);
         if (isMounted) {
           setHotels(res.data?.data || []);
         }
-      })
-      .catch((err) => console.error("Error fetching hotels:", err))
-      .finally(() => {
+      } catch (err) {
+        console.error("Error fetching hotels:", err);
+      } finally {
         if (isMounted) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    fetchHotels();
 
     return () => { isMounted = false; };
-  }, [search]); 
+  }, [search]); // Tự động fetch lại khi thanh tìm kiếm thay đổi
 
   const filteredHotels = useMemo(() => {
     const keyword = normalizeText(search.keyword || "");

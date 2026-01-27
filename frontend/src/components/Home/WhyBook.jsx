@@ -3,120 +3,11 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
-import { motion } from "framer-motion";
 
-const MotionBox = motion(Box);
-
-const REASONS = [
-  {
-    icon: <LocalOfferIcon fontSize="small" />,
-    title: "Giá tốt mỗi ngày",
-    desc: "Cập nhật mức giá cạnh tranh nhất.",
-    iconBg: "#F9F5F0", // Tông Sand nhẹ
-    iconColor: "#C2A56D", // Vàng đồng thương hiệu
-  },
-  {
-    icon: <VisibilityOffIcon fontSize="small" />,
-    title: "Không phí ẩn",
-    desc: "Minh bạch trong từng chi tiết.",
-    iconBg: "#F9F5F0",
-    iconColor: "#C2A56D",
-  },
-  {
-    icon: <SupportAgentIcon fontSize="small" />,
-    title: "Hỗ trợ 24/7",
-    desc: "Tận tâm đồng hành cùng bạn.",
-    iconBg: "#F9F5F0",
-    iconColor: "#C2A56D",
-  },
-  {
-    icon: <AutorenewIcon fontSize="small" />,
-    title: "Hoàn huỷ linh hoạt",
-    desc: "Dễ dàng thay đổi kế hoạch.",
-    iconBg: "#F9F5F0",
-    iconColor: "#C2A56D",
-  },
-];
-
-export default function WhyBook() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  return (
-    <Container maxWidth="lg">
-      <Box sx={{ mt: 10, mb: 10 }}>
-        {/* HEADER */}
-        <MotionBox
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          sx={{ mb: 6, textAlign: "center" }}
-        >
-          <Stack alignItems="center" spacing={1}>
-            <Typography
-              sx={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "1.75rem",
-                fontWeight: 800,
-                color: "#1C1B19",
-              }}
-            >
-              Trải nghiệm khác biệt
-            </Typography>
-            <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D" }} />
-          </Stack>
-        </MotionBox>
-
-        {/* GRID VỚI MOTION */}
-        <MotionBox
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "repeat(2, 1fr)",
-              md: "repeat(4, 1fr)",
-            },
-            gap: { xs: 2, md: 4 },
-          }}
-        >
-          {REASONS.map((item) => (
-            <ReasonItem key={item.title} {...item} />
-          ))}
-        </MotionBox>
-      </Box>
-    </Container>
-  );
-}
-
+/* ================= COMPONENT CON: REASON ITEM ================= */
 function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
-  const itemVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
-      y: 0,
-      transition: { duration: 0.5, ease: "easeOut" }
-    },
-  };
-
   return (
-    <MotionBox
-      variants={itemVariants}
-      whileHover={{ 
-        y: -8,
-        transition: { duration: 0.3 }
-      }}
+    <Box
       sx={{
         bgcolor: "#fff",
         p: { xs: 2.5, md: 4 },
@@ -126,10 +17,11 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        transition: "border-color 0.3s ease",
+        transition: "all 0.3s ease-in-out", // Thay cho Motion
         "&:hover": {
           borderColor: "#C2A56D",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.04)"
+          boxShadow: "0 20px 40px rgba(0,0,0,0.04)",
+          transform: "translateY(-8px)", // Hiệu ứng bay lên
         },
       }}
     >
@@ -144,7 +36,6 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
           alignItems: "center",
           justifyContent: "center",
           mb: 2,
-          transition: "0.3s ease",
         }}
       >
         {icon}
@@ -172,6 +63,79 @@ function ReasonItem({ icon, title, desc, iconBg, iconColor }) {
       >
         {desc}
       </Typography>
-    </MotionBox>
+    </Box>
+  );
+}
+
+const REASONS = [
+  {
+    icon: <LocalOfferIcon fontSize="small" />,
+    title: "Giá tốt mỗi ngày",
+    desc: "Cập nhật mức giá cạnh tranh nhất.",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
+  },
+  {
+    icon: <VisibilityOffIcon fontSize="small" />,
+    title: "Không phí ẩn",
+    desc: "Minh bạch trong từng chi tiết.",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
+  },
+  {
+    icon: <SupportAgentIcon fontSize="small" />,
+    title: "Hỗ trợ 24/7",
+    desc: "Tận tâm đồng hành cùng bạn.",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
+  },
+  {
+    icon: <AutorenewIcon fontSize="small" />,
+    title: "Hoàn huỷ linh hoạt",
+    desc: "Dễ dàng thay đổi kế hoạch.",
+    iconBg: "#F9F5F0",
+    iconColor: "#C2A56D",
+  },
+];
+
+/* ================= COMPONENT CHÍNH ================= */
+export default function WhyBook() {
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 10, mb: 10 }}>
+        {/* HEADER */}
+        <Box sx={{ mb: 6, textAlign: "center" }}>
+          <Stack alignItems="center" spacing={1}>
+            <Typography
+              sx={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: "1.75rem",
+                fontWeight: 800,
+                color: "#1C1B19",
+              }}
+            >
+              Trải nghiệm khác biệt
+            </Typography>
+            <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D" }} />
+          </Stack>
+        </Box>
+
+        {/* GRID */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "repeat(2, 1fr)",
+              md: "repeat(4, 1fr)",
+            },
+            gap: { xs: 2, md: 4 },
+          }}
+        >
+          {REASONS.map((item) => (
+            <ReasonItem key={item.title} {...item} />
+          ))}
+        </Box>
+      </Box>
+    </Container>
   );
 }

@@ -7,10 +7,14 @@ const normalize = (text = "") =>
 
 export const getAllHotels = async (req, res) => {
   try {
-    const { city, minPrice, maxPrice, types, amenities, keyword, onlyDiscount, checkIn, checkOut } = req.query;
-    const query = { status: "active" }; // Chỉ lấy hotel đang hoạt động
+    const { 
+      city, minPrice, maxPrice, types, amenities, 
+      keyword, onlyDiscount, checkIn, checkOut 
+    } = req.query;
 
-    // 1. Lọc theo Keyword (Tên, Thành phố, hoặc Loại hình)
+    const query = { status: "active" };
+
+    // 1. Filter theo Keyword
     if (keyword) {
       query.$or = [
         { name: { $regex: keyword, $options: "i" } },
@@ -20,21 +24,27 @@ export const getAllHotels = async (req, res) => {
     }
     if (city) query.citySlug = city;
     if (types) query.type = { $in: types.split(",") };
+    
+    // Thêm lọc tiện nghi nếu có (Dùng $all để tìm khách sạn có TẤT CẢ tiện nghi chọn)
+    if (amenities) query.amenities = { $all: amenities.split(",") };
 
-    // 2. LOGIC LỌC PHÒNG TRỐNG (Nếu có ngày checkIn/checkOut)
+    // 2. LOGIC LỌC PHÒNG TRỐNG
     let unavailableRoomIds = [];
     if (checkIn && checkOut) {
       const bookedRooms = await Booking.find({
-        status: { $ne: "cancelled" }, 
+        status: { $ne: "cancelled" },
         $or: [
-          { checkIn: { $lt: new Date(checkOut) }, checkOut: { $gt: new Date(checkIn) } }
+          {
+            checkIn: { $lt: new Date(checkOut) },
+            checkOut: { $gt: new Date(checkIn) }
+          }
         ]
       }).select("roomId");
       
       unavailableRoomIds = bookedRooms.map(b => b.roomId);
     }
 
-    // 3. Truy vấn Hotel và Populate Room
+    // 3. Truy vấn và xử lý dữ liệu
     let hotels = await Hotel.find(query)
       .populate({ 
         path: "rooms", 
@@ -42,25 +52,52 @@ export const getAllHotels = async (req, res) => {
         select: "price discount name" 
       })
       .lean();
-      const result = hotels.map((hotel) => {
-      const availableRooms = hotel.rooms || [];
-      const prices = availableRooms.map(r => r.price * (1 - (r.discount || 0) / 100));
-      const minP = prices.length ? Math.min(...prices) : null;
-      const maxD = availableRooms.reduce((max, r) => Math.max(max, r.discount || 0), 0);
 
-      return { ...hotel, minPrice: minP, discount: maxD, roomCount: availableRooms.length };
+    const result = hotels.map((hotel) => {
+      const availableRooms = hotel.rooms || [];
+      
+      // Tính toán giá sau khi giảm (Final Price)
+      const roomDetails = availableRooms.map(r => ({
+        ...r,
+        finalPrice: r.price * (1 - (r.discount || 0) / 100)
+      }));
+
+      const prices = roomDetails.map(r => r.finalPrice);
+      const minP = prices.length ? Math.min(...prices) : null;
+      const maxD = roomDetails.reduce((max, r) => Math.max(max, r.discount || 0), 0);
+
+      return { 
+        ...hotel, 
+        minPrice: minP, 
+        maxDiscount: maxD, 
+        availableRoomCount: availableRooms.length 
+      };
     }).filter((hotel) => {
-      if (checkIn && checkOut && hotel.roomCount === 0) return false;
+      // Điều kiện 1: Phải có phòng trống (Nếu có search ngày)
+      if (checkIn && checkOut && hotel.availableRoomCount === 0) return false;
+      
+      // Điều kiện 2: Phải có giá (Khách sạn không có phòng thì không hiện)
+      if (hotel.minPrice === null) return false;
+
+      // Điều kiện 3: Lọc theo khoảng giá người dùng chọn
       const okMin = minPrice ? hotel.minPrice >= Number(minPrice) : true;
       const okMax = maxPrice ? hotel.minPrice <= Number(maxPrice) : true;
-      const okDiscount = onlyDiscount === "true" ? hotel.discount > 0 : true;
       
-      return (hotel.minPrice !== null) && okMin && okMax && okDiscount;
+      // Điều kiện 4: Chỉ lấy hàng giảm giá
+      const okDiscount = onlyDiscount === "true" ? hotel.maxDiscount > 0 : true;
+      
+      return okMin && okMax && okDiscount;
     });
 
-    res.json({ success: true, data: result });
+    res.json({ 
+      success: true, 
+      count: result.length,
+      data: result 
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Backend Error:", err);
+    res.status(500).json({ success: false, message: "Lỗi Server: " + err.message });
   }
 };
 
