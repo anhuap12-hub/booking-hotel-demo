@@ -29,20 +29,11 @@ export default function HotelList() {
     amenities: [],
   });
 
-  // 1. Debounce Search
   useEffect(() => {
     const handler = setTimeout(() => setSearchTerm(inputValue), 300);
     return () => clearTimeout(handler);
   }, [inputValue]);
-
-  // 2. Đồng bộ city từ Context vào Sidebar khi từ trang chủ sang
-  useEffect(() => {
-    if (search.city) {
-      setFilters((prev) => ({ ...prev, city: search.city }));
-    }
-  }, [search.city]);
-
-  // 3. Fetch dữ liệu từ API
+ 
   useEffect(() => {
     let isMounted = true;
     const fetchHotels = async () => {
@@ -60,11 +51,15 @@ export default function HotelList() {
     return () => { isMounted = false; };
   }, [search]);
 
-  // 4. Logic lọc dữ liệu (Client-side)
+  
  useEffect(() => {
   if (search.city) {
     setInputValue(search.city); 
-    setFilters((prev) => ({ ...prev, city: "" })); 
+    setSearchTerm(search.city); 
+    setFilters((prev) => ({ 
+      ...prev, 
+      city: search.city 
+    })); 
   }
 }, [search.city]);
 
