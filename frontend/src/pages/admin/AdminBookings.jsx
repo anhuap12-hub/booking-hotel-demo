@@ -230,14 +230,24 @@ export default function AdminBookings() {
                             {/* NÚT THU TIỀN: Luôn hiện nếu chưa PAID */}
                             {!isPaidFull && (
                               <Button
-                                size="small"
-                                variant="contained"
-                                startIcon={<Payment />}
-                                onClick={() => handlePaid(b._id)}
-                                sx={{ bgcolor: "#FF9800", fontWeight: 700 }}
-                              >
-                                Xác nhận thu tiền mặt
-                              </Button>
+                              size="small"
+                              variant="contained"
+                              startIcon={<Payment />}
+                              onClick={() => handlePaid(b._id)}
+                              sx={{ 
+                              bgcolor: "#2e7d32", // Màu xanh lá đậm (Success) thể hiện việc tiền đã vào túi
+                              fontWeight: 700,
+                              textTransform: "none", // Giữ nguyên chữ thường cho dễ đọc
+                              borderRadius: "8px",
+                              px: 2,
+                              "&:hover": {
+                              bgcolor: "#1b5e20", // Màu đậm hơn khi di chuột vào
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                               }
+                                }}
+                                >
+                               Xác nhận thu tiền mặt
+                                </Button>
                             )}
                           </>
                         )}
