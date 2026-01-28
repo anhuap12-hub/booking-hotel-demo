@@ -236,7 +236,7 @@ export default function AdminBookings() {
                                 onClick={() => handlePaid(b._id)}
                                 sx={{ bgcolor: "#FF9800", fontWeight: 700 }}
                               >
-                                Thu mặt
+                                Xác nhận thu tiền mặt
                               </Button>
                             )}
                           </>

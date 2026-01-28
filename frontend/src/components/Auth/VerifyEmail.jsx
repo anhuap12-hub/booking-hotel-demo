@@ -30,7 +30,7 @@ export default function VerifyEmail() {
           }, 4000);
         }
       } catch (err) {
-        if (isMounted) setStatus("error");
+        if (isMounted) setStatus("error"),err;
       }
     };
 
