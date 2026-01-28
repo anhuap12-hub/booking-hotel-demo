@@ -102,7 +102,19 @@ export default function BookingCard({ booking, onView }) {
       setSubmitting(false);
     }
   };
+    
+  const handlePayment = (e) => {
+    e.stopPropagation(); 
+    const finalId = bookingId || booking?.id;
+    
+    if (!finalId) {
+      setToast({ open: true, message: "Không tìm thấy mã đặt phòng!", severity: "error" });
+      return;
+    }
 
+    console.log("Đang chuyển hướng thanh toán ID:", finalId);
+    navigate(`/checkout/${finalId}`);
+  };
   const payInfo = (() => {
     if (status === 'no_show') return { label: "Mất cọc", color: "#991b1b", bgcolor: "rgba(153, 27, 27, 0.1)" };
     if (paymentStatus === 'REFUNDED') return { label: "Đã hoàn tiền", color: "#7b1fa2", bgcolor: "rgba(123, 31, 162, 0.1)" };
@@ -227,16 +239,24 @@ export default function BookingCard({ booking, onView }) {
                     </Button>
                   )}
                   {canPay && (
-                    <Button 
-                      variant="contained"
-                      fullWidth={isMobile}
-                      onClick={() => navigate(`/checkout/${bookingId}`)}
-                      startIcon={<Payment />}
-                      sx={{ bgcolor: "#1C1B19", color: "#fff", borderRadius: "10px", fontWeight: 700, textTransform: 'none', px: 3, "&:hover": { bgcolor: "#333" } }}
-                    >
-                      Thanh toán
-                    </Button>
-                  )}
+      <Button 
+      variant="contained"
+      fullWidth={isMobile}
+      onClick={handlePayment} 
+      startIcon={<Payment />}
+      sx={{ 
+        bgcolor: "#1C1B19", 
+        color: "#fff", 
+        borderRadius: "10px", 
+        fontWeight: 700, 
+        textTransform: 'none', 
+        px: 3, 
+        "&:hover": { bgcolor: "#333" } 
+      }}
+    >
+      Thanh toán
+    </Button>
+  )}
                   <Button 
                     variant="outlined" 
                     fullWidth={isMobile}
