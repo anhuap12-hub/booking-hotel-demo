@@ -20,7 +20,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const redirectTo = location.state?.redirectTo || "/hotels";
+  const redirectTo = location.state?.redirectTo || "/";
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
