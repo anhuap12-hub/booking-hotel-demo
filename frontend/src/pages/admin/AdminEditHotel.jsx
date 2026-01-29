@@ -28,18 +28,13 @@ const AdminEditHotel = () => {
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
 
-  const [photos, setPhotos] = useState([]); // File thực tế để upload
-  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // URL hiển thị preview
-  const [existingPhotos, setExistingPhotos] = useState([]); // Ảnh từ database
+  const [photos, setPhotos] = useState([]); 
+  const [newPhotosPreview, setNewPhotosPreview] = useState([]); 
+  const [existingPhotos, setExistingPhotos] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State cho Snackbar (Toast)
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   // --- Fetch Data ---
   useEffect(() => {
@@ -47,7 +42,6 @@ const AdminEditHotel = () => {
       try {
         const res = await axios.get(`/hotels/${id}`);
         const hotel = res.data.data;
-        
         setName(hotel.name || "");
         setCity(hotel.city || "");
         setAddress(hotel.address || "");
@@ -58,7 +52,7 @@ const AdminEditHotel = () => {
         setAmenities(hotel.amenities || []);
         setExistingPhotos(hotel.photos || []); 
       } catch (err) {
-        console.error("Lỗi lấy dữ liệu khách sạn:", err);
+        console.error("Lỗi fetch:", err);
         triggerToast("Không thể tải thông tin khách sạn!", "error");
       } finally {
         setLoading(false);
@@ -67,15 +61,19 @@ const AdminEditHotel = () => {
     fetchHotel();
   }, [id]);
 
-  // --- Handlers ---
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') return;
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  };
+  // Cleanup Preview URLs để tránh rò rỉ bộ nhớ
+  useEffect(() => {
+    return () => {
+      newPhotosPreview.forEach((photo) => {
+        if (photo.url.startsWith("blob:")) {
+          URL.revokeObjectURL(photo.url);
+        }
+      });
+    };
+  }, [newPhotosPreview]);
 
-  const triggerToast = (msg, type = "success") => {
-    setSnackbar({ open: true, message: msg, severity: type });
-  };
+  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
+  const triggerToast = (msg, type = "success") => setSnackbar({ open: true, message: msg, severity: type });
 
   const handleAddAmenity = (e) => {
     if (e.key === "Enter" && newAmenity.trim()) {
@@ -87,43 +85,21 @@ const AdminEditHotel = () => {
     }
   };
 
-  const handleDeleteAmenity = (item) => {
-    setAmenities(amenities.filter((a) => a !== item));
-  };
+  const handleDeleteAmenity = (item) => setAmenities(amenities.filter((a) => a !== item));
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
-
-    if (imageFiles.length === 0) {
-      triggerToast("Vui lòng chỉ chọn các tệp tin hình ảnh!", "warning");
-      return;
-    }
+    if (imageFiles.length === 0) return triggerToast("Vui lòng chỉ chọn hình ảnh!", "warning");
 
     setPhotos((prev) => [...prev, ...imageFiles]);
-
-    const newPreviews = imageFiles.map((file) => ({
-      url: URL.createObjectURL(file), 
-      name: file.name
-    }));
+    const newPreviews = imageFiles.map((file) => ({ url: URL.createObjectURL(file), name: file.name }));
     setNewPhotosPreview((prev) => [...prev, ...newPreviews]);
     e.target.value = null;
   };
 
-  useEffect(() => {
-    return () => {
-      newPhotosPreview.forEach((photo) => {
-        if (photo.url.startsWith("blob:")) {
-          URL.revokeObjectURL(photo.url);
-        }
-      });
-    };
-  }, [newPhotosPreview]);
-
   const handleDeletePhoto = (index, type = "new") => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn bỏ ảnh này không?");
-    if (!confirmDelete) return;
-
+    if (!window.confirm("Bạn có chắc chắn muốn bỏ ảnh này không?")) return;
     if (type === "new") {
       URL.revokeObjectURL(newPhotosPreview[index].url);
       setPhotos((prev) => prev.filter((_, i) => i !== index));
@@ -141,7 +117,7 @@ const AdminEditHotel = () => {
     setExistingPhotos(items);
   };
 
-  // --- Submit ---
+  // --- SUBMIT (FIXED 400 ERROR) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -150,32 +126,31 @@ const AdminEditHotel = () => {
       let uploadedUrls = [];
       if (photos.length > 0) {
         const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-       const compressedFiles = await Promise.all(
-       photos.map(async (file) => {
-    try {
-      // Thêm await và bọc try-catch cho từng file
-      return await imageCompression(file, options);
-    } catch (e) {
-      console.warn(`Không thể nén ${file.name}, giữ nguyên bản gốc:`, e);
-      return file; // Nén lỗi thì dùng file gốc, không để crash cả hàm Submit
-    }
-  })
-);
+        
+        // Nén và chuyển đổi Blob sang File chuẩn có tên để Multer nhận dạng
+        const compressedFiles = await Promise.all(
+          photos.map(async (file) => {
+            try {
+              const compressedBlob = await imageCompression(file, options);
+              return new File([compressedBlob], file.name, { type: file.type });
+            } catch (err) {
+              console.warn("Nén thất bại, dùng file gốc:", file.name);
+              return file; 
+            }
+          })
+        );
 
         const uploadForm = new FormData();
         compressedFiles.forEach((file) => uploadForm.append("photos", file));
 
-        const uploadRes = await axios.post(`/upload/hotels/${id}`, uploadForm);
+        const uploadRes = await axios.post(`/upload/hotels/${id}`, uploadForm, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
         uploadedUrls = uploadRes.data.data || [];
       }
 
       const finalHotelData = {
-        name,
-        city,
-        address,
-        desc,
-        type,
-        status,
+        name, city, address, desc, type, status,
         location: {
           lat: Number(location.lat) || 0,
           lng: Number(location.lng) || 0
@@ -185,33 +160,26 @@ const AdminEditHotel = () => {
       };
 
       await axios.put(`/hotels/${id}`, finalHotelData);
-      
-      triggerToast("Cập nhật khách sạn thành công!", "success");
-      
-      // Chuyển hướng sau khi hiện thông báo thành công một lát
-      setTimeout(() => {
-        navigate("/admin/hotels");
-      }, 1500);
+      triggerToast("Cập nhật thành công!", "success");
+      setTimeout(() => navigate("/admin/hotels"), 1500);
 
     } catch (err) {
-      const msg = err.response?.data?.message || "Có lỗi xảy ra khi lưu";
-      console.error("Submit Error:", msg);
+      const msg = err.response?.data?.message || "Lỗi khi lưu dữ liệu";
+      console.error("Submit Error:", err);
       triggerToast(`Thất bại: ${msg}`, "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (loading) return (
-    <Box display="flex" justifyContent="center" mt={10}><CircularProgress color="inherit" /></Box>
-  );
+  if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress color="inherit" /></Box>;
 
   return (
     <Paper elevation={0} sx={{ maxWidth: 850, mx: "auto", p: 4, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
       <Stack spacing={4}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Chỉnh sửa Khách sạn</Typography>
-          <Typography variant="body2" color="text.secondary">Cập nhật thông tin chi tiết và quản lý hình ảnh</Typography>
+          <Typography variant="body2" color="text.secondary">Cập nhật thông tin và quản lý hình ảnh</Typography>
         </Box>
 
         <Divider />
@@ -256,7 +224,7 @@ const AdminEditHotel = () => {
         <Box>
           <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Tiện ích</Typography>
           <TextField 
-            fullWidth size="small" placeholder="Nhấn Enter để thêm tiện ích"
+            fullWidth size="small" placeholder="Nhấn Enter để thêm"
             value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)}
             onKeyDown={handleAddAmenity}
             InputProps={{ startAdornment: <AddIcon sx={{ color: 'action.active', mr: 1, fontSize: 20 }} /> }}
@@ -274,11 +242,7 @@ const AdminEditHotel = () => {
             <Droppable droppableId="existingPhotos" direction="horizontal">
               {(provided) => (
                 <Stack 
-                  ref={provided.innerRef} 
-                  direction="row" 
-                  spacing={2} 
-                  flexWrap="wrap" 
-                  {...provided.droppableProps} 
+                  ref={provided.innerRef} direction="row" spacing={2} flexWrap="wrap" {...provided.droppableProps} 
                   sx={{ minHeight: 120, p: 2, border: '1px dashed #ccc', borderRadius: 2, bgcolor: '#fafafa', gap: 2 }}
                 >
                   {existingPhotos.map((photo, i) => (
@@ -286,10 +250,7 @@ const AdminEditHotel = () => {
                       {(provided) => (
                         <Box ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} sx={{ position: "relative" }}>
                           <Box component="img" src={photo.url || photo} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px solid #C2A56D" }} />
-                          <Button 
-                            onClick={() => handleDeletePhoto(i, "existing")}
-                            sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0, '&:hover': { bgcolor: '#b91c1c' } }}
-                          >
+                          <Button onClick={() => handleDeletePhoto(i, "existing")} sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0 }}>
                             <CloseIcon sx={{ fontSize: 14 }} />
                           </Button>
                         </Box>
@@ -301,10 +262,7 @@ const AdminEditHotel = () => {
                     <Box key={`new-${i}`} sx={{ position: "relative" }}>
                       <Box component="img" src={photo.url} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px dashed #2e7d32", opacity: 0.8 }} />
                       <Chip label="Mới" size="small" color="success" sx={{ position: 'absolute', bottom: 5, left: 5, height: 16, fontSize: 10 }} />
-                      <Button 
-                        onClick={() => handleDeletePhoto(i, "new")}
-                        sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0 }}
-                      >
+                      <Button onClick={() => handleDeletePhoto(i, "new")} sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0 }}>
                         <CloseIcon sx={{ fontSize: 14 }} />
                       </Button>
                     </Box>
@@ -316,8 +274,8 @@ const AdminEditHotel = () => {
           </DragDropContext>
         </Box>
 
-        <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
-          <Button variant="outlined" component="label" size="large" sx={{ textTransform: 'none' }}>
+        <Stack direction="row" spacing={2} justifyContent="space-between">
+          <Button variant="outlined" component="label" sx={{ textTransform: 'none' }}>
             + Chọn thêm ảnh mới
             <input type="file" hidden multiple onChange={handleFileChange} accept="image/*" />
           </Button>
@@ -325,16 +283,13 @@ const AdminEditHotel = () => {
           <Stack direction="row" spacing={2}>
             <Button onClick={() => navigate("/admin/hotels")} color="inherit">Hủy</Button>
             <Button 
-              variant="contained" 
-              onClick={handleSubmit} 
-              disabled={isSubmitting}
-              size="large" 
+              variant="contained" onClick={handleSubmit} disabled={isSubmitting} size="large" 
               sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', fontWeight: 700, '&:hover': { bgcolor: '#000' } }}
             >
               {isSubmitting ? (
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <CircularProgress size={20} sx={{ color: '#C2A56D' }} />
-                  <Typography variant="caption">Đang xử lý & Upload...</Typography>
+                   <CircularProgress size={20} color="inherit" />
+                   <span>Đang lưu...</span>
                 </Stack>
               ) : "Lưu thay đổi"}
             </Button>
@@ -342,19 +297,8 @@ const AdminEditHotel = () => {
         </Stack>
       </Stack>
 
-      {/* Snackbar để hiển thị thông báo */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          variant="filled" 
-          sx={{ width: '100%', boxShadow: 3 }}
-        >
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled" sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
