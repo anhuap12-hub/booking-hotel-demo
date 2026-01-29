@@ -45,31 +45,43 @@ export const getRoomById = async (req, res) => {
 
 export const updateRoom = async (req, res) => {
   try {
-    // 1. Tìm phòng hiện tại
     const room = await Room.findById(req.params.id);
     if (!room) return res.status(404).json({ success: false, message: "Room not found" });
 
     const oldHotelId = room.hotel?.toString();
     const newHotelId = req.body.hotel;
 
-    // 2. Cập nhật phòng (sử dụng runValidators để đảm bảo dữ liệu chuẩn)
+    if (req.body.photos) {
+      const photosToDelete = room.photos.filter(
+        (oldPhoto) => !req.body.photos.find((newPhoto) => newPhoto.public_id === oldPhoto.public_id)
+      );
+
+      if (photosToDelete.length > 0) {
+        await Promise.all(
+          photosToDelete.map((photo) => cloudinary.uploader.destroy(photo.public_id))
+        );
+      }
+    }
+
     const updatedRoom = await Room.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
 
-    // 3. Nếu thay đổi khách sạn chủ quản, cập nhật lại mảng rooms ở cả 2 Hotel
     if (newHotelId && oldHotelId !== newHotelId) {
-      // Xóa ở hotel cũ
-      await Hotel.findByIdAndUpdate(oldHotelId, { $pull: { rooms: req.params.id } });
-      // Thêm vào hotel mới
+      if (oldHotelId) {
+        await Hotel.findByIdAndUpdate(oldHotelId, { $pull: { rooms: req.params.id } });
+        await syncHotelPrice(oldHotelId);
+      }
       await Hotel.findByIdAndUpdate(newHotelId, { $addToSet: { rooms: req.params.id } });
+      await syncHotelPrice(newHotelId);
+    } else if (oldHotelId) {
+      await syncHotelPrice(oldHotelId);
     }
 
     res.status(200).json({ success: true, data: updatedRoom });
   } catch (error) {
-    // Trả về lỗi validation chi tiết nếu có
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -99,16 +111,24 @@ export const deleteRoom = async (req, res) => {
     if (!room) return res.status(404).json({ message: "Room not found" });
 
     const hotelId = room.hotel;
-    await Hotel.findByIdAndUpdate(hotelId, { $pull: { rooms: room._id } });
+    if (room.photos && room.photos.length > 0) {
+      await Promise.all(
+        room.photos.map(photo => cloudinary.uploader.destroy(photo.public_id))
+      );
+    }
+    if (hotelId) {
+      await Hotel.findByIdAndUpdate(hotelId, { $pull: { rooms: room._id } });
+    }
     await room.deleteOne();
-    await syncHotelPrice(hotelId);
+    if (hotelId) {
+      await syncHotelPrice(hotelId);
+    }
 
-    res.json({ message: "Room deleted" });
+    res.json({ success: true, message: "Room and associated images deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const getAvailableRooms = async (req, res) => {
   try {
     const { checkIn, checkOut, hotelId } = req.query;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
+import { uploadBatch } from "../../api/upload"; 
 import imageCompression from 'browser-image-compression';
 import {
   Stack, TextField, Typography, Button, Paper, Box, Divider, 
@@ -17,26 +18,28 @@ const AdminEditHotel = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // --- States ---
+  // --- Form States ---
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [desc, setDesc] = useState("");
   const [type, setType] = useState("hotel");
   const [status, setStatus] = useState("active");
-  const [location, setLocation] = useState({ lat: 0, lng: 0 });
+  const [location, setLocation] = useState({ lat: "", lng: "" });
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
 
+  // --- Photo States ---
   const [photos, setPhotos] = useState([]); 
   const [newPhotosPreview, setNewPhotosPreview] = useState([]); 
   const [existingPhotos, setExistingPhotos] = useState([]); 
+  
+  // --- Status States ---
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  // --- Fetch Data ---
+  // Fetch dữ liệu ban đầu
   useEffect(() => {
     const fetchHotel = async () => {
       try {
@@ -51,8 +54,7 @@ const AdminEditHotel = () => {
         setLocation(hotel.location || { lat: 0, lng: 0 });
         setAmenities(hotel.amenities || []);
         setExistingPhotos(hotel.photos || []); 
-      } catch (err) {
-        console.error("Lỗi fetch:", err);
+      } catch{
         triggerToast("Không thể tải thông tin khách sạn!", "error");
       } finally {
         setLoading(false);
@@ -61,19 +63,13 @@ const AdminEditHotel = () => {
     fetchHotel();
   }, [id]);
 
-  // Cleanup Preview URLs để tránh rò rỉ bộ nhớ
+  // Dọn dẹp bộ nhớ preview ảnh
   useEffect(() => {
-    return () => {
-      newPhotosPreview.forEach((photo) => {
-        if (photo.url.startsWith("blob:")) {
-          URL.revokeObjectURL(photo.url);
-        }
-      });
-    };
+    return () => newPhotosPreview.forEach(photo => URL.revokeObjectURL(photo.url));
   }, [newPhotosPreview]);
 
-  const handleCloseSnackbar = () => setSnackbar((prev) => ({ ...prev, open: false }));
   const triggerToast = (msg, type = "success") => setSnackbar({ open: true, message: msg, severity: type });
+  const handleCloseSnackbar = () => setSnackbar(prev => ({ ...prev, open: false }));
 
   const handleAddAmenity = (e) => {
     if (e.key === "Enter" && newAmenity.trim()) {
@@ -85,16 +81,13 @@ const AdminEditHotel = () => {
     }
   };
 
-  const handleDeleteAmenity = (item) => setAmenities(amenities.filter((a) => a !== item));
-
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
-    if (imageFiles.length === 0) return triggerToast("Vui lòng chỉ chọn hình ảnh!", "warning");
-
-    setPhotos((prev) => [...prev, ...imageFiles]);
-    const newPreviews = imageFiles.map((file) => ({ url: URL.createObjectURL(file), name: file.name }));
-    setNewPhotosPreview((prev) => [...prev, ...newPreviews]);
+    
+    setPhotos(prev => [...prev, ...imageFiles]);
+    const newPreviews = imageFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name }));
+    setNewPhotosPreview(prev => [...prev, ...newPreviews]);
     e.target.value = null;
   };
 
@@ -102,10 +95,10 @@ const AdminEditHotel = () => {
     if (!window.confirm("Bạn có chắc chắn muốn bỏ ảnh này không?")) return;
     if (type === "new") {
       URL.revokeObjectURL(newPhotosPreview[index].url);
-      setPhotos((prev) => prev.filter((_, i) => i !== index));
-      setNewPhotosPreview((prev) => prev.filter((_, i) => i !== index));
+      setPhotos(prev => prev.filter((_, i) => i !== index));
+      setNewPhotosPreview(prev => prev.filter((_, i) => i !== index));
     } else {
-      setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
+      setExistingPhotos(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -117,38 +110,37 @@ const AdminEditHotel = () => {
     setExistingPhotos(items);
   };
 
-  // --- SUBMIT (FIXED 400 ERROR) ---
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     
     try {
-      let uploadedUrls = [];
+      let newlyUploadedPhotos = [];
+      
+      // 1. Nén và Upload ảnh mới (nếu có)
       if (photos.length > 0) {
         const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-        
-        // Nén và chuyển đổi Blob sang File chuẩn có tên để Multer nhận dạng
         const compressedFiles = await Promise.all(
           photos.map(async (file) => {
             try {
               const compressedBlob = await imageCompression(file, options);
               return new File([compressedBlob], file.name, { type: file.type });
-            } catch (err) {
-              console.warn("Nén thất bại, dùng file gốc:", file.name);
-              return file; 
-            }
+            } catch { return file; }
           })
         );
 
         const uploadForm = new FormData();
-        compressedFiles.forEach((file) => uploadForm.append("photos", file));
+        compressedFiles.forEach(file => uploadForm.append("photos", file));
 
-        const uploadRes = await axios.post(`/upload/hotels/${id}`, uploadForm, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        uploadedUrls = uploadRes.data.data || [];
+        const uploadRes = await uploadBatch(uploadForm);
+        newlyUploadedPhotos = uploadRes.data.data.map(item => ({
+          url: item.url,
+          public_id: item.public_id
+        }));
       }
 
+      // 2. Chuẩn bị Payload gửi lên Server
       const finalHotelData = {
         name, city, address, desc, type, status,
         location: {
@@ -156,30 +148,30 @@ const AdminEditHotel = () => {
           lng: Number(location.lng) || 0
         },
         amenities,
-        photos: [...existingPhotos, ...uploadedUrls],
+        photos: [...existingPhotos, ...newlyUploadedPhotos],
       };
 
-      await axios.put(`/hotels/${id}`, finalHotelData);
+      // 3. Gọi API cập nhật
+      await axios.put(`/hotels/${id}`, finalHotelData); 
       triggerToast("Cập nhật thành công!", "success");
-      setTimeout(() => navigate("/admin/hotels"), 1500);
+      setTimeout(() => navigate("/admin/hotels"), 1000);
 
     } catch (err) {
       const msg = err.response?.data?.message || "Lỗi khi lưu dữ liệu";
-      console.error("Submit Error:", err);
       triggerToast(`Thất bại: ${msg}`, "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress color="inherit" /></Box>;
+  if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress color="#1C1B19" /></Box>;
 
   return (
     <Paper elevation={0} sx={{ maxWidth: 850, mx: "auto", p: 4, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
       <Stack spacing={4}>
         <Box>
-          <Typography variant="h5" fontWeight={700}>Chỉnh sửa Khách sạn</Typography>
-          <Typography variant="body2" color="text.secondary">Cập nhật thông tin và quản lý hình ảnh</Typography>
+          <Typography variant="h5" fontWeight={700} color="#1C1B19">Chỉnh sửa Khách sạn</Typography>
+          <Typography variant="body2" color="text.secondary">Cập nhật thông tin chi tiết và thư viện ảnh</Typography>
         </Box>
 
         <Divider />
@@ -192,9 +184,10 @@ const AdminEditHotel = () => {
               <Stack direction="row" spacing={2}>
                 <TextField label="Thành phố" value={city} onChange={(e) => setCity(e.target.value)} fullWidth />
                 <TextField select label="Loại" value={type} onChange={(e) => setType(e.target.value)} sx={{ width: 180 }}>
-                  <MenuItem value="hotel">Hotel</MenuItem>
+                  <MenuItem value="hotel">Khách sạn</MenuItem>
                   <MenuItem value="resort">Resort</MenuItem>
                   <MenuItem value="villa">Villa</MenuItem>
+                  <MenuItem value="apartment">Căn hộ</MenuItem>
                 </TextField>
               </Stack>
               <TextField label="Mô tả" value={desc} onChange={(e) => setDesc(e.target.value)} fullWidth multiline minRows={4} />
@@ -204,17 +197,17 @@ const AdminEditHotel = () => {
           <Grid item xs={12} md={4}>
             <Stack spacing={3}>
               <TextField select fullWidth label="Trạng thái" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <MenuItem value="active">Hoạt động</MenuItem>
+                <MenuItem value="active">Đang hoạt động</MenuItem>
                 <MenuItem value="inactive">Tạm ngưng</MenuItem>
               </TextField>
 
-              <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-                  <LocationOnIcon fontSize="small" color="primary"/> Tọa độ GPS
+              <Box sx={{ p: 2, bgcolor: '#F9F9F9', borderRadius: 2, border: '1px solid #eee' }}>
+                <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5, color: '#C2A56D' }}>
+                  <LocationOnIcon fontSize="small"/> Tọa độ GPS
                 </Typography>
                 <Stack spacing={1.5}>
-                  <TextField label="Lat" size="small" type="number" value={location.lat} onChange={(e) => setLocation({...location, lat: e.target.value})} fullWidth />
-                  <TextField label="Lng" size="small" type="number" value={location.lng} onChange={(e) => setLocation({...location, lng: e.target.value})} fullWidth />
+                  <TextField label="Vĩ độ (Lat)" size="small" type="number" value={location.lat} onChange={(e) => setLocation({...location, lat: e.target.value})} fullWidth />
+                  <TextField label="Kinh độ (Lng)" size="small" type="number" value={location.lng} onChange={(e) => setLocation({...location, lng: e.target.value})} fullWidth />
                 </Stack>
               </Box>
             </Stack>
@@ -224,32 +217,34 @@ const AdminEditHotel = () => {
         <Box>
           <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Tiện ích</Typography>
           <TextField 
-            fullWidth size="small" placeholder="Nhấn Enter để thêm"
+            fullWidth size="small" placeholder="Ví dụ: WiFi, Hồ bơi... (Nhấn Enter)"
             value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)}
             onKeyDown={handleAddAmenity}
             InputProps={{ startAdornment: <AddIcon sx={{ color: 'action.active', mr: 1, fontSize: 20 }} /> }}
           />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
             {amenities.map((item, idx) => (
-              <Chip key={idx} label={item} onDelete={() => handleDeleteAmenity(item)} color="primary" variant="outlined" />
+              <Chip key={idx} label={item} onDelete={() => setAmenities(amenities.filter(a => a !== item))} color="primary" variant="outlined" sx={{ borderRadius: '6px' }} />
             ))}
           </Box>
         </Box>
 
         <Box>
-          <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Thư viện ảnh ({existingPhotos.length + newPhotosPreview.length})</Typography>
+          <Typography variant="subtitle1" fontWeight={600} mb={0.5}>Thư viện ảnh ({existingPhotos.length + newPhotosPreview.length})</Typography>
+          <Typography variant="caption" color="text.secondary" display="block" mb={2}>Kéo thả ảnh cũ để thay đổi thứ tự ưu tiên</Typography>
+          
           <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="existingPhotos" direction="horizontal">
+            <Droppable droppableId="photos-grid" direction="horizontal">
               {(provided) => (
-                <Stack 
-                  ref={provided.innerRef} direction="row" spacing={2} flexWrap="wrap" {...provided.droppableProps} 
-                  sx={{ minHeight: 120, p: 2, border: '1px dashed #ccc', borderRadius: 2, bgcolor: '#fafafa', gap: 2 }}
+                <Box 
+                  ref={provided.innerRef} {...provided.droppableProps}
+                  sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, p: 2, border: '1px dashed #C2A56D', borderRadius: 2, bgcolor: '#FFFBF5', minHeight: 130 }}
                 >
                   {existingPhotos.map((photo, i) => (
                     <Draggable key={photo.public_id || `exist-${i}`} draggableId={photo.public_id || `exist-${i}`} index={i}>
                       {(provided) => (
                         <Box ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} sx={{ position: "relative" }}>
-                          <Box component="img" src={photo.url || photo} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px solid #C2A56D" }} />
+                          <Box component="img" src={photo.url} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px solid #C2A56D" }} />
                           <Button onClick={() => handleDeletePhoto(i, "existing")} sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, borderRadius: "50%", bgcolor: "#ef4444", color: "white", p: 0 }}>
                             <CloseIcon sx={{ fontSize: 14 }} />
                           </Button>
@@ -268,37 +263,32 @@ const AdminEditHotel = () => {
                     </Box>
                   ))}
                   {provided.placeholder}
-                </Stack>
+                </Box>
               )}
             </Droppable>
           </DragDropContext>
         </Box>
 
-        <Stack direction="row" spacing={2} justifyContent="space-between">
-          <Button variant="outlined" component="label" sx={{ textTransform: 'none' }}>
+        <Stack direction="row" spacing={2} justifyContent="space-between" alignItems="center">
+          <Button variant="outlined" component="label" color="inherit" sx={{ textTransform: 'none' }}>
             + Chọn thêm ảnh mới
             <input type="file" hidden multiple onChange={handleFileChange} accept="image/*" />
           </Button>
 
           <Stack direction="row" spacing={2}>
-            <Button onClick={() => navigate("/admin/hotels")} color="inherit">Hủy</Button>
+            <Button onClick={() => navigate("/admin/hotels")} sx={{ textTransform: 'none' }}>Hủy bỏ</Button>
             <Button 
-              variant="contained" onClick={handleSubmit} disabled={isSubmitting} size="large" 
-              sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', fontWeight: 700, '&:hover': { bgcolor: '#000' } }}
+              variant="contained" onClick={handleSubmit} disabled={isSubmitting} 
+              sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#000' } }}
             >
-              {isSubmitting ? (
-                <Stack direction="row" spacing={1} alignItems="center">
-                   <CircularProgress size={20} color="inherit" />
-                   <span>Đang lưu...</span>
-                </Stack>
-              ) : "Lưu thay đổi"}
+              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "Lưu thay đổi"}
             </Button>
           </Stack>
         </Stack>
       </Stack>
 
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled" sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled">
           {snackbar.message}
         </Alert>
       </Snackbar>

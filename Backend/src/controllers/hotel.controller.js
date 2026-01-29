@@ -160,7 +160,6 @@ export const updateHotel = async (req, res) => {
     const updateData = { ...req.body };
     if (updateData.city) updateData.citySlug = normalize(updateData.city);
 
-    // Xử lý tọa độ
     if (req.body['location[lat]'] && req.body['location[lng]']) {
       updateData.location = {
         lat: Number(req.body['location[lat]']),
@@ -168,14 +167,16 @@ export const updateHotel = async (req, res) => {
       };
     }
 
-    // Quản lý ảnh: Nếu có ảnh mới, ta CỘNG DỒN (hoặc thay thế tùy bạn)
-    if (req.files?.length) {
-      const newPhotos = req.files.map(file => ({
-        url: file.path,
-        public_id: file.filename
-      }));
-      // Ở đây tôi chọn ghi đè bằng ảnh mới để đúng logic AdminEdit thông thường
-      updateData.photos = newPhotos; 
+    if (req.body.photos) {
+      const photosToDelete = hotel.photos.filter(
+        (oldPhoto) => !req.body.photos.find((newPhoto) => newPhoto.public_id === oldPhoto.public_id)
+      );
+
+      if (photosToDelete.length > 0) {
+        await Promise.all(
+          photosToDelete.map((photo) => cloudinary.uploader.destroy(photo.public_id))
+        );
+      }
     }
 
     const updatedHotel = await Hotel.findByIdAndUpdate(
@@ -183,6 +184,7 @@ export const updateHotel = async (req, res) => {
       { $set: updateData },
       { new: true, runValidators: true }
     );
+
     res.json({ success: true, data: updatedHotel });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

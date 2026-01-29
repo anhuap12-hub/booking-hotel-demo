@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getRoomById, updateRoom } from "../../api/room.api";
-import axios from "../../api/axios";
+import { uploadBatch } from "../../api/upload"; 
+import imageCompression from 'browser-image-compression';
 
 import {
   Stack, TextField, Button, Select, MenuItem, InputLabel, FormControl,
@@ -30,14 +31,12 @@ export default function AdminEditRoom() {
     refundPercent: 100
   });
 
-  // Khởi tạo là mảng rỗng để tránh lỗi "n is not iterable"
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
   const [existingPhotos, setExistingPhotos] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State cho Confirm Dialog
   const [openConfirm, setOpenConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState({ type: "", index: null, value: "" });
 
@@ -73,24 +72,37 @@ export default function AdminEditRoom() {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Xử lý Ảnh ---
+  // --- PHẦN SỬA ĐỔI: XỬ LÝ UPLOAD ẢNH QUA ROUTE CHUNG ---
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const uploadForm = new FormData();
-    files.forEach((file) => uploadForm.append("photos", file));
-
+    setIsSubmitting(true); // Disable nút trong khi upload ảnh
     try {
-      const res = await axios.post(`/upload/rooms/${roomId}`, uploadForm, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      // Đảm bảo lấy đúng key 'data' từ Backend (Object {url, public_id})
-      const newUploadedPhotos = res.data.data || res.data.urls;
-      setExistingPhotos(prev => [...newUploadedPhotos, ...prev]);
+      // 1. Nén ảnh
+      const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1280, useWebWorker: true };
+      const compressedFiles = await Promise.all(
+        files.map(async (file) => {
+          try {
+            return await imageCompression(file, options);
+          } catch { return file; }
+        })
+      );
+
+      // 2. Upload qua hàm uploadBatch
+      const uploadForm = new FormData();
+      compressedFiles.forEach((file) => uploadForm.append("photos", file));
+
+      const res = await uploadBatch(uploadForm);
+      const newUrls = res.data.data; // Mảng object {url, public_id}
+      
+      setExistingPhotos(prev => [...newUrls, ...prev]);
     } catch (err) {
       console.error(err);
-      alert("Upload ảnh thất bại");
+      alert("Upload ảnh thất bại: " + (err.response?.data?.message || "Lỗi server"));
+    } finally {
+      setIsSubmitting(false);
+      e.target.value = null; // Reset input file
     }
   };
 
@@ -102,7 +114,6 @@ export default function AdminEditRoom() {
     setExistingPhotos(items);
   };
 
-  // --- Xử lý Amenities ---
   const handleAddAmenity = () => {
     const val = newAmenity.trim();
     if (val && !amenities.includes(val)) {
@@ -111,7 +122,6 @@ export default function AdminEditRoom() {
     }
   };
 
-  // --- Logic Xác nhận Xóa ---
   const requestDelete = (type, index = null, value = "") => {
     setDeleteTarget({ type, index, value });
     setOpenConfirm(true);
@@ -126,7 +136,7 @@ export default function AdminEditRoom() {
     setOpenConfirm(false);
   };
 
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.hotel) {
       alert("Vui lòng điền đầy đủ tên phòng và thông tin khách sạn");
@@ -139,10 +149,8 @@ export default function AdminEditRoom() {
       const payload = {
         name: form.name.trim(),
         type: form.type,
-        // Loại bỏ dấu chấm phân cách hàng nghìn trước khi gửi
         price: Number(form.price.toString().replace(/\./g, "")),
         maxPeople: Number(form.maxPeople),
-        // Chuyển discount về null nếu để trống để tránh lỗi validation min/max
         discount: form.discount === "" || form.discount === null ? 0 : Number(form.discount),
         status: form.status,
         desc: form.desc.trim(),
@@ -152,18 +160,15 @@ export default function AdminEditRoom() {
           freeCancelBeforeHours: Number(form.freeCancelBeforeHours) || 0,
           refundPercent: Number(form.refundPercent) || 0
         },
-        // Đảm bảo gửi một ID hợp lệ, không gửi chuỗi rỗng
         hotel: form.hotel 
       };
-
-      console.log("Payload gửi đi:", payload); // Debug để kiểm tra trước khi push
 
       await updateRoom(roomId, payload);
       alert("Cập nhật phòng thành công!");
       navigate(`/admin/hotels/${form.hotel}/rooms`);
     } catch (err) {
       console.error("Update error detail:", err.response?.data);
-      const errorMsg = err.response?.data?.message || "Cập nhật thất bại. Vui lòng kiểm tra lại dữ liệu.";
+      const errorMsg = err.response?.data?.message || "Cập nhật thất bại.";
       alert(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -207,6 +212,7 @@ export default function AdminEditRoom() {
                     <MenuItem value="single">Single</MenuItem>
                     <MenuItem value="double">Double</MenuItem>
                     <MenuItem value="suite">Suite</MenuItem>
+                    <MenuItem value="family">Family</MenuItem>
                   </Select>
                 </FormControl>
                 <TextField label="Sức chứa" name="maxPeople" type="number" value={form.maxPeople} onChange={handleChange} fullWidth />
@@ -267,8 +273,8 @@ export default function AdminEditRoom() {
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography fontWeight={700}>Hình ảnh phòng ({existingPhotos.length})</Typography>
-            <Button variant="outlined" component="label" startIcon={<CloudUploadIcon />}>
-              Tải ảnh lên
+            <Button variant="outlined" component="label" startIcon={<CloudUploadIcon />} disabled={isSubmitting}>
+              {isSubmitting ? "Đang xử lý..." : "Tải ảnh lên"}
               <input hidden multiple type="file" accept="image/*" onChange={handleFileChange} />
             </Button>
           </Stack>
@@ -321,7 +327,7 @@ export default function AdminEditRoom() {
             onClick={handleSubmit}
             sx={{ px: 4, bgcolor: "#1C1B19", color: "#C2A56D", fontWeight: 700, "&:hover": { bgcolor: "#000" } }}
           >
-            {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
+            {isSubmitting ? "Vui lòng đợi..." : "Lưu thay đổi"}
           </Button>
         </Stack>
       </Stack>
@@ -331,7 +337,7 @@ export default function AdminEditRoom() {
         <DialogContent>
           <Typography variant="body2">
             Bạn có chắc chắn muốn xóa {deleteTarget.type === "photo" ? "hình ảnh này" : `tiện ích "${deleteTarget.value}"`} không? 
-            Hành động này sẽ xóa khỏi danh sách hiện tại nhưng chỉ được áp dụng vĩnh viễn sau khi bạn nhấn "Lưu thay đổi".
+            Thay đổi sẽ chỉ được lưu vĩnh viễn sau khi bạn nhấn "Lưu thay đổi".
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

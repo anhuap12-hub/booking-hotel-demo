@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
+import { uploadBatch } from "../../api/upload"; // Import hàm upload mới
 import imageCompression from 'browser-image-compression';
 import {
   TextField, Button, Select, MenuItem, Stack, InputLabel,
   FormControl, Box, Typography, CircularProgress, Alert,
   Grid, Divider, Chip, Paper
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 
 export default function AdminAddRoom() {
@@ -31,7 +31,7 @@ export default function AdminAddRoom() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Dọn dẹp bộ nhớ ảnh preview tránh crash trình duyệt
+  // Dọn dẹp bộ nhớ ảnh preview
   useEffect(() => {
     return () => previews.forEach(url => {
         if(url.startsWith('blob:')) URL.revokeObjectURL(url);
@@ -52,7 +52,6 @@ export default function AdminAddRoom() {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/"));
-    // Giới hạn tối đa 5 ảnh theo logic backend
     if (photos.length + files.length > 5) {
         alert("Chỉ được phép upload tối đa 5 ảnh.");
         return;
@@ -73,46 +72,46 @@ export default function AdminAddRoom() {
     e.preventDefault();
     setError("");
     setLoading(true);
+try {
+  let uploadedPhotos = [];
 
-    try {
-      let uploadedPhotos = [];
-      if (photos.length > 0) {
-        // 1. Nén ảnh 
-        const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1280, useWebWorker: true };
-        const compressedFiles = await Promise.all(
-          photos.map(async (file) => {
-            try {
-              const compressedBlob = await imageCompression(file, options);
-              return new File([compressedBlob], file.name, { type: file.type });
-            } catch { return file; }
-          })
-        );
+  if (photos.length > 0) {
+ 
+    const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1280, useWebWorker: true };
+    const compressedFiles = await Promise.all(
+      photos.map(async (file) => {
+        try {
+          const compressedBlob = await imageCompression(file, options);
+          return new File([compressedBlob], file.name, { type: file.type });
+        } catch { return file; }
+      })
+    );
 
-        // 2. Upload ảnh - Sửa URL khớp với Backend uploadRoute.js
-        const formData = new FormData();
-        compressedFiles.forEach(file => formData.append("photos", file));
+    const formData = new FormData();
+    compressedFiles.forEach(file => formData.append("photos", file));
 
-        const res = await axios.post(`/upload/rooms/${hotelId}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        uploadedPhotos = res.data.data; // Mảng các URL từ Cloudinary/Server
-      }
+    const uploadRes = await uploadBatch(formData);
+    
+    uploadedPhotos = uploadRes.data.data.map(item => ({
+      url: item.url,
+      public_id: item.public_id
+    })); 
+  }
 
-      // 3. Tạo phòng - Sửa URL khớp với roomRoutes (by-hotel/:hotelId)
-      await axios.post(`/rooms/by-hotel/${hotelId}`, {
-        ...form,
-        price: Number(form.price),
-        maxPeople: Number(form.maxPeople),
-        amenities,
-        photos: uploadedPhotos,
-      });
+  await axios.post(`/rooms/by-hotel/${hotelId}`, {
+    ...form,
+    price: Number(form.price),
+    maxPeople: Number(form.maxPeople),
+    amenities,
+    photos: uploadedPhotos, 
+  });
       
       alert("Thêm phòng thành công!");
       navigate(`/admin/hotels/${hotelId}/rooms`);
     } catch (err) {
       console.error("Lỗi chi tiết:", err);
       const msg = err.response?.data?.message || "Không thể kết nối đến server.";
-      setError(err.response?.status === 404 ? "Lỗi hệ thống: Route upload chưa đúng hoặc Server chưa cập nhật." : msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }

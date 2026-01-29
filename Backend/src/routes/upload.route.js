@@ -6,29 +6,26 @@ import { uploadFile } from "../controllers/upload.controller.js";
 
 const router = express.Router();
 
-// upload ảnh khách sạn
+/**
+ * @route   POST /api/upload/batch
+ * @desc    Dùng chung cho tất cả các trường hợp upload nhiều ảnh (Add/Edit Hotel & Room)
+ */
 router.post(
-  "/hotels/:id",
+  "/batch",
   protect,
   adminOnly,
-  uploadImage.array("photos", 5),
+  uploadImage.array("photos", 10), // Tăng lên 10 để thoải mái cho Hotel
   uploadFile
 );
 
-// upload ảnh phòng
+/**
+ * @route   POST /api/upload/single
+ * @desc    Dùng cho các trường hợp 1 ảnh duy nhất (Avatar, Thumbnail...)
+ */
 router.post(
-  "/rooms/:id",
+  "/single",
   protect,
-  adminOnly,
-  uploadImage.array("photos", 5),
-  uploadFile
-);
-
-// upload avatar user
-router.post(
-  "/users/:id/avatar",
-  protect,
-  uploadImage.single("avatar"),
+  uploadImage.single("photo"), 
   uploadFile
 );
 
