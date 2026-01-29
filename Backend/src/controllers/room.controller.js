@@ -1,7 +1,15 @@
 import mongoose from "mongoose";
+import { v2 as cloudinary } from "cloudinary"; // PHẢI IMPORT
 import Room from "../models/Room.js";
 import Hotel from "../models/Hotel.js";
 import Booking from "../models/Booking.js";
+
+// Cấu hình Cloudinary để các hàm destroy hoạt động
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET,
+});
 
 const syncHotelPrice = async (hotelId) => {
   if (!hotelId) return;
@@ -14,7 +22,6 @@ const syncHotelPrice = async (hotelId) => {
       
       const cheapest = validPrices.length > 0 ? Math.min(...validPrices) : 0;
       
-      // CHỐT: Dùng updateOne để bỏ qua Middleware pre('save')
       await Hotel.updateOne({ _id: hotelId }, { $set: { cheapestPrice: cheapest } });
     }
   } catch (err) {
@@ -22,28 +29,26 @@ const syncHotelPrice = async (hotelId) => {
   }
 };
 
-
-
-export const getAllRooms = async (req, res) => {
+export const getAllRooms = async (req, res, next) => {
   try {
     const rooms = await Room.find().populate("hotel", "name city");
     res.json(rooms);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const getRoomById = async (req, res) => {
+export const getRoomById = async (req, res, next) => {
   try {
     const room = await Room.findById(req.params.id).populate("hotel", "name city address");
     if (!room) return res.status(404).json({ message: "Room not found" });
     res.json(room);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const updateRoom = async (req, res) => {
+export const updateRoom = async (req, res, next) => {
   try {
     const room = await Room.findById(req.params.id);
     if (!room) return res.status(404).json({ success: false, message: "Room not found" });
@@ -82,27 +87,29 @@ export const updateRoom = async (req, res) => {
 
     res.status(200).json({ success: true, data: updatedRoom });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const createRoom = async (req, res) => {
+export const createRoom = async (req, res, next) => {
   try {
     const hotelId = req.params.hotelId;
     const newRoom = new Room({ ...req.body, hotel: hotelId });
     const savedRoom = await newRoom.save();
 
-    // Đẩy ID phòng vào mảng rooms của Hotel
     await Hotel.findByIdAndUpdate(hotelId, {
       $push: { rooms: savedRoom._id },
     });
+    
+    await syncHotelPrice(hotelId); // Nên đồng bộ giá ngay khi tạo phòng mới
 
     res.status(201).json({ success: true, data: savedRoom });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
-export const deleteRoom = async (req, res) => {
+
+export const deleteRoom = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: "Invalid room id" });
@@ -126,10 +133,11 @@ export const deleteRoom = async (req, res) => {
 
     res.json({ success: true, message: "Room and associated images deleted successfully" });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
-export const getAvailableRooms = async (req, res) => {
+
+export const getAvailableRooms = async (req, res, next) => {
   try {
     const { checkIn, checkOut, hotelId } = req.query;
     if (!checkIn || !checkOut) return res.status(400).json({ message: "Thiếu checkIn hoặc checkOut" });
@@ -157,11 +165,11 @@ export const getAvailableRooms = async (req, res) => {
 
     res.json({ rooms });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const getRoomsByHotel = async (req, res) => {
+export const getRoomsByHotel = async (req, res, next) => {
   try {
     const { hotelId } = req.params;
     const hotel = await Hotel.findById(hotelId).select("name city address");
@@ -170,11 +178,11 @@ export const getRoomsByHotel = async (req, res) => {
     const rooms = await Room.find({ hotel: hotelId }).populate("hotel", "name city address");
     res.json({ hotel, rooms });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const getRoomBookedDates = async (req, res) => {
+export const getRoomBookedDates = async (req, res, next) => {
   try {
     const { roomId } = req.params;
     if (!mongoose.Types.ObjectId.isValid(roomId)) return res.status(400).json({ message: "Invalid room id" });
@@ -196,11 +204,11 @@ export const getRoomBookedDates = async (req, res) => {
 
     res.json({ dates });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    next(err);
   }
 };
 
-export const getAdminRoomMap = async (req, res) => {
+export const getAdminRoomMap = async (req, res, next) => {
   try {
     const { hotelId } = req.query;
     const now = new Date();
@@ -245,11 +253,11 @@ export const getAdminRoomMap = async (req, res) => {
 
     res.json(roomMap);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const updateRoomStatus = async (req, res) => {
+export const updateRoomStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -259,17 +267,17 @@ export const updateRoomStatus = async (req, res) => {
     await syncHotelPrice(updatedRoom.hotel);
     res.status(200).json(updatedRoom);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-export const getRoomDetail = async (req, res) => {
+export const getRoomDetail = async (req, res, next) => {
   try {
     const room = await Room.findById(req.params.id).populate("hotel", "name location address");
     if (!room) return res.status(404).json({ message: "Không tìm thấy phòng này" });
     if (room.status === "inactive") return res.status(400).json({ message: "Phòng hiện tại đã ngừng kinh doanh" });
     res.status(200).json(room);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };

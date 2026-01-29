@@ -1,11 +1,19 @@
 import Hotel from "../models/Hotel.js";
 import { v2 as cloudinary } from "cloudinary";
 import slugify from "slugify";
+import Booking from "../models/Booking.js"; 
+
+// 1. Cấu hình Cloudinary để các hàm destroy/upload hoạt động
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET,
+});
 
 const normalize = (text = "") =>
   slugify(text, { lower: true, strict: true, locale: "vi" });
 
-export const getAllHotels = async (req, res) => {
+export const getAllHotels = async (req, res, next) => {
   try {
     const { 
       city, minPrice, maxPrice, types, amenities, 
@@ -14,7 +22,6 @@ export const getAllHotels = async (req, res) => {
 
     const query = { status: "active" };
 
-    // 1. Filter theo Keyword
     if (keyword) {
       query.$or = [
         { name: { $regex: keyword, $options: "i" } },
@@ -25,10 +32,8 @@ export const getAllHotels = async (req, res) => {
     if (city) query.citySlug = city;
     if (types) query.type = { $in: types.split(",") };
     
-    // Thêm lọc tiện nghi nếu có (Dùng $all để tìm khách sạn có TẤT CẢ tiện nghi chọn)
     if (amenities) query.amenities = { $all: amenities.split(",") };
 
-    // 2. LOGIC LỌC PHÒNG TRỐNG
     let unavailableRoomIds = [];
     if (checkIn && checkOut) {
       const bookedRooms = await Booking.find({
@@ -44,7 +49,6 @@ export const getAllHotels = async (req, res) => {
       unavailableRoomIds = bookedRooms.map(b => b.roomId);
     }
 
-    // 3. Truy vấn và xử lý dữ liệu
     let hotels = await Hotel.find(query)
       .populate({ 
         path: "rooms", 
@@ -55,8 +59,6 @@ export const getAllHotels = async (req, res) => {
 
     const result = hotels.map((hotel) => {
       const availableRooms = hotel.rooms || [];
-      
-      // Tính toán giá sau khi giảm (Final Price)
       const roomDetails = availableRooms.map(r => ({
         ...r,
         finalPrice: r.price * (1 - (r.discount || 0) / 100)
@@ -73,35 +75,23 @@ export const getAllHotels = async (req, res) => {
         availableRoomCount: availableRooms.length 
       };
     }).filter((hotel) => {
-      // Điều kiện 1: Phải có phòng trống (Nếu có search ngày)
       if (checkIn && checkOut && hotel.availableRoomCount === 0) return false;
-      
-      // Điều kiện 2: Phải có giá (Khách sạn không có phòng thì không hiện)
       if (hotel.minPrice === null) return false;
 
-      // Điều kiện 3: Lọc theo khoảng giá người dùng chọn
       const okMin = minPrice ? hotel.minPrice >= Number(minPrice) : true;
       const okMax = maxPrice ? hotel.minPrice <= Number(maxPrice) : true;
-      
-      // Điều kiện 4: Chỉ lấy hàng giảm giá
       const okDiscount = onlyDiscount === "true" ? hotel.maxDiscount > 0 : true;
       
       return okMin && okMax && okDiscount;
     });
 
-    res.json({ 
-      success: true, 
-      count: result.length,
-      data: result 
-    });
-
+    res.json({ success: true, count: result.length, data: result });
   } catch (err) {
-    console.error("Backend Error:", err);
-    res.status(500).json({ success: false, message: "Lỗi Server: " + err.message });
+    next(err); // Sửa lỗi next is not a function
   }
 };
 
-export const getHotelById = async (req, res) => {
+export const getHotelById = async (req, res, next) => {
   try {
     const hotel = await Hotel.findById(req.params.id)
       .populate({ path: "rooms" })
@@ -120,24 +110,29 @@ export const getHotelById = async (req, res) => {
 
     res.json({ success: true, data: { ...hotel, cheapestPrice } });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const createHotel = async (req, res) => {
+export const createHotel = async (req, res, next) => {
   try {
     const hotelData = { ...req.body };
     if (hotelData.city) hotelData.citySlug = normalize(hotelData.city);
     
-    // Xử lý tọa độ từ FormData (bọc lại thành object)
-    if (req.body['location[lat]'] && req.body['location[lng]']) {
+    // Fix logic nhận location từ JSON (Frontend gửi trực tiếp object)
+    if (req.body.location && typeof req.body.location === 'object') {
+      hotelData.location = {
+        lat: Number(req.body.location.lat),
+        lng: Number(req.body.location.lng)
+      };
+    } else if (req.body['location[lat]'] && req.body['location[lng]']) {
       hotelData.location = {
         lat: Number(req.body['location[lat]']),
         lng: Number(req.body['location[lng]'])
       };
     }
 
-    // Đồng bộ dùng 'photos' thay vì 'images'
+    // Xử lý ảnh nếu gửi qua Multer (FormData)
     if (req.files?.length) {
       hotelData.photos = req.files.map(file => ({
         url: file.path,
@@ -148,11 +143,11 @@ export const createHotel = async (req, res) => {
     const newHotel = await Hotel.create(hotelData);
     res.status(201).json({ success: true, data: newHotel });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const updateHotel = async (req, res) => {
+export const updateHotel = async (req, res, next) => {
   try {
     const hotel = await Hotel.findById(req.params.id);
     if (!hotel) return res.status(404).json({ success: false, message: "Hotel not found" });
@@ -160,16 +155,23 @@ export const updateHotel = async (req, res) => {
     const updateData = { ...req.body };
     if (updateData.city) updateData.citySlug = normalize(updateData.city);
 
-    if (req.body['location[lat]'] && req.body['location[lng]']) {
+    // Đồng bộ xử lý location JSON
+    if (req.body.location && typeof req.body.location === 'object') {
+        updateData.location = {
+          lat: Number(req.body.location.lat),
+          lng: Number(req.body.location.lng)
+        };
+    } else if (req.body['location[lat]'] && req.body['location[lng]']) {
       updateData.location = {
         lat: Number(req.body['location[lat]']),
         lng: Number(req.body['location[lng]'])
       };
     }
 
+    // Xóa ảnh trên Cloudinary nếu ảnh không còn trong danh sách mới
     if (req.body.photos) {
       const photosToDelete = hotel.photos.filter(
-        (oldPhoto) => !req.body.photos.find((newPhoto) => newPhoto.public_id === oldPhoto.public_id)
+        (oldPhoto) => !req.body.photos.find((p) => p.public_id === oldPhoto.public_id)
       );
 
       if (photosToDelete.length > 0) {
@@ -187,21 +189,25 @@ export const updateHotel = async (req, res) => {
 
     res.json({ success: true, data: updatedHotel });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
-export const deleteHotel = async (req, res) => {
+
+export const deleteHotel = async (req, res, next) => {
   try {
     const hotel = await Hotel.findById(req.params.id);
     if (!hotel) return res.status(404).json({ success: false, message: "Hotel not found" });
 
-    await Promise.all(
-      (hotel.photos || []).map(photo => cloudinary.uploader.destroy(photo.public_id))
-    );
+    // Xóa tất cả ảnh liên quan trên Cloudinary trước khi xóa Hotel
+    if (hotel.photos?.length > 0) {
+      await Promise.all(
+        hotel.photos.map(photo => cloudinary.uploader.destroy(photo.public_id))
+      );
+    }
 
     await hotel.deleteOne();
     res.json({ success: true, message: "Hotel deleted" });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
