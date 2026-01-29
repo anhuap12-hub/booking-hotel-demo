@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
-
+import imageCompression from 'browser-image-compression';
 import {
   Stack, TextField, Typography, Button, Paper, Box, Divider, 
-  MenuItem, Chip, Grid, CircularProgress
+  MenuItem, Chip, Grid, CircularProgress, Snackbar, Alert
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
@@ -29,10 +29,17 @@ const AdminEditHotel = () => {
   const [newAmenity, setNewAmenity] = useState("");
 
   const [photos, setPhotos] = useState([]); // File thực tế để upload
-  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // URL để hiển thị preview
+  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // URL hiển thị preview
   const [existingPhotos, setExistingPhotos] = useState([]); // Ảnh từ database
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // State cho Snackbar (Toast)
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   // --- Fetch Data ---
   useEffect(() => {
@@ -52,6 +59,7 @@ const AdminEditHotel = () => {
         setExistingPhotos(hotel.photos || []); 
       } catch (err) {
         console.error("Lỗi lấy dữ liệu khách sạn:", err);
+        triggerToast("Không thể tải thông tin khách sạn!", "error");
       } finally {
         setLoading(false);
       }
@@ -60,6 +68,15 @@ const AdminEditHotel = () => {
   }, [id]);
 
   // --- Handlers ---
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const triggerToast = (msg, type = "success") => {
+    setSnackbar({ open: true, message: msg, severity: type });
+  };
+
   const handleAddAmenity = (e) => {
     if (e.key === "Enter" && newAmenity.trim()) {
       e.preventDefault();
@@ -75,24 +92,40 @@ const AdminEditHotel = () => {
   };
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    // Lưu file để tí nữa upload
-    setPhotos((prev) => [...prev, ...files]);
+    const selectedFiles = Array.from(e.target.files);
+    const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
 
-    // Tạo URL blob để hiển thị ảnh ngay lập tức
-    const previews = files.map(file => ({
-      url: URL.createObjectURL(file),
+    if (imageFiles.length === 0) {
+      triggerToast("Vui lòng chỉ chọn các tệp tin hình ảnh!", "warning");
+      return;
+    }
+
+    setPhotos((prev) => [...prev, ...imageFiles]);
+
+    const newPreviews = imageFiles.map((file) => ({
+      url: URL.createObjectURL(file), 
       name: file.name
     }));
-    setNewPhotosPreview((prev) => [...prev, ...previews]);
+    setNewPhotosPreview((prev) => [...prev, ...newPreviews]);
+    e.target.value = null;
   };
+
+  useEffect(() => {
+    return () => {
+      newPhotosPreview.forEach((photo) => {
+        if (photo.url.startsWith("blob:")) {
+          URL.revokeObjectURL(photo.url);
+        }
+      });
+    };
+  }, [newPhotosPreview]);
 
   const handleDeletePhoto = (index, type = "new") => {
     const confirmDelete = window.confirm("Bạn có chắc chắn muốn bỏ ảnh này không?");
     if (!confirmDelete) return;
 
     if (type === "new") {
-      // Xóa ở cả mảng file và mảng preview
+      URL.revokeObjectURL(newPhotosPreview[index].url);
       setPhotos((prev) => prev.filter((_, i) => i !== index));
       setNewPhotosPreview((prev) => prev.filter((_, i) => i !== index));
     } else {
@@ -112,18 +145,28 @@ const AdminEditHotel = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     try {
       let uploadedUrls = [];
       if (photos.length > 0) {
+        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+       const compressedFiles = await Promise.all(
+       photos.map(async (file) => {
+    try {
+      // Thêm await và bọc try-catch cho từng file
+      return await imageCompression(file, options);
+    } catch (e) {
+      console.warn(`Không thể nén ${file.name}, giữ nguyên bản gốc:`, e);
+      return file; // Nén lỗi thì dùng file gốc, không để crash cả hàm Submit
+    }
+  })
+);
+
         const uploadForm = new FormData();
-        photos.forEach((file) => uploadForm.append("photos", file));
-        
-        const uploadRes = await axios.post(
-          `/upload/hotels/${id}`, 
-          uploadForm,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        uploadedUrls = uploadRes.data.data || []; 
+        compressedFiles.forEach((file) => uploadForm.append("photos", file));
+
+        const uploadRes = await axios.post(`/upload/hotels/${id}`, uploadForm);
+        uploadedUrls = uploadRes.data.data || [];
       }
 
       const finalHotelData = {
@@ -143,12 +186,17 @@ const AdminEditHotel = () => {
 
       await axios.put(`/hotels/${id}`, finalHotelData);
       
-      alert("Cập nhật khách sạn thành công!");
-      navigate("/admin/hotels");
+      triggerToast("Cập nhật khách sạn thành công!", "success");
+      
+      // Chuyển hướng sau khi hiện thông báo thành công một lát
+      setTimeout(() => {
+        navigate("/admin/hotels");
+      }, 1500);
+
     } catch (err) {
       const msg = err.response?.data?.message || "Có lỗi xảy ra khi lưu";
       console.error("Submit Error:", msg);
-      alert(`Thất bại: ${msg}`);
+      triggerToast(`Thất bại: ${msg}`, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -233,7 +281,6 @@ const AdminEditHotel = () => {
                   {...provided.droppableProps} 
                   sx={{ minHeight: 120, p: 2, border: '1px dashed #ccc', borderRadius: 2, bgcolor: '#fafafa', gap: 2 }}
                 >
-                  {/* Render Ảnh cũ từ Server (Cho phép kéo thả sắp xếp) */}
                   {existingPhotos.map((photo, i) => (
                     <Draggable key={photo.public_id || `exist-${i}`} draggableId={photo.public_id || `exist-${i}`} index={i}>
                       {(provided) => (
@@ -250,7 +297,6 @@ const AdminEditHotel = () => {
                     </Draggable>
                   ))}
 
-                  {/* Render Ảnh mới chọn từ máy (Chưa upload nên chỉ hiển thị preview) */}
                   {newPhotosPreview.map((photo, i) => (
                     <Box key={`new-${i}`} sx={{ position: "relative" }}>
                       <Box component="img" src={photo.url} sx={{ width: 120, height: 90, objectFit: "cover", borderRadius: 2, border: "2px dashed #2e7d32", opacity: 0.8 }} />
@@ -285,11 +331,33 @@ const AdminEditHotel = () => {
               size="large" 
               sx={{ px: 4, bgcolor: '#1C1B19', color: '#C2A56D', fontWeight: 700, '&:hover': { bgcolor: '#000' } }}
             >
-              {isSubmitting ? <CircularProgress size={24} sx={{ color: '#C2A56D' }} /> : "Lưu thay đổi"}
+              {isSubmitting ? (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={20} sx={{ color: '#C2A56D' }} />
+                  <Typography variant="caption">Đang xử lý & Upload...</Typography>
+                </Stack>
+              ) : "Lưu thay đổi"}
             </Button>
           </Stack>
         </Stack>
       </Stack>
+
+      {/* Snackbar để hiển thị thông báo */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          variant="filled" 
+          sx={{ width: '100%', boxShadow: 3 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };
