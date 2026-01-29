@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
-import { uploadBatch } from "../../api/upload"; 
+import { uploadBatch } from "../../api/upload.api"; 
 import imageCompression from 'browser-image-compression';
 import {
   Stack, TextField, Typography, Button, Paper, Box, Divider, 

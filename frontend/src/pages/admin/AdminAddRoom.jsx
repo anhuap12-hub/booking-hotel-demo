@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
-import { uploadBatch } from "../../api/upload"; // Import hàm upload mới
+import { uploadBatch } from "../../api/upload.api"; // Import hàm upload mới
 import imageCompression from 'browser-image-compression';
 import {
   TextField, Button, Select, MenuItem, Stack, InputLabel,

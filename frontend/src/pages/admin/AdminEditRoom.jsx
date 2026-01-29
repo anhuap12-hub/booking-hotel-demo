@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getRoomById, updateRoom } from "../../api/room.api";
-import { uploadBatch } from "../../api/upload"; 
+import { uploadBatch } from "../../api/upload.api"; 
 import imageCompression from 'browser-image-compression';
 
 import {
