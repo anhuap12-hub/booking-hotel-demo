@@ -19,7 +19,7 @@ const router = express.Router();
 router.get("/available", getAvailableRooms);
 router.get("/admin/map", protect, adminOnly, getAdminRoomMap);
 router.get("/hotel/:hotelId", getRoomsByHotel);
-router.get("/:roomId/booked-dates", getRoomBookedDates);
+router.get("/:id/booked-dates", getRoomBookedDates);
 router.get("/", getAllRooms);
 router.get("/:id", getRoomDetail);
 

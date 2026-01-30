@@ -37,24 +37,32 @@ export default function HotelRoom() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    let mounted = true;
-    const fetchRooms = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`/rooms/hotel/${hotelId}`);
-        if (mounted) {
-          setRooms(res.data.rooms || []);
-          setHotel(res.data.hotel);
+  let mounted = true;
+  const fetchRooms = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`/rooms/hotel/${hotelId}`);
+      
+      if (mounted) {
+        // Backend trả về { success: true, data: [...] }
+        const roomsData = res.data.data || []; 
+        setRooms(roomsData);
+
+        // Vì Backend chỉ trả về mảng Room, để lấy thông tin Hotel 
+        // bạn có thể lấy từ room đầu tiên (vì đã populate hotel ở Backend)
+        if (roomsData.length > 0) {
+          setHotel(roomsData[0].hotel);
         }
-      } catch (err) {
-        if (mounted) setError("Không thể tải danh sách phòng");
-      } finally {
-        if (mounted) setLoading(false);
       }
-    };
-    if (hotelId) fetchRooms();
-    return () => (mounted = false);
-  }, [hotelId]);
+    } catch (err) {
+      if (mounted) setError("Không thể tải danh sách phòng");
+    } finally {
+      if (mounted) setLoading(false);
+    }
+  };
+  if (hotelId) fetchRooms();
+  return () => (mounted = false);
+}, [hotelId]);
 
   // Logic lọc giữ nguyên như bạn đã viết
   const filteredRooms = useMemo(() => {

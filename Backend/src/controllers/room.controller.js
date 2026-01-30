@@ -30,7 +30,19 @@ const syncHotelPrice = async (hotelId) => {
 export const getAllRooms = async (req, res) => {
   try {
     const rooms = await Room.find().populate("hotel", "name city");
-    res.json(rooms);
+    res.json({ success: true, data: rooms }); // Đồng bộ cấu trúc trả về
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getRoomsByHotel = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    const rooms = await Room.find({ hotel: hotelId }); // Thêm .find({ status: "active" }) nếu muốn lọc
+    
+    // Luôn bọc trong { success, data }
+    res.status(200).json({ success: true, data: rooms }); 
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -118,7 +130,15 @@ export const deleteRoom = async (req, res) => {
 export const getAvailableRooms = async (req, res) => {
   try {
     const { checkIn, checkOut, hotelId } = req.query;
-    if (!checkIn || !checkOut) return res.status(400).json({ message: "Thiếu ngày" });
+    
+    // Nếu không có ngày, trả về toàn bộ phòng của hotel đó hoặc lỗi rõ ràng
+    if (!checkIn || !checkOut) {
+       const allRooms = await Room.find({ 
+         ...(hotelId && { hotel: hotelId }), 
+         status: "active" 
+       }).populate("hotel", "name city address");
+       return res.json({ success: true, data: allRooms });
+    }
 
     const bookings = await Booking.find({
       checkIn: { $lt: new Date(checkOut) },
@@ -127,13 +147,15 @@ export const getAvailableRooms = async (req, res) => {
     }).select("room");
 
     const bookedRoomIds = bookings.map(b => b.room);
+    
     const rooms = await Room.find({
       _id: { $nin: bookedRoomIds },
       ...(hotelId && { hotel: hotelId }),
       status: "active",
     }).populate("hotel", "name city address");
 
-    res.json({ rooms });
+    // FIX: Trả về cấu trúc { success, data } để Frontend map được
+    res.json({ success: true, data: rooms });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -210,19 +232,10 @@ export const getRoomBookedDates = async (req, res) => {
 export const getRoomDetail = async (req, res) => {
   try {
     const room = await Room.findById(req.params.id).populate("hotel", "name location address");
-    if (!room) return res.status(404).json({ message: "Không tìm thấy phòng" });
-    res.status(200).json(room);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getRoomsByHotel = async (req, res) => {
-  try {
-    const { hotelId } = req.params;
-    const rooms = await Room.find({ hotel: hotelId }).populate("hotel", "name city");
+    if (!room) return res.status(404).json({ success: false, message: "Không tìm thấy phòng" });
     
-    res.status(200).json(rooms); 
+    // Đồng bộ cấu trúc
+    res.status(200).json({ success: true, data: room });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
