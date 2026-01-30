@@ -221,7 +221,8 @@ export const getRoomsByHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
     const rooms = await Room.find({ hotel: hotelId }).populate("hotel", "name city");
-    res.status(200).json({ success: true, data: rooms });
+    
+    res.status(200).json(rooms); 
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
