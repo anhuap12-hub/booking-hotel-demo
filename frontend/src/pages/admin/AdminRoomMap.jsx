@@ -9,6 +9,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 
 const statusMap = {
+  active: { color: '#4caf50', label: 'Trống' },
   available: { color: '#4caf50', label: 'Trống' },
   occupied: { color: '#f44336', label: 'Đang ở' },
   booked: { color: '#ff9800', label: 'Đã đặt' },
@@ -72,11 +73,22 @@ export default function AdminRoomMap() {
       <Box mb={4}>
         <Typography variant="h5" fontWeight={800} color="#1a2027">Sơ Đồ Phòng Real-time</Typography>
         <Stack direction="row" spacing={3} mt={2}>
-          <Typography variant="body2">Tổng: <b>{rooms.length}</b></Typography>
-          <Typography variant="body2" color="success.main">Trống: <b>{rooms.filter(r => r.displayStatus === 'available').length}</b></Typography>
-          <Typography variant="body2" color="error.main">Đang ở: <b>{rooms.filter(r => r.displayStatus === 'occupied').length}</b></Typography>
-          <Typography variant="body2" color="warning.main">Đã đặt: <b>{rooms.filter(r => r.displayStatus === 'booked').length}</b></Typography>
-        </Stack>
+  <Typography variant="body2">Tổng: <b>{rooms.length}</b></Typography>
+  
+  {/* Sửa: Lọc theo 'active' thay vì 'available' */}
+  <Typography variant="body2" color="success.main">
+    
+Trống: <b>{rooms.filter(r => ['active', 'available'].includes(r.displayStatus)).length}</b>
+  </Typography>
+  
+  <Typography variant="body2" color="error.main">
+    Đang ở: <b>{rooms.filter(r => r.displayStatus === 'occupied').length}</b>
+  </Typography>
+  
+  <Typography variant="body2" color="warning.main">
+    Đã đặt: <b>{rooms.filter(r => r.displayStatus === 'booked').length}</b>
+  </Typography>
+</Stack>
       </Box>
       
       {/* CHÚ THÍCH (LEGEND) */}
