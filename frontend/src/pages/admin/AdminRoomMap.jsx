@@ -158,8 +158,8 @@ Trống: <b>{rooms.filter(r => ['active', 'available'].includes(r.displayStatus)
                     }} 
                   />
                   <Typography variant="subtitle2" fontWeight={800} color="#2d3436">
-                    {room.price?.toLocaleString()}đ
-                  </Typography>
+  {room.price ? `${room.price.toLocaleString()}đ` : 'Liên hệ'}
+</Typography>
                 </Stack>
               </Paper>
             </Grid>
