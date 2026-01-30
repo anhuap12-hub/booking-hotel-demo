@@ -217,3 +217,12 @@ export const getRoomBookedDates = async (req, res) => {
     });
   }
 };
+export const getRoomDetail = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id).populate("hotel", "name location address");
+    if (!room) return res.status(404).json({ message: "Không tìm thấy phòng" });
+    res.status(200).json(room);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
