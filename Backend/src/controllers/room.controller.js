@@ -36,16 +36,6 @@ export const getAllRooms = async (req, res) => {
   }
 };
 
-export const getRoomById = async (req, res) => {
-  try {
-    const room = await Room.findById(req.params.id).populate("hotel", "name city address");
-    if (!room) return res.status(404).json({ message: "Room not found" });
-    res.json(room);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 export const updateRoom = async (req, res) => {
   try {
     const room = await Room.findById(req.params.id);
@@ -222,6 +212,32 @@ export const getRoomDetail = async (req, res) => {
     const room = await Room.findById(req.params.id).populate("hotel", "name location address");
     if (!room) return res.status(404).json({ message: "Không tìm thấy phòng" });
     res.status(200).json(room);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getRoomsByHotel = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    const rooms = await Room.find({ hotel: hotelId }).populate("hotel", "name city");
+    res.status(200).json({ success: true, data: rooms });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const updateRoomStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const updatedRoom = await Room.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true }
+    );
+    if (!updatedRoom) return res.status(404).json({ message: "Không tìm thấy phòng" });
+    res.status(200).json({ success: true, data: updatedRoom });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
