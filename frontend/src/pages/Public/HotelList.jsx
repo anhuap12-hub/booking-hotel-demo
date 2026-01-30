@@ -19,7 +19,6 @@ export default function HotelList() {
   const { search, resetSearch } = useSearch();
   // States cho Search Bar
   const [inputValue, setInputValue] = useState(""); 
-  const [searchTerm, setSearchTerm] = useState("");
 
   const [filters, setFilters] = useState({
     minPrice: 0,
@@ -50,37 +49,32 @@ export default function HotelList() {
  useEffect(() => {
   if (search.city) {
     setInputValue(search.city);
-    setSearchTerm(search.city); 
     setFilters((prev) => ({ ...prev, city: "" })); 
   }
 }, [search.city]);
 
-// 4. Logic lọc dữ liệu (Bỏ lọc city riêng lẻ, gộp vào matchesSearch)
 const filteredHotels = useMemo(() => {
-  const term = normalizeText(searchTerm);
+  const term = normalizeText(inputValue); 
 
   return hotels.filter((hotel) => {
     if (hotel.status !== "active") return false;
 
-    // TÌM KIẾM TỔNG HỢP: Khớp tên HOẶC khớp thành phố
     const matchesSearch = !term || 
       normalizeText(hotel.name || "").includes(term) ||
       normalizeText(hotel.city || "").includes(term);
 
-    // Lọc giá
     const prices = hotel.rooms?.map((r) => (r.price || 0) * (1 - (r.discount || 0) / 100)) || [];
     const minRoomPrice = prices.length ? Math.min(...prices) : 0;
     const matchesPrice = minRoomPrice >= filters.minPrice && minRoomPrice <= filters.maxPrice;
 
-    // Lọc loại hình và tiện nghi (giữ nguyên)
     const matchesType = !filters.types.length || filters.types.includes(hotel.type);
     const matchesAmenities = !filters.amenities.length || 
       filters.amenities.every((a) => hotel.amenities?.includes(a));
 
     return matchesSearch && matchesPrice && matchesType && matchesAmenities;
   });
-}, [hotels, searchTerm, filters]);
-  // Trích xuất dữ liệu động cho Sidebar
+}, [hotels, inputValue, filters]);
+  
   const uniqueCities = useMemo(() => [...new Set(hotels.map((h) => h.city).filter(Boolean))], [hotels]);
   const allAmenities = useMemo(() => [...new Set(hotels.flatMap((h) => h.amenities || []))].filter(Boolean).sort(), [hotels]);
 
