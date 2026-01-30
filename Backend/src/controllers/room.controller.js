@@ -177,12 +177,43 @@ export const getAdminRoomMap = async (req, res) => {
   }
 };
 
-export const getRoomDetail = async (req, res) => {
+export const getRoomBookedDates = async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id).populate("hotel", "name location address");
-    if (!room) return res.status(404).json({ message: "Không tìm thấy phòng" });
-    res.status(200).json(room);
+    const { id } = req.params;
+
+    // Chỉ lấy các booking có khả năng chiếm phòng (Chờ thanh toán hoặc Đã xác nhận)
+    // Loại bỏ: cancelled (đã hủy), expired (hết hạn), no_show (khách ko đến)
+    const bookings = await Booking.find({
+      room: id,
+      status: { $in: ["pending", "confirmed", "completed"] },
+    }).select("checkIn checkOut");
+
+    let bookedDates = [];
+
+    bookings.forEach((booking) => {
+      // Khởi tạo ngày bắt đầu và ngày kết thúc
+      let currentDate = new Date(booking.checkIn);
+      const endDate = new Date(booking.checkOut);
+
+      while (currentDate < endDate) {
+        bookedDates.push(currentDate.toISOString().split("T")[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+
+    // Loại bỏ các ngày trùng lặp nếu có nhiều booking gối đầu nhau
+    const uniqueDates = [...new Set(bookedDates)].sort();
+
+    res.status(200).json({
+      success: true,
+      count: uniqueDates.length,
+      data: uniqueDates,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách ngày đã đặt",
+      error: error.message,
+    });
   }
 };
