@@ -7,7 +7,7 @@ import HotelSuggestion from "../../components/Home/HotelSuggestion";
 import CityHotelSections from "../../components/Home/CityHotelSections";
 import { getAllHotels } from "../../api/hotel.api";
 import { NAVBAR_HEIGHT } from "../../components/Layout/Navbar";
-
+import Recommendation from "../../components/Home/Recommendation";
 export default function Home() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,16 @@ export default function Home() {
                 }}>
                   <HotelSuggestion hotels={hotels} />
                 </Box>
-
+                {/* Section Gợi ý khách sạn - Recommendation */}
+                <Box
+                 sx={{
+                 p: { xs: 2, md: 6 },
+                 bgcolor: "#fff",
+                 borderRadius: { xs: "20px", md: "40px" },
+                }}
+                  >
+                  <Recommendation />
+                </Box>
                 {/* Section Khách sạn theo thành phố */}
                 <CityHotelSections citiesSorted={citiesSorted} />
               </Stack>

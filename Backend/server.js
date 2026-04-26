@@ -15,6 +15,8 @@ import uploadRoutes from "./src/routes/upload.route.js";
 import bookingRoutes from "./src/routes/booking.route.js";
 import adminRoutes from "./src/routes/admin.route.js";
 import reviewRoutes from "./src/routes/review.route.js";
+import chatRoutes from "./src/routes/chat.route.js";
+import recommendRoutes from "./src/routes/recommend.route.js";
 const app = express();
 
 /* ===================== MIDDLEWARE ===================== */
@@ -57,6 +59,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/recommend", recommendRoutes);
 
 /* ===================== STATIC ===================== */
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

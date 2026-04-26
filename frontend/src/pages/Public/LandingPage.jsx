@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Box, Container, Stack, Fade, CircularProgress } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
-
-// Soát lỗi Import: Đảm bảo đúng đường dẫn các Component Landing
 import HeroSection from "../../components/Landing/HeroSection";
 import DealsSection from "../../components/Landing/DealsSection";
 import TrendingDestinations from "../../components/Landing/TrendingDestinations";
@@ -10,7 +8,7 @@ import PropertiesByType from "../../components/Landing/PropertiesByType";
 import WeekendDeals from "../../components/Landing/WeekendDeals";
 import ContactCTA from "../../components/Landing/ContactCTA";
 import GeniusModal from "../../components/Common/GeniusModal";
-
+import Recommendation from "../../components/Home/Recommendation";
 import { getAllHotels } from "../../api/hotel.api";
 
 export default function LandingPage() {
@@ -105,6 +103,10 @@ export default function LandingPage() {
               </Box>
             </Fade>
           )}
+          {/* Recommendation Section */}
+        <Box sx={{ mt: 8 }}>
+       <Recommendation />
+        </Box>
 
           {/* Điểm đến Xu hướng */}
           <Box sx={{ position: "relative" }}>
