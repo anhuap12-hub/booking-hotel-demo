@@ -9,7 +9,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import { getRecommendations } from "../api/recommend.api.js"; // dùng API layer
+import { getRecommendations } from "../../api/recommend.api.js"; 
 
 export default function Recommendation() {
   const [hotels, setHotels] = useState([]);

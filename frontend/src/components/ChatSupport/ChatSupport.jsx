@@ -11,7 +11,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { sendChatMessage } from "../api/chat.api";
+import { sendChatMessage } from "../../api/chat.api";
+
 const QUESTIONS = [
   { q: "Chính sách hủy phòng miễn phí?", a: "Hầu hết các phòng hỗ trợ hủy miễn phí trước 48h." },
   { q: "Giờ nhận và trả phòng?", a: "Check-in từ 14:00, check-out trước 12:00 trưa hôm sau." },
