@@ -17,29 +17,29 @@ const MotionPaper = motion(Paper);
 export default function WeekendDeals({ hotels = [] }) {
   const navigate = useNavigate();
 
-  // XỬ LÝ DỮ LIỆU: Ưu tiên % giảm giá cao nhất
-  const displayHotels = [...hotels] // Tạo bản sao mảng để tránh mutate props
+  // COPY NGUYÊN LOGIC THOÁNG CỦA TRANG DEALS
+  const displayHotels = [...hotels]
     .map(h => {
-      // 1. Tìm phòng có % discount cao nhất của khách sạn đó
-      const bestRoom = h.rooms?.reduce((max, curr) => 
-        (curr.discount > max.discount) ? curr : max
-      , h.rooms[0]) || { price: 0, discount: 0 };
+      // Tìm phòng có giá rẻ nhất (hoặc phòng đầu tiên) để làm giá gốc
+      const baseRoom = h.rooms?.[0] || { price: 0, discount: 0 };
+      
+      // Tìm mức discount lớn nhất trong các phòng (giống trang Deals hiện Badge)
+      const maxDiscount = h.rooms?.reduce((max, r) => Math.max(max, r.discount || 0), 0) || 0;
 
       return {
         ...h,
-        originalPrice: bestRoom.price,
-        finalPrice: Math.round(bestRoom.price * (1 - (bestRoom.discount || 0) / 100)),
-        discountPercent: bestRoom.discount || 0
+        originalPrice: baseRoom.price,
+        // Tính giá sau giảm (Nếu trang Deals tính khác thì bạn chỉnh lại công thức này)
+        finalPrice: Math.round(baseRoom.price * (1 - maxDiscount / 100)),
+        discountPercent: maxDiscount
       };
     })
-    // 2. Sắp xếp khách sạn có % giảm giá từ cao xuống thấp
+    // Sắp xếp thằng có giảm giá lên đầu để không bị trống Badge ở hàng đầu
     .sort((a, b) => b.discountPercent - a.discountPercent)
-    // 3. Lấy 5 anh em "Hot" nhất
     .slice(0, 5);
 
   return (
     <Container maxWidth="lg" sx={{ mb: 12 }}>
-      {/* Header giữ nguyên */}
       <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 4 }}>
         <Box>
           <Stack direction="row" spacing={1} alignItems="center" mb={1}>
@@ -92,7 +92,6 @@ export default function WeekendDeals({ hotels = [] }) {
                 },
               }}
             >
-              {/* IMAGE & CHIP */}
               <Box sx={{ position: "relative", pt: "100%", overflow: "hidden" }}>
                 <Box
                   component="img"
@@ -105,7 +104,7 @@ export default function WeekendDeals({ hotels = [] }) {
                     objectFit: "cover",
                   }}
                 />
-                {/* Chỉ hiện Chip nếu có giảm giá thực sự */}
+                {/* Ép hiện Badge nếu discountPercent > 0 */}
                 {h.discountPercent > 0 && (
                   <Chip 
                     label={`-${h.discountPercent}%`}
@@ -119,7 +118,6 @@ export default function WeekendDeals({ hotels = [] }) {
                 )}
               </Box>
 
-              {/* INFO */}
               <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="caption" sx={{ color: "#C2A56D", fontWeight: 700, textTransform: "uppercase", fontSize: "0.65rem" }}>
                   {h.city}
@@ -145,11 +143,12 @@ export default function WeekendDeals({ hotels = [] }) {
                   <Typography sx={{ fontSize: "0.65rem", color: "#72716E", fontWeight: 600 }}>GIÁ TỪ</Typography>
                   <Stack direction="row" spacing={1} alignItems="baseline">
                     <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.05rem" }}>
-                      {h.finalPrice.toLocaleString("vi-VN")}₫
+                      {(h.finalPrice || 0).toLocaleString("vi-VN")}₫
                     </Typography>
+                    {/* Hiển thị giá gốc gạch ngang giống trang Deals */}
                     {h.discountPercent > 0 && (
                       <Typography sx={{ fontSize: "0.7rem", textDecoration: "line-through", color: "#A8A7A1" }}>
-                        {h.originalPrice.toLocaleString("vi-VN")}
+                        {(h.originalPrice || 0).toLocaleString("vi-VN")}
                       </Typography>
                     )}
                   </Stack>
