@@ -17,26 +17,29 @@ const MotionPaper = motion(Paper);
 export default function WeekendDeals({ hotels = [] }) {
   const navigate = useNavigate();
 
-  // CHỈ SỬA PHẦN XỬ LÝ HIỂN THỊ Ở ĐÂY
-  const displayHotels = hotels
-    .filter(h => h.rooms?.some(r => r.discount > 0)) // Lọc những khách sạn thực sự có giảm giá
-    .slice(0, 5) // Lấy đúng 5 khách sạn để hiển thị
+  // XỬ LÝ DỮ LIỆU: Ưu tiên % giảm giá cao nhất
+  const displayHotels = [...hotels] // Tạo bản sao mảng để tránh mutate props
     .map(h => {
-      // Tìm phòng có mức giảm giá (%) cao nhất để làm đại diện
-      const bestDealRoom = h.rooms.reduce((max, curr) => 
+      // 1. Tìm phòng có % discount cao nhất của khách sạn đó
+      const bestRoom = h.rooms?.reduce((max, curr) => 
         (curr.discount > max.discount) ? curr : max
-      , h.rooms[0]);
+      , h.rooms[0]) || { price: 0, discount: 0 };
 
       return {
         ...h,
-        originalPrice: bestDealRoom.price,
-        finalPrice: Math.round(bestDealRoom.price * (1 - bestDealRoom.discount / 100)),
-        discountPercent: bestDealRoom.discount
+        originalPrice: bestRoom.price,
+        finalPrice: Math.round(bestRoom.price * (1 - (bestRoom.discount || 0) / 100)),
+        discountPercent: bestRoom.discount || 0
       };
-    });
+    })
+    // 2. Sắp xếp khách sạn có % giảm giá từ cao xuống thấp
+    .sort((a, b) => b.discountPercent - a.discountPercent)
+    // 3. Lấy 5 anh em "Hot" nhất
+    .slice(0, 5);
 
   return (
     <Container maxWidth="lg" sx={{ mb: 12 }}>
+      {/* Header giữ nguyên */}
       <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 4 }}>
         <Box>
           <Stack direction="row" spacing={1} alignItems="center" mb={1}>
@@ -66,7 +69,7 @@ export default function WeekendDeals({ hotels = [] }) {
 
       <Grid container spacing={2.5}>
         {displayHotels.map((h, idx) => (
-          <Grid item xs={12} sm={6} md={2.4} key={h._id}> {/* md={2.4} để hiện đúng 5 card trên 1 hàng */}
+          <Grid item xs={12} sm={6} md={2.4} key={h._id}>
             <MotionPaper
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -89,7 +92,7 @@ export default function WeekendDeals({ hotels = [] }) {
                 },
               }}
             >
-              {/* PHẦN ẢNH & CHIP GIẢM GIÁ */}
+              {/* IMAGE & CHIP */}
               <Box sx={{ position: "relative", pt: "100%", overflow: "hidden" }}>
                 <Box
                   component="img"
@@ -102,18 +105,21 @@ export default function WeekendDeals({ hotels = [] }) {
                     objectFit: "cover",
                   }}
                 />
-                <Chip 
-                  label={`-${h.discountPercent}%`}
-                  sx={{
-                    position: "absolute", top: 12, right: 12,
-                    bgcolor: "#E74C3C", color: "#fff",
-                    fontWeight: 900, borderRadius: "6px",
-                    fontSize: "0.7rem", height: "24px"
-                  }}
-                />
+                {/* Chỉ hiện Chip nếu có giảm giá thực sự */}
+                {h.discountPercent > 0 && (
+                  <Chip 
+                    label={`-${h.discountPercent}%`}
+                    sx={{
+                      position: "absolute", top: 12, right: 12,
+                      bgcolor: "#E74C3C", color: "#fff",
+                      fontWeight: 900, borderRadius: "6px",
+                      fontSize: "0.7rem", height: "24px"
+                    }}
+                  />
+                )}
               </Box>
 
-              {/* PHẦN THÔNG TIN */}
+              {/* INFO */}
               <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="caption" sx={{ color: "#C2A56D", fontWeight: 700, textTransform: "uppercase", fontSize: "0.65rem" }}>
                   {h.city}
@@ -129,7 +135,7 @@ export default function WeekendDeals({ hotels = [] }) {
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                    height: '2.6rem' // Cố định chiều cao để các card đều nhau
+                    height: '2.6rem'
                   }}
                 >
                   {h.name}
@@ -141,9 +147,11 @@ export default function WeekendDeals({ hotels = [] }) {
                     <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.05rem" }}>
                       {h.finalPrice.toLocaleString("vi-VN")}₫
                     </Typography>
-                    <Typography sx={{ fontSize: "0.7rem", textDecoration: "line-through", color: "#A8A7A1" }}>
-                      {h.originalPrice.toLocaleString("vi-VN")}
-                    </Typography>
+                    {h.discountPercent > 0 && (
+                      <Typography sx={{ fontSize: "0.7rem", textDecoration: "line-through", color: "#A8A7A1" }}>
+                        {h.originalPrice.toLocaleString("vi-VN")}
+                      </Typography>
+                    )}
                   </Stack>
                 </Box>
               </Box>
