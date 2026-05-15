@@ -7,7 +7,7 @@ import HotelSuggestion from "../../components/Home/HotelSuggestion";
 import CityHotelSections from "../../components/Home/CityHotelSections";
 import { getAllHotels } from "../../api/hotel.api";
 import { NAVBAR_HEIGHT } from "../../components/Layout/Navbar";
-import Recommendation from "../../components/Home/Recommendation";
+import Recommendation from "../../components/Common/Recommendation";
 export default function Home() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);

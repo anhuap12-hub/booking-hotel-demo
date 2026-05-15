@@ -17,12 +17,16 @@ const MotionPaper = motion(Paper);
 export default function WeekendDeals({ hotels = [] }) {
   const navigate = useNavigate();
 
+  // Logic lấy giá tốt nhất từ mảng rooms
   const getBestPrice = (rooms) => {
     if (!Array.isArray(rooms) || rooms.length === 0) return null;
+
+    // Ưu tiên tìm các phòng đang có discount
     const discountedRooms = rooms.filter(
       (r) => typeof r.discount === "number" && r.discount > 0
     );
 
+    // Nếu có phòng giảm giá, chọn phòng có giá sau giảm (finalPrice) thấp nhất
     if (discountedRooms.length) {
       const bestRoom = discountedRooms.reduce((best, cur) => {
         const curFinal = cur.price * (1 - cur.discount / 100);
@@ -37,6 +41,7 @@ export default function WeekendDeals({ hotels = [] }) {
       };
     }
 
+    // Nếu không có phòng nào giảm giá, lấy phòng rẻ nhất bình thường
     const cheapestRoom = rooms.reduce((min, cur) =>
       cur.price < min.price ? cur : min
     , rooms[0]);
@@ -56,7 +61,7 @@ export default function WeekendDeals({ hotels = [] }) {
           <Stack direction="row" spacing={1} alignItems="center" mb={1}>
              <LocalFireDepartmentIcon sx={{ color: "#C2A56D" }} />
              <Typography variant="overline" sx={{ fontWeight: 700, letterSpacing: 2, color: "#C2A56D" }}>
-                Limited Offers
+                Hot Deals
              </Typography>
           </Stack>
           <Typography
@@ -94,6 +99,9 @@ export default function WeekendDeals({ hotels = [] }) {
                   overflow: "hidden",
                   bgcolor: "#FFF",
                   border: "1px solid #F1F0EE",
+                  height: "100%", // Cho các card cao bằng nhau
+                  display: "flex",
+                  flexDirection: "column",
                   transition: "0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&:hover": {
                     transform: "translateY(-10px)",
@@ -101,13 +109,15 @@ export default function WeekendDeals({ hotels = [] }) {
                   },
                 }}
               >
-                {/* IMAGE BOX */}
-                <Box sx={{ position: "relative", height: 240, overflow: "hidden" }}>
+                {/* IMAGE BOX - Cố định tỉ lệ 3:4 hoặc 1:1 cho Weekend Deals */}
+                <Box sx={{ position: "relative", pt: "75%", overflow: "hidden" }}>
                   <Box
                     component="img"
-                    src={h.photos?.[0]?.url || "https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg"}
+                    src={h.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
                     alt={h.name}
                     sx={{
+                      position: "absolute",
+                      top: 0, left: 0,
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
@@ -119,7 +129,7 @@ export default function WeekendDeals({ hotels = [] }) {
                       label={`-${priceInfo.discount}%`}
                       sx={{
                         position: "absolute", top: 16, right: 16,
-                        bgcolor: "#1C1B19", color: "#C2A56D",
+                        bgcolor: "#E74C3C", color: "#fff", // Đổi sang đỏ để nhấn mạnh deal
                         fontWeight: 800, borderRadius: "8px",
                         fontSize: "0.75rem"
                       }}
@@ -128,32 +138,36 @@ export default function WeekendDeals({ hotels = [] }) {
                 </Box>
 
                 {/* CONTENT */}
-                <Box sx={{ p: 2.5 }}>
+                <Box sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                   <Typography variant="caption" sx={{ color: "#C2A56D", fontWeight: 700, textTransform: "uppercase" }}>
                     {h.city}
                   </Typography>
                   <Typography
-                    noWrap
                     sx={{
                       fontFamily: "'Playfair Display', serif",
                       fontSize: "1.1rem",
                       fontWeight: 700,
                       color: "#1C1B19",
-                      mt: 0.5, mb: 2
+                      mt: 0.5, mb: 2,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      height: '3rem' // Cố định chiều cao tiêu đề
                     }}
                   >
                     {h.name}
                   </Typography>
 
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 'auto' }}>
                     <Box>
-                       <Typography sx={{ fontSize: "0.75rem", color: "#72716E" }}>Giá từ</Typography>
-                       <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.05rem" }}>
+                       <Typography sx={{ fontSize: "0.75rem", color: "#72716E", fontWeight: 600 }}>GIÁ TỪ</Typography>
+                       <Stack direction="row" spacing={1} alignItems="baseline">
+                          <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.1rem" }}>
                              {priceInfo?.finalPrice.toLocaleString("vi-VN")}₫
                           </Typography>
                           {priceInfo?.discount > 0 && (
-                            <Typography sx={{ fontSize: "0.8rem", textDecoration: "line-through", color: "#A8A7A1" }}>
+                            <Typography sx={{ fontSize: "0.75rem", textDecoration: "line-through", color: "#A8A7A1" }}>
                                {priceInfo.price.toLocaleString("vi-VN")}
                             </Typography>
                           )}
@@ -164,7 +178,7 @@ export default function WeekendDeals({ hotels = [] }) {
                       variant="contained"
                       onClick={() => navigate(`/hotels/${h._id}`)}
                       sx={{
-                        minWidth: 45, width: 45, height: 45, borderRadius: "12px",
+                        minWidth: 40, width: 40, height: 40, borderRadius: "10px",
                         bgcolor: "#1C1B19", color: "#C2A56D",
                         "&:hover": { bgcolor: "#C2A56D", color: "#1C1B19" }
                       }}

@@ -8,7 +8,7 @@ import PropertiesByType from "../../components/Landing/PropertiesByType";
 import WeekendDeals from "../../components/Landing/WeekendDeals";
 import ContactCTA from "../../components/Landing/ContactCTA";
 import GeniusModal from "../../components/Common/GeniusModal";
-import Recommendation from "../../components/Home/Recommendation";
+import Recommendation from "../../components/Common/Recommendation";
 import { getAllHotels } from "../../api/hotel.api";
 
 export default function LandingPage() {
