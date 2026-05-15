@@ -8,11 +8,20 @@ import {
   CardContent,
   Button,
   CircularProgress,
+  Paper,
+  Avatar,
+  Stack,
+  Chip,
+  Container
 } from "@mui/material";
-import { getRecommendations } from "../../api/recommend.api.js"; 
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import StarIcon from "@mui/icons-material/Star";
+import { getRecommendations } from "../../api/recommend.api.js";
 
 export default function Recommendation() {
   const [hotels, setHotels] = useState([]);
+  const [aiIntro, setAiIntro] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,16 +29,23 @@ export default function Recommendation() {
     const fetchData = async () => {
       try {
         const res = await getRecommendations();
+        // Backend trả về: { data: { data: [...], intro: "..." } }
         setHotels(res.data.data || []);
+        setAiIntro(res.data.intro || "");
       } catch (err) {
-        if (err.response?.status === 401) {
-          setError("Bạn chưa đăng nhập. Vui lòng đăng nhập để xem gợi ý.");
-        } else if (err.response?.status === 403) {
-          setError("Vui lòng xác thực email trước khi tiếp tục.");
+        // Sử dụng biến err để phân loại lỗi cụ thể
+        const status = err.response?.status;
+        
+        if (status === 401) {
+          setError("Vui lòng đăng nhập để nhận gợi ý cá nhân hóa.");
+        } else if (status === 403) {
+          setError("Tài khoản của bạn cần xác thực email để sử dụng tính năng này.");
         } else {
-          setError("Có lỗi xảy ra khi tải gợi ý.");
+          setError("Hiện tại không thể tải gợi ý. Vui lòng thử lại sau.");
         }
-        console.error("Recommendation error:", err);
+        
+        // Log lỗi ra console để debug khi cần thiết
+        console.error("Lỗi fetch recommendation:", err.message);
       } finally {
         setLoading(false);
       }
@@ -37,85 +53,130 @@ export default function Recommendation() {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <Box textAlign="center" py={3}>
-        <CircularProgress />
-        <Typography variant="body2" mt={1}>
-          Đang tải gợi ý...
-        </Typography>
-      </Box>
-    );
-  }
+  if (loading) return (
+    <Box textAlign="center" py={10}><CircularProgress sx={{ color: "#C2A56D" }} /></Box>
+  );
 
-  if (error) {
-    return (
-      <Typography textAlign="center" py={3} color="error">
-        {error}
-      </Typography>
-    );
-  }
-
-  if (hotels.length === 0) {
-    return (
-      <Typography textAlign="center" py={3}>
-        Chưa có gợi ý nào.
-      </Typography>
-    );
-  }
+  if (error || hotels.length === 0) return null;
 
   return (
-    <Box sx={{ mt: 5 }}>
-      <Typography
-        variant="h5"
-        fontWeight={700}
-        mb={3}
-        sx={{ textAlign: "center", color: "#1C1B19" }}
+    <Container maxWidth="lg" sx={{ py: 8 }}>
+      {/* KHỐI AI ADVISOR - ĐIỂM NHẤN CỦA ĐỒ ÁN */}
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 4, 
+          mb: 6, 
+          background: "linear-gradient(135deg, #1C1B19 0%, #2D2C2A 100%)",
+          color: "#fff",
+          borderRadius: 4,
+          position: "relative",
+          overflow: "hidden",
+          border: "1px solid rgba(194, 165, 109, 0.3)"
+        }}
       >
-        Khách sạn gợi ý cho bạn
+        {/* Họa tiết trang trí chìm */}
+        <Box sx={{ position: "absolute", right: -20, bottom: -20, opacity: 0.1 }}>
+          <SmartToyIcon sx={{ fontSize: 150, color: "#C2A56D" }} />
+        </Box>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems="center">
+          <Avatar 
+            sx={{ 
+              bgcolor: "#C2A56D", 
+              width: 70, 
+              height: 70, 
+              boxShadow: "0 0 20px rgba(194, 165, 109, 0.5)" 
+            }}
+          >
+            <SmartToyIcon sx={{ fontSize: 40 }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight={700} sx={{ color: "#C2A56D", mb: 1 }}>
+              Coffee Stay AI Advisor
+            </Typography>
+            <Typography variant="body1" sx={{ fontStyle: "italic", lineHeight: 1.8, opacity: 0.9 }}>
+              "{aiIntro || "Dựa trên sở thích và lịch sử tìm kiếm, tôi đã chọn lọc những không gian nghỉ dưỡng tuyệt vời nhất dành riêng cho bạn."}"
+            </Typography>
+          </Box>
+        </Stack>
+      </Paper>
+
+      {/* TIÊU ĐỀ DANH SÁCH */}
+      <Typography variant="h4" fontWeight={800} mb={4} sx={{ color: "#1C1B19" }}>
+        Đề xuất cho kỳ nghỉ của bạn
       </Typography>
-      <Grid container spacing={3}>
+
+      {/* GRID DANH SÁCH KHÁCH SẠN */}
+      <Grid container spacing={4}>
         {hotels.map((hotel) => (
           <Grid item xs={12} sm={6} md={4} key={hotel._id}>
             <Card
               sx={{
-                borderRadius: 3,
-                boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-                transition: "transform 0.2s",
-                "&:hover": { transform: "translateY(-5px)" },
+                borderRadius: 4,
+                boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
+                transition: "all 0.3s ease",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                "&:hover": { transform: "translateY(-10px)", boxShadow: "0 20px 50px rgba(0,0,0,0.12)" }
               }}
             >
-              <CardMedia
-                component="img"
-                height="180"
-                image={
-                  hotel.photos?.[0]?.url || "https://via.placeholder.com/300"
-                }
-                alt={hotel.name}
-              />
-              <CardContent>
-                <Typography variant="subtitle1" fontWeight={600}>
+              <Box sx={{ position: "relative" }}>
+                <CardMedia
+                  component="img"
+                  height="240"
+                  image={hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
+                  alt={hotel.name}
+                />
+                <Chip 
+                  icon={<StarIcon sx={{ fontSize: "14px !important", color: "#C2A56D !important" }} />}
+                  label={hotel.rating || "New"}
+                  sx={{ 
+                    position: "absolute", top: 15, right: 15, 
+                    bgcolor: "#fff", fontWeight: 700, color: "#1C1B19" 
+                  }} 
+                />
+              </Box>
+
+              <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                <Stack direction="row" alignItems="center" spacing={0.5} mb={1}>
+                  <LocationOnIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                    {hotel.city}
+                  </Typography>
+                </Stack>
+
+                <Typography variant="h6" fontWeight={700} mb={2} sx={{ color: "#1C1B19", height: 60, overflow: "hidden" }}>
                   {hotel.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {hotel.city} • ⭐ {hotel.rating}
-                </Typography>
-                <Typography variant="body2" color="primary" fontWeight={700}>
-                  Giá từ {hotel.cheapestPrice} VND
-                </Typography>
-                <Button
-                  size="small"
-                  sx={{ mt: 1 }}
-                  href={`/hotels/${hotel._id}`}
-                  variant="outlined"
-                >
-                  Xem chi tiết
-                </Button>
+
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">Giá từ</Typography>
+                    <Typography variant="h6" fontWeight={800} color="#C2A56D">
+                      {hotel.cheapestPrice?.toLocaleString()} <small style={{ fontSize: 12 }}>VND</small>
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    href={`/hotels/${hotel._id}`}
+                    sx={{ 
+                      bgcolor: "#1C1B19", 
+                      borderRadius: 2, 
+                      px: 3,
+                      textTransform: "none",
+                      "&:hover": { bgcolor: "#C2A56D" } 
+                    }}
+                  >
+                    Chi tiết
+                  </Button>
+                </Stack>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
-    </Box>
+    </Container>
   );
 }

@@ -71,15 +71,9 @@ export default function Home() {
                   <HotelSuggestion hotels={hotels} />
                 </Box>
                 {/* Section Gợi ý khách sạn - Recommendation */}
-                <Box
-                 sx={{
-                 p: { xs: 2, md: 6 },
-                 bgcolor: "#fff",
-                 borderRadius: { xs: "20px", md: "40px" },
-                }}
-                  >
-                  <Recommendation />
-                </Box>
+                <Box sx={{ width: '100%' }}>
+       <Recommendation />
+    </Box>
                 {/* Section Khách sạn theo thành phố */}
                 <CityHotelSections citiesSorted={citiesSorted} />
               </Stack>

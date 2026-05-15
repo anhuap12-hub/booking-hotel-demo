@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import initCronJobs from "../utils/cronJobs.js"; // Import đúng từ thư mục utils
+import initCronJobs from "../utils/cronJobs.js"; 
 
 const connectDB = async () => {
   try {

@@ -1,71 +1,70 @@
-// src/controllers/chat.controller.js
-import OpenAI from "openai";
+import { classifyIntent, generalReply, formatRecommendationReply } from "../config/openaiService.js";
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message) {
-      return res.status(400).json({ success: false, message: "Message is required" });
-    }
+    if (!message) return res.status(400).json({ success: false, message: "Message is required" });
 
-    // Bước 1: Phân loại intent bằng AI
-    const intentResponse = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "Bạn là AI hỗ trợ đặt phòng khách sạn. Phân loại câu hỏi thành 'general' hoặc 'database'." },
-        { role: "user", content: message },
-      ],
-    });
-
-    const intent = intentResponse.choices[0].message.content.toLowerCase();
+    const intent = await classifyIntent(message);
     let reply;
 
-    // Bước 2: Nếu intent là database → truy vấn MongoDB
-    if (intent.includes("database")) {
-      if (message.toLowerCase().includes("khách sạn ở")) {
-        // Lấy city từ câu hỏi
-        const city = message.split("ở")[1]?.trim();
-        const hotels = await Hotel.find({ city, status: "active" }).limit(5);
+    if (intent === "database") {
+      const lowerMsg = message.toLowerCase();
 
-        if (!hotels || hotels.length === 0) {
-          reply = `Xin lỗi, hiện chưa có khách sạn nào ở ${city}.`;
-        } else {
-          reply = `Các khách sạn ở ${city}:\n` +
-            hotels.map(h => `- ${h.name}, giá từ ${h.cheapestPrice} ${h.currency || "VND"}`).join("\n");
+      // 1. Xử lý tìm Khách sạn (Dùng Regex linh hoạt hơn)
+      if (lowerMsg.includes("khách sạn") || lowerMsg.includes("ở")) {
+        // Trích xuất tên thành phố bỏ dấu câu cuối câu
+        const cityMatch = message.match(/(?:ở|tại)\s+([a-zA-ZÀ-ỹ\s]+)/i);
+        const city = cityMatch ? cityMatch[1].replace(/[?.,!]/g, "").trim() : null;
+
+        if (city) {
+          const hotels = await Hotel.find({ 
+            city: { $regex: city, $options: "i" }, // Tìm kiếm không phân biệt hoa thường
+            status: "active" 
+          }).limit(3);
+
+          if (hotels.length > 0) {
+            // Dùng hàm bổ trợ để AI viết câu trả lời dựa trên list hotels
+            reply = await formatRecommendationReply(hotels);
+            reply += "\n" + hotels.map(h => `- ${h.name}: ${h.cheapestPrice.toLocaleString()} VNĐ`).join("\n");
+          } else {
+            reply = `Tiếc quá, mình chưa tìm thấy khách sạn nào tại ${city}. Bạn thử khu vực khác nhé?`;
+          }
         }
-      } else if (message.toLowerCase().includes("phòng")) {
-        const rooms = await Room.find({ status: "active" }).limit(5);
-        reply = "Một số phòng hiện có:\n" +
-          rooms.map(r => `- ${r.name}, loại ${r.type}, giá ${r.finalPrice} VND`).join("\n");
-      } else if (message.toLowerCase().includes("booking")) {
-        const bookings = await Booking.find({ user: req.user._id })
-          .limit(3)
-          .populate("hotel room");
+      } 
+      
+      // 2. Xử lý tìm Phòng
+      else if (lowerMsg.includes("phòng")) {
+        const rooms = await Room.find({ status: "active" }).limit(3).populate("hotel");
+        reply = "Dưới đây là một số phòng trống 'hot' nhất hiện nay:\n" +
+                rooms.map(r => `- ${r.name} (${r.hotel?.name}): ${r.finalPrice.toLocaleString()} VNĐ`).join("\n");
+      }
 
-        reply = bookings.length === 0
-          ? "Bạn chưa có booking nào."
-          : "Các booking gần đây của bạn:\n" +
-            bookings.map(b => `- ${b.hotel.name}, phòng ${b.roomSnapshot.name}, từ ${b.checkIn.toDateString()} đến ${b.checkOut.toDateString()}, trạng thái: ${b.status}`).join("\n");
-      } else {
-        reply = "Tôi chưa hiểu rõ yêu cầu, bạn có thể nói cụ thể hơn về khách sạn, phòng hoặc booking.";
+      // 3. Xử lý Booking của tôi
+      else if (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking") || lowerMsg.includes("đặt")) {
+        const bookings = await Booking.find({ user: req.user._id })
+          .sort({ createdAt: -1 })
+          .limit(2)
+          .populate("hotel");
+
+        if (bookings.length === 0) {
+          reply = "Bạn hiện chưa có lịch đặt phòng nào trên hệ thống Coffee Stay.";
+        } else {
+          reply = "Lịch sử đặt phòng gần nhất của bạn đây:\n" +
+                  bookings.map(b => `- ${b.hotel?.name}, ngày: ${new Date(b.checkIn).toLocaleDateString()}, trạng thái: ${b.status}`).join("\n");
+        }
+      }
+
+      // Fallback nếu không khớp case nào trong database
+      if (!reply) {
+        reply = await generalReply(message);
       }
     } else {
-      // Bước 3: Nếu intent là general → trả lời bằng AI
-      const response = await client.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Bạn là chatbot hỗ trợ khách hàng về khách sạn và du lịch." },
-          { role: "user", content: message },
-        ],
-      });
-      reply = response.choices[0].message.content;
+      // Intent là general
+      reply = await generalReply(message);
     }
 
     res.json({ success: true, reply });
