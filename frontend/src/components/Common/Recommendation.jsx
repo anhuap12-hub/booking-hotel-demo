@@ -7,23 +7,25 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import StarIcon from "@mui/icons-material/Star";
 import { getRecommendations } from "../../api/recommend.api.js";
-import { Link as RouterLink } from "react-router-dom"; 
+import { Link as RouterLink } from "react-router-dom";
+
 export default function Recommendation() {
   const [hotels, setHotels] = useState([]);
   const [aiIntro, setAiIntro] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Logic lấy giá tốt nhất từ mảng rooms của Hotel
-  const getBestPrice = (rooms) => {
+  // Logic lấy thông tin giá tốt nhất từ mảng rooms
+  const getBestPriceInfo = (rooms) => {
     if (!Array.isArray(rooms) || rooms.length === 0) return null;
 
-    // Tìm phòng có giá sau khi giảm (finalPrice) là thấp nhất
-    return rooms.reduce((cheapest, current) => {
-      const currentFinal = current.price * (1 - (current.discount || 0) / 100);
-      const cheapestFinal = cheapest.price * (1 - (cheapest.discount || 0) / 100);
+    return rooms.reduce((best, current) => {
+      // Tính giá cuối cùng của từng phòng
+      const currentFinal = (current.price || 0) * (1 - (current.discount || 0) / 100);
+      const bestFinal = (best.price || 0) * (1 - (best.discount || 0) / 100);
       
-      return currentFinal < cheapestFinal ? current : cheapest;
+      // So sánh để lấy phòng rẻ nhất sau khi giảm giá
+      return currentFinal < bestFinal ? current : best;
     }, rooms[0]);
   };
 
@@ -35,7 +37,7 @@ export default function Recommendation() {
         setAiIntro(res.data.intro || "");
       } catch (err) {
         setError("Không thể tải gợi ý.");
-        console.error(err);
+        console.error("Error fetching recommendations:", err);
       } finally {
         setLoading(false);
       }
@@ -51,7 +53,7 @@ export default function Recommendation() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
-      {/* AI ADVISOR SECTION */}
+      {/* AI ADVISOR BANNER */}
       <Paper 
         elevation={0} 
         sx={{ 
@@ -85,9 +87,9 @@ export default function Recommendation() {
 
       <Grid container spacing={4}>
         {hotels.map((hotel) => {
-          const cheapestRoom = getBestPrice(hotel.rooms);
-          const hasDiscount = cheapestRoom?.discount > 0;
-          const finalPrice = cheapestRoom ? cheapestRoom.price * (1 - (cheapestRoom.discount || 0) / 100) : 0;
+          const bestRoom = getBestPriceInfo(hotel.rooms);
+          const finalPrice = bestRoom ? (bestRoom.price * (1 - (bestRoom.discount || 0) / 100)) : 0;
+          const hasDiscount = bestRoom?.discount > 0;
 
           return (
             <Grid item xs={12} sm={6} md={4} key={hotel._id}>
@@ -108,13 +110,18 @@ export default function Recommendation() {
                     component="img"
                     image={hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
                     alt={hotel.name}
-                    sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                    sx={{ 
+                      position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
+                      objectFit: "cover" // Đảm bảo ảnh không bị méo
+                    }}
                   />
-                  {/* Tag giảm giá nếu có */}
                   {hasDiscount && (
                     <Chip 
-                      label={`-${cheapestRoom.discount}%`} 
-                      sx={{ position: "absolute", top: 15, left: 15, bgcolor: "#E74C3C", color: "#fff", fontWeight: 700, borderRadius: '8px' }} 
+                      label={`-${bestRoom.discount}%`} 
+                      sx={{ 
+                        position: "absolute", top: 15, left: 15, 
+                        bgcolor: "#E74C3C", color: "#fff", fontWeight: 700, borderRadius: '8px' 
+                      }} 
                     />
                   )}
                   <Chip 
@@ -146,13 +153,13 @@ export default function Recommendation() {
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
                       <Box>
                         <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 600 }}>GIÁ TỪ</Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} alignItems="baseline">
                           <Typography variant="h6" fontWeight={800} color="#C2A56D">
-                            {finalPrice.toLocaleString()} <small style={{ fontSize: 12 }}>₫</small>
+                            {Math.round(finalPrice).toLocaleString()} <small style={{ fontSize: 12 }}>₫</small>
                           </Typography>
                           {hasDiscount && (
                             <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
-                              {cheapestRoom.price.toLocaleString()}
+                              {bestRoom.price.toLocaleString()}
                             </Typography>
                           )}
                         </Stack>
