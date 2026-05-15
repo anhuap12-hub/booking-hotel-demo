@@ -15,16 +15,20 @@ export default function Recommendation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Logic lấy thông tin giá tốt nhất từ mảng rooms
+  // Logic lấy thông tin giá tốt nhất - Đã cập nhật để xử lý Object rooms
   const getBestPriceInfo = (rooms) => {
     if (!Array.isArray(rooms) || rooms.length === 0) return null;
 
     return rooms.reduce((best, current) => {
-      // Tính giá cuối cùng của từng phòng
-      const currentFinal = (current.price || 0) * (1 - (current.discount || 0) / 100);
-      const bestFinal = (best.price || 0) * (1 - (best.discount || 0) / 100);
+      // Ép kiểu Number để đảm bảo tính toán chính xác
+      const currentPrice = Number(current.price) || 0;
+      const currentDiscount = Number(current.discount) || 0;
+      const currentFinal = currentPrice * (1 - currentDiscount / 100);
+
+      const bestPrice = Number(best.price) || 0;
+      const bestDiscount = Number(best.discount) || 0;
+      const bestFinal = bestPrice * (1 - bestDiscount / 100);
       
-      // So sánh để lấy phòng rẻ nhất sau khi giảm giá
       return currentFinal < bestFinal ? current : best;
     }, rooms[0]);
   };
@@ -88,8 +92,12 @@ export default function Recommendation() {
       <Grid container spacing={4}>
         {hotels.map((hotel) => {
           const bestRoom = getBestPriceInfo(hotel.rooms);
-          const finalPrice = bestRoom ? (bestRoom.price * (1 - (bestRoom.discount || 0) / 100)) : 0;
-          const hasDiscount = bestRoom?.discount > 0;
+          
+          // Tính toán an toàn
+          const originalPrice = Number(bestRoom?.price) || 0;
+          const discountPercent = Number(bestRoom?.discount) || 0;
+          const finalPrice = originalPrice * (1 - discountPercent / 100);
+          const hasDiscount = discountPercent > 0;
 
           return (
             <Grid item xs={12} sm={6} md={4} key={hotel._id}>
@@ -104,24 +112,17 @@ export default function Recommendation() {
                   "&:hover": { transform: "translateY(-10px)", boxShadow: "0 20px 50px rgba(0,0,0,0.12)" }
                 }}
               >
-                {/* ẢNH KHÁCH SẠN - CỐ ĐỊNH TỈ LỆ 3:2 */}
                 <Box sx={{ position: "relative", pt: "66.67%", overflow: "hidden" }}> 
                   <CardMedia
                     component="img"
                     image={hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
                     alt={hotel.name}
-                    sx={{ 
-                      position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
-                      objectFit: "cover" // Đảm bảo ảnh không bị méo
-                    }}
+                    sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
                   />
                   {hasDiscount && (
                     <Chip 
-                      label={`-${bestRoom.discount}%`} 
-                      sx={{ 
-                        position: "absolute", top: 15, left: 15, 
-                        bgcolor: "#E74C3C", color: "#fff", fontWeight: 700, borderRadius: '8px' 
-                      }} 
+                      label={`-${discountPercent}%`} 
+                      sx={{ position: "absolute", top: 15, left: 15, bgcolor: "#E74C3C", color: "#fff", fontWeight: 700, borderRadius: '8px' }} 
                     />
                   )}
                   <Chip 
@@ -155,11 +156,13 @@ export default function Recommendation() {
                         <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 600 }}>GIÁ TỪ</Typography>
                         <Stack direction="row" spacing={1} alignItems="baseline">
                           <Typography variant="h6" fontWeight={800} color="#C2A56D">
-                            {Math.round(finalPrice).toLocaleString()} <small style={{ fontSize: 12 }}>₫</small>
+                            {finalPrice > 0 
+                              ? `${Math.round(finalPrice).toLocaleString("vi-VN")} ₫` 
+                              : "Liên hệ"}
                           </Typography>
                           {hasDiscount && (
                             <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
-                              {bestRoom.price.toLocaleString()}
+                              {originalPrice.toLocaleString("vi-VN")}
                             </Typography>
                           )}
                         </Stack>
