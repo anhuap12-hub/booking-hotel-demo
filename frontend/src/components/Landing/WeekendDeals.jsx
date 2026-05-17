@@ -11,32 +11,44 @@ import {
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import { useMemo } from "react";
 
 const MotionPaper = motion(Paper);
 
 export default function WeekendDeals({ hotels = [] }) {
   const navigate = useNavigate();
 
-  // COPY NGUYÊN LOGIC THOÁNG CỦA TRANG DEALS
-  const displayHotels = [...hotels]
-    .map(h => {
-      // Tìm phòng có giá rẻ nhất (hoặc phòng đầu tiên) để làm giá gốc
-      const baseRoom = h.rooms?.[0] || { price: 0, discount: 0 };
-      
-      // Tìm mức discount lớn nhất trong các phòng (giống trang Deals hiện Badge)
-      const maxDiscount = h.rooms?.reduce((max, r) => Math.max(max, r.discount || 0), 0) || 0;
+  // ĐỒNG BỘ LOGIC 100% VỚI TRANG DEALS
+  const displayHotels = useMemo(() => {
+    return hotels
+      .map((hotel) => {
+        if (!hotel.rooms || hotel.rooms.length === 0) return null;
 
-      return {
-        ...h,
-        originalPrice: baseRoom.price,
-        // Tính giá sau giảm (Nếu trang Deals tính khác thì bạn chỉnh lại công thức này)
-        finalPrice: Math.round(baseRoom.price * (1 - maxDiscount / 100)),
-        discountPercent: maxDiscount
-      };
-    })
-    // Sắp xếp thằng có giảm giá lên đầu để không bị trống Badge ở hàng đầu
-    .sort((a, b) => b.discountPercent - a.discountPercent)
-    .slice(0, 5);
+        // 1. Chỉ lọc ra các phòng có giảm giá (Y hệt logic Deals)
+        const discountedRooms = hotel.rooms.filter((r) => r.discount > 0);
+        if (discountedRooms.length === 0) return null;
+
+        // 2. Tìm phòng có giá sau giảm thấp nhất để hiển thị "Giá từ..."
+        const bestRoom = discountedRooms.reduce((min, cur) => {
+          const curFinal = cur.price * (1 - cur.discount / 100);
+          const minFinal = min.price * (1 - min.discount / 100);
+          return curFinal < minFinal ? cur : min;
+        }, discountedRooms[0]);
+
+        // 3. Tìm mức discount lớn nhất của khách sạn để hiện Badge (Y hệt logic Deals)
+        const maxDiscount = Math.max(...discountedRooms.map((r) => r.discount));
+
+        return {
+          ...hotel,
+          originalPrice: bestRoom.price,
+          finalPrice: Math.round(bestRoom.price * (1 - bestRoom.discount / 100)),
+          discountPercent: maxDiscount, // Badge sẽ hiện % cao nhất
+        };
+      })
+      .filter(Boolean) // Loại bỏ các khách sạn không có giảm giá
+      .sort((a, b) => b.discountPercent - a.discountPercent) // Sắp xếp theo % giảm cao nhất
+      .slice(0, 5); // Lấy 5 anh em dẫn đầu
+  }, [hotels]);
 
   return (
     <Container maxWidth="lg" sx={{ mb: 12 }}>
@@ -104,18 +116,16 @@ export default function WeekendDeals({ hotels = [] }) {
                     objectFit: "cover",
                   }}
                 />
-                {/* Ép hiện Badge nếu discountPercent > 0 */}
-                {h.discountPercent > 0 && (
-                  <Chip 
-                    label={`-${h.discountPercent}%`}
-                    sx={{
-                      position: "absolute", top: 12, right: 12,
-                      bgcolor: "#E74C3C", color: "#fff",
-                      fontWeight: 900, borderRadius: "6px",
-                      fontSize: "0.7rem", height: "24px"
-                    }}
-                  />
-                )}
+                {/* Badge giảm giá y hệt trang Deals */}
+                <Chip 
+                  label={`-${h.discountPercent}%`}
+                  sx={{
+                    position: "absolute", top: 12, right: 12,
+                    bgcolor: "#E74C3C", color: "#fff",
+                    fontWeight: 900, borderRadius: "6px",
+                    fontSize: "0.7rem", height: "24px"
+                  }}
+                />
               </Box>
 
               <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
@@ -143,14 +153,11 @@ export default function WeekendDeals({ hotels = [] }) {
                   <Typography sx={{ fontSize: "0.65rem", color: "#72716E", fontWeight: 600 }}>GIÁ TỪ</Typography>
                   <Stack direction="row" spacing={1} alignItems="baseline">
                     <Typography sx={{ fontWeight: 800, color: "#1C1B19", fontSize: "1.05rem" }}>
-                      {(h.finalPrice || 0).toLocaleString("vi-VN")}₫
+                      {h.finalPrice.toLocaleString("vi-VN")}₫
                     </Typography>
-                    {/* Hiển thị giá gốc gạch ngang giống trang Deals */}
-                    {h.discountPercent > 0 && (
-                      <Typography sx={{ fontSize: "0.7rem", textDecoration: "line-through", color: "#A8A7A1" }}>
-                        {(h.originalPrice || 0).toLocaleString("vi-VN")}
-                      </Typography>
-                    )}
+                    <Typography sx={{ fontSize: "0.7rem", textDecoration: "line-through", color: "#A8A7A1" }}>
+                      {h.originalPrice.toLocaleString("vi-VN")}
+                    </Typography>
                   </Stack>
                 </Box>
               </Box>
