@@ -20,7 +20,7 @@ export default function AdminEditRoom() {
   // --- Form States ---
   const [name, setName] = useState("");
   const [type, setType] = useState("single");
-  const [price, setPrice] = useState(""); // Lưu dạng số để dễ nhập liệu
+  const [price, setPrice] = useState(""); 
   const [maxPeople, setMaxPeople] = useState(1);
   const [discount, setDiscount] = useState(0);
   const [status, setStatus] = useState("active");
@@ -34,7 +34,7 @@ export default function AdminEditRoom() {
   const [newAmenity, setNewAmenity] = useState("");
   const [existingPhotos, setExistingPhotos] = useState([]); 
   const [newPhotos, setNewPhotos] = useState([]); // File gốc để upload
-  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // URL để preview
+  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // Chứa {id, url} để preview chính xác
 
   // --- UI States ---
   const [loading, setLoading] = useState(true);
@@ -79,13 +79,19 @@ export default function AdminEditRoom() {
 
   const triggerToast = (msg, type = "success") => setSnackbar({ open: true, message: msg, severity: type });
 
-  // Xử lý ảnh giống EditHotel
+  // Logic xử lý chọn file giống EditHotel nhưng có thêm ID để tránh trùng lặp hiển thị
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
     
     setNewPhotos(prev => [...prev, ...imageFiles]);
-    const newPreviews = imageFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name }));
+
+    // Tạo preview với ID duy nhất (Khắc phục lỗi render 3 hình giống nhau)
+    const newPreviews = imageFiles.map(file => ({ 
+      id: `${file.name}-${Date.now()}-${Math.random()}`, 
+      url: URL.createObjectURL(file) 
+    }));
+    
     setNewPhotosPreview(prev => [...prev, ...newPreviews]);
     e.target.value = null;
   };
@@ -95,6 +101,7 @@ export default function AdminEditRoom() {
     if (isExisting) {
       setExistingPhotos(prev => prev.filter((_, i) => i !== index));
     } else {
+      // Giải phóng bộ nhớ của URL preview
       URL.revokeObjectURL(newPhotosPreview[index].url);
       setNewPhotos(prev => prev.filter((_, i) => i !== index));
       setNewPhotosPreview(prev => prev.filter((_, i) => i !== index));
@@ -116,7 +123,7 @@ export default function AdminEditRoom() {
     try {
       let newlyUploadedPhotos = [];
       
-      // 1. Upload ảnh mới nếu có (Giống Hotel)
+      // 1. Upload ảnh mới nếu có (Sử dụng imageCompression để tối ưu)
       if (newPhotos.length > 0) {
         const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1280, useWebWorker: true };
         const compressedFiles = await Promise.all(
@@ -154,7 +161,7 @@ export default function AdminEditRoom() {
     }
   };
 
-  if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress color="#1C1B19" /></Box>;
+  if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress sx={{ color: "#1C1B19" }} /></Box>;
 
   return (
     <Paper elevation={0} sx={{ maxWidth: 900, mx: "auto", p: 4, borderRadius: 3, border: "1px solid #E5E2DC" }}>
@@ -249,9 +256,10 @@ export default function AdminEditRoom() {
                     </Draggable>
                   ))}
                   {newPhotosPreview.map((photo, i) => (
-                    <Box key={i} sx={{ position: "relative" }}>
+                    // KEY ĐÃ ĐƯỢC SỬA THÀNH PHOTO.ID ĐỂ TRÁNH LỖI HIỂN THỊ
+                    <Box key={photo.id} sx={{ position: "relative" }}>
                       <Box component="img" src={photo.url} sx={{ width: 100, height: 80, objectFit: "cover", borderRadius: 1.5, border: "2px dashed #4caf50" }} />
-                      <IconButton onClick={() => handleDeletePhoto(i, false)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "error.main", color: "white", p: 0.2 }} size="small">
+                      <IconButton onClick={() => handleDeletePhoto(i, false)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "error.main", color: "white", p: 0.2, "&:hover": {bgcolor: "error.dark"} }} size="small">
                         <CloseIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Box>
@@ -273,7 +281,7 @@ export default function AdminEditRoom() {
             variant="contained" disabled={isSubmitting} onClick={handleSubmit}
             sx={{ bgcolor: "#1C1B19", color: "#C2A56D", px: 4, fontWeight: 700 }}
           >
-            {isSubmitting ? <CircularProgress size={24} /> : "Lưu thay đổi"}
+            {isSubmitting ? <CircularProgress size={24} sx={{ color: "#C2A56D" }} /> : "Lưu thay đổi"}
           </Button>
         </Stack>
       </Stack>
