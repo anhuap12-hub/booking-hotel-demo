@@ -6,7 +6,7 @@ import imageCompression from 'browser-image-compression';
 
 import {
   Stack, TextField, Button, MenuItem, Typography, Box, Paper, Divider, 
-  Chip, Grid, InputAdornment, CircularProgress, Snackbar, Alert
+  Chip, Grid, InputAdornment, CircularProgress, Snackbar, Alert, IconButton
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
