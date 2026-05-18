@@ -2,7 +2,7 @@
 import Booking from "../models/Booking.js";
 import Hotel from "../models/Hotel.js";
 import Review from "../models/Review.js";
-import { formatRecommendationReply } from "../config/openaiService.js";
+import { formatRecommendationReply } from "../config/geminiService.js";
 
 export const recommendHotels = async (req, res) => {
   try {
