@@ -19,7 +19,7 @@ import {
 
 export default function AdminRooms() {
   const { hotelId } = useParams();
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState([]); // Khởi tạo mảng rỗng
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,30 +27,31 @@ export default function AdminRooms() {
     const fetchData = async () => {
       try {
         const res = await getRoomsByHotel(hotelId);
-        // Backend trả về: { success: true, hotel: {...}, rooms: [...] }
-        setHotel(res.data.hotel);
-        setRooms(res.data.rooms);
+        // Kiểm tra an toàn dữ liệu từ API
+        if (res.data) {
+          setHotel(res.data.hotel || null);
+          setRooms(res.data.rooms || []);
+        }
       } catch (err) {
         console.error("Error fetching rooms:", err);
+        setRooms([]); // Fallback về mảng rỗng nếu lỗi
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    if (hotelId) fetchData();
   }, [hotelId]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa phòng này? Giá khách sạn sẽ được tính toán lại.")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn xóa phòng này?")) return;
     try {
       await deleteRoom(id);
       setRooms((prev) => prev.filter((r) => r._id !== id));
-      // Lưu ý: Backend đã tự chạy syncHotelPrice sau khi xóa
     } catch (err) {
-      alert("Không thể xóa phòng. Vui lòng thử lại."), err;
+      alert("Không thể xóa phòng. Vui lòng thử lại.");
     }
   };
 
-  // Hàm hiển thị tag trạng thái đẹp mắt
   const getStatusChip = (status) => {
     const config = {
       active: { label: "Sẵn sàng", color: "success" },
@@ -61,12 +62,11 @@ export default function AdminRooms() {
     return <Chip label={label} color={color} size="small" variant="outlined" />;
   };
 
-  if (loading)
-    return (
-      <Box display="flex" justifyContent="center" py={10}>
-        <CircularProgress sx={{ color: "#3E2C1C" }} />
-      </Box>
-    );
+  if (loading) return (
+    <Box display="flex" justifyContent="center" py={10}>
+      <CircularProgress sx={{ color: "#3E2C1C" }} />
+    </Box>
+  );
 
   return (
     <Stack spacing={3} sx={{ p: { xs: 2, md: 4 } }}>
@@ -76,7 +76,7 @@ export default function AdminRooms() {
             Danh sách phòng
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            Khách sạn: {hotel?.name}
+            Khách sạn: {hotel?.name || "Đang tải..."}
           </Typography>
         </Box>
         <Button
@@ -102,7 +102,8 @@ export default function AdminRooms() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rooms.length > 0 ? (
+            {/* Sử dụng optional chaining rooms?.length để an toàn tuyệt đối */}
+            {rooms?.length > 0 ? (
               rooms.map((room) => (
                 <TableRow key={room._id} hover>
                   <TableCell sx={{ fontWeight: 600 }}>{room.name}</TableCell>
