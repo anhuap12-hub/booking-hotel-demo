@@ -5,18 +5,22 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export const classifyIntent = async (message) => {
   try {
-    const prompt = `Bạn là trợ lý phân loại ý định người dùng cho hệ thống đặt phòng Coffee Stay.
-    Chỉ trả về DUY NHẤT một trong hai từ sau (không dấu câu, không viết hoa):
-    - 'database': Nếu khách muốn tìm khách sạn, phòng, xem đơn hàng/booking, giá cả.
-    - 'general': Nếu khách chào hỏi, hỏi về chính sách hoặc tán gẫu.
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("Missing GEMINI_API_KEY");
+      return "general";
+    }
+
+    const prompt = `Bạn là trợ lý phân loại ý định cho Coffee Stay. 
+    Trả về 'database' nếu khách tìm phòng/khách sạn/đơn hàng. 
+    Trả về 'general' nếu chào hỏi/tán gẫu. 
     Tin nhắn: "${message}"`;
 
     const result = await model.generateContent(prompt);
-    // Xử lý để lấy text sạch, loại bỏ dấu sao hoặc khoảng trắng thừa
     const text = result.response.text().toLowerCase().replace(/[^a-z]/g, "").trim();
+    
     return text.includes("database") ? "database" : "general";
   } catch (error) {
-    console.error("Gemini Classify Error:", error);
+    console.error("Gemini Classify Error Details:", error);
     return "general"; 
   }
 };
