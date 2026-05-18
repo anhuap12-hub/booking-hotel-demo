@@ -6,11 +6,10 @@ import imageCompression from 'browser-image-compression';
 
 import {
   Stack, TextField, Button, MenuItem, Typography, Box, Paper, Divider, 
-  Chip, Grid, InputAdornment, CircularProgress, Snackbar, Alert, IconButton
+  Chip, Grid, CircularProgress, Snackbar, Alert, IconButton
 } from "@mui/material";
 
 import CloseIcon from "@mui/icons-material/Close";
-import AddIcon from "@mui/icons-material/Add";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 export default function AdminEditRoom() {
@@ -28,13 +27,12 @@ export default function AdminEditRoom() {
   const [hotelId, setHotelId] = useState("");
   const [freeCancel, setFreeCancel] = useState(24);
   const [refund, setRefund] = useState(100);
-
-  // --- Photo & Amenities States ---
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
+
+  // --- Photo States (Đồng bộ logic Hotel nhưng thêm ID) ---
   const [existingPhotos, setExistingPhotos] = useState([]); 
-  const [newPhotos, setNewPhotos] = useState([]); // File gốc để upload
-  const [newPhotosPreview, setNewPhotosPreview] = useState([]); // Chứa {id, url} để preview chính xác
+  const [newPhotos, setNewPhotos] = useState([]); // Mảng chứa object { id, file }
 
   // --- UI States ---
   const [loading, setLoading] = useState(true);
@@ -47,7 +45,6 @@ export default function AdminEditRoom() {
         const res = await getRoomById(roomId);
         const room = res.data.data; 
         
-        if (!room) throw new Error("Không có dữ liệu phòng");
         setName(room.name || "");
         setType(room.type || "single");
         setPrice(room.price || "");
@@ -59,16 +56,8 @@ export default function AdminEditRoom() {
         setExistingPhotos(room.photos || []);
         setFreeCancel(room.cancellationPolicy?.freeCancelBeforeHours ?? 24);
         setRefund(room.cancellationPolicy?.refundPercent ?? 100);
-
-        const id = room.hotel?._id || room.hotel; 
-        if (id) {
-          setHotelId(id.toString());
-        } else {
-          console.warn("Cảnh báo: Phòng này không có Hotel ID gắn kèm!");
-        }
-
-      } catch (err) {
-        console.error(err);
+        setHotelId(room.hotel?._id || room.hotel || "");
+      } catch {
         triggerToast("Không thể tải thông tin phòng", "error");
       } finally {
         setLoading(false);
@@ -77,34 +66,36 @@ export default function AdminEditRoom() {
     fetchRoom();
   }, [roomId]);
 
+  // Giải phóng bộ nhớ preview khi unmount
+  useEffect(() => {
+    return () => newPhotos.forEach(p => URL.revokeObjectURL(p.preview));
+  }, [newPhotos]);
+
   const triggerToast = (msg, type = "success") => setSnackbar({ open: true, message: msg, severity: type });
 
-  // Logic xử lý chọn file giống EditHotel nhưng có thêm ID để tránh trùng lặp hiển thị
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
     
-    setNewPhotos(prev => [...prev, ...imageFiles]);
-
-    // Tạo preview với ID duy nhất (Khắc phục lỗi render 3 hình giống nhau)
-    const newPreviews = imageFiles.map(file => ({ 
-      id: `${file.name}-${Date.now()}-${Math.random()}`, 
-      url: URL.createObjectURL(file) 
+    // Tạo object mới chứa cả file và preview để quản lý bằng 1 ID duy nhất
+    const newItems = imageFiles.map(file => ({
+      id: `${file.name}-${Date.now()}-${Math.random()}`,
+      file: file,
+      preview: URL.createObjectURL(file)
     }));
-    
-    setNewPhotosPreview(prev => [...prev, ...newPreviews]);
+
+    setNewPhotos(prev => [...prev, ...newItems]);
     e.target.value = null;
   };
 
-  const handleDeletePhoto = (index, isExisting) => {
+  const handleDeletePhoto = (id, isExisting) => {
     if (!window.confirm("Bỏ ảnh này?")) return;
     if (isExisting) {
-      setExistingPhotos(prev => prev.filter((_, i) => i !== index));
+      setExistingPhotos(prev => prev.filter(p => p.public_id !== id));
     } else {
-      // Giải phóng bộ nhớ của URL preview
-      URL.revokeObjectURL(newPhotosPreview[index].url);
-      setNewPhotos(prev => prev.filter((_, i) => i !== index));
-      setNewPhotosPreview(prev => prev.filter((_, i) => i !== index));
+      const photoToDelete = newPhotos.find(p => p.id === id);
+      if (photoToDelete) URL.revokeObjectURL(photoToDelete.preview);
+      setNewPhotos(prev => prev.filter(p => p.id !== id));
     }
   };
 
@@ -118,27 +109,34 @@ export default function AdminEditRoom() {
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
       let newlyUploadedPhotos = [];
       
-      // 1. Upload ảnh mới nếu có (Sử dụng imageCompression để tối ưu)
       if (newPhotos.length > 0) {
         const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1280, useWebWorker: true };
         const compressedFiles = await Promise.all(
-          newPhotos.map(async (file) => {
-            try { return await imageCompression(file, options); } catch { return file; }
+          newPhotos.map(async (p) => {
+            try { 
+              const compressedBlob = await imageCompression(p.file, options);
+              return new File([compressedBlob], p.file.name, { type: p.file.type });
+            } catch { return p.file; }
           })
         );
 
         const uploadForm = new FormData();
         compressedFiles.forEach(file => uploadForm.append("photos", file));
         const uploadRes = await uploadBatch(uploadForm);
-        newlyUploadedPhotos = uploadRes.data.data; 
+        
+        // Map lại đúng format {url, public_id} giống Hotel
+        newlyUploadedPhotos = uploadRes.data.data.map(item => ({
+          url: item.url,
+          public_id: item.public_id
+        }));
       }
 
-      // 2. Build Payload
       const payload = {
         name, type, maxPeople, status, desc, amenities,
         price: Number(price),
@@ -173,21 +171,12 @@ export default function AdminEditRoom() {
             <Stack spacing={2.5}>
               <TextField label="Tên phòng" value={name} onChange={(e) => setName(e.target.value)} fullWidth />
               <Stack direction="row" spacing={2}>
-                <TextField 
-                  label="Giá (VNĐ)" type="number" value={price} 
-                  onChange={(e) => setPrice(e.target.value)} fullWidth 
-                />
-                <TextField 
-                  label="Giảm giá (%)" type="number" value={discount} 
-                  onChange={(e) => setDiscount(e.target.value)} fullWidth 
-                />
+                <TextField label="Giá (VNĐ)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} fullWidth />
+                <TextField label="Giảm giá (%)" type="number" value={discount} onChange={(e) => setDiscount(e.target.value)} fullWidth />
               </Stack>
               <Stack direction="row" spacing={2}>
                 <TextField select label="Loại phòng" value={type} onChange={(e) => setType(e.target.value)} fullWidth>
-                  <MenuItem value="single">Single</MenuItem>
-                  <MenuItem value="double">Double</MenuItem>
-                  <MenuItem value="suite">Suite</MenuItem>
-                  <MenuItem value="family">Family</MenuItem>
+                  {["single", "double", "suite", "family"].map(t => <MenuItem key={t} value={t}>{t.toUpperCase()}</MenuItem>)}
                 </TextField>
                 <TextField label="Sức chứa" type="number" value={maxPeople} onChange={(e) => setMaxPeople(e.target.value)} fullWidth />
               </Stack>
@@ -200,7 +189,6 @@ export default function AdminEditRoom() {
               <TextField select label="Trạng thái" value={status} onChange={(e) => setStatus(e.target.value)} fullWidth>
                 <MenuItem value="active">Hoạt động</MenuItem>
                 <MenuItem value="inactive">Tạm ngưng</MenuItem>
-                <MenuItem value="maintenance">Bảo trì</MenuItem>
               </TextField>
               
               <Box sx={{ p: 2, bgcolor: "#F9F8F6", borderRadius: 2, border: "1px solid #eee" }}>
@@ -220,12 +208,10 @@ export default function AdminEditRoom() {
             fullWidth size="small" placeholder="Thêm tiện ích (Enter)" 
             value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)}
             onKeyDown={(e) => {
-                if(e.key === 'Enter') {
+                if(e.key === 'Enter' && newAmenity.trim()) {
                     e.preventDefault();
-                    if(newAmenity.trim() && !amenities.includes(newAmenity.trim())) {
-                        setAmenities([...amenities, newAmenity.trim()]);
-                        setNewAmenity("");
-                    }
+                    if(!amenities.includes(newAmenity.trim())) setAmenities([...amenities, newAmenity.trim()]);
+                    setNewAmenity("");
                 }
             }}
           />
@@ -235,7 +221,7 @@ export default function AdminEditRoom() {
         </Box>
 
         <Box>
-          <Typography variant="subtitle2" fontWeight={700} mb={1}>Hình ảnh ({existingPhotos.length + newPhotosPreview.length})</Typography>
+          <Typography variant="subtitle2" fontWeight={700} mb={1}>Hình ảnh ({existingPhotos.length + newPhotos.length})</Typography>
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="room-photos" direction="horizontal">
               {(provided) => (
@@ -248,18 +234,17 @@ export default function AdminEditRoom() {
                       {(provided) => (
                         <Box ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} sx={{ position: "relative" }}>
                           <Box component="img" src={photo.url} sx={{ width: 100, height: 80, objectFit: "cover", borderRadius: 1.5, border: "2px solid #C2A56D" }} />
-                          <IconButton onClick={() => handleDeletePhoto(i, true)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "error.main", color: "white", p: 0.2, "&:hover": {bgcolor: "error.dark"} }} size="small">
+                          <IconButton onClick={() => handleDeletePhoto(photo.public_id, true)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "error.main", color: "white", p: 0.2, "&:hover": {bgcolor: "error.dark"} }} size="small">
                             <CloseIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Box>
                       )}
                     </Draggable>
                   ))}
-                  {newPhotosPreview.map((photo, i) => (
-                    // KEY ĐÃ ĐƯỢC SỬA THÀNH PHOTO.ID ĐỂ TRÁNH LỖI HIỂN THỊ
+                  {newPhotos.map((photo) => (
                     <Box key={photo.id} sx={{ position: "relative" }}>
-                      <Box component="img" src={photo.url} sx={{ width: 100, height: 80, objectFit: "cover", borderRadius: 1.5, border: "2px dashed #4caf50" }} />
-                      <IconButton onClick={() => handleDeletePhoto(i, false)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "error.main", color: "white", p: 0.2, "&:hover": {bgcolor: "error.dark"} }} size="small">
+                      <Box component="img" src={photo.preview} sx={{ width: 100, height: 80, objectFit: "cover", borderRadius: 1.5, border: "2px dashed #4caf50" }} />
+                      <IconButton onClick={() => handleDeletePhoto(photo.id, false)} sx={{ position: "absolute", top: -8, right: -8, bgcolor: "error.main", color: "white", p: 0.2 }} size="small">
                         <CloseIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Box>
