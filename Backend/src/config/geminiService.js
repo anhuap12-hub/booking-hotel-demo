@@ -35,12 +35,13 @@ export const generalReply = async (message) => {
   }
 };
 
-export const formatRecommendationReply = async (rooms) => {
+export const formatRecommendationReply = async (hotels) => {
   try {
-    const prompt = `Viết 1 câu dẫn dắt hào hứng giới thiệu danh sách phòng/khách sạn này cho khách: ${JSON.stringify(rooms)}.`;
+    // Sửa prompt để AI chỉ viết câu dẫn dắt, không liệt kê chi tiết
+    const prompt = `Tôi đã tìm thấy ${hotels.length} khách sạn phù hợp. Hãy viết MỘT câu dẫn dắt ngắn gọn, hào hứng (tối đa 20 từ) để giới thiệu danh sách bên dưới cho khách. Không liệt kê tên khách sạn trong câu này.`;
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
   } catch (error) {
-    return "Dưới đây là một số lựa chọn tuyệt vời dành cho bạn:";
+    return "Đây là những lựa chọn tuyệt vời nhất dành cho bạn:";
   }
 };
