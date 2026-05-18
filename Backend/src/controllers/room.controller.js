@@ -50,41 +50,80 @@ export const getRoomsByHotel = async (req, res) => {
 
 export const updateRoom = async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id);
-    if (!room) return res.status(404).json({ success: false, message: "Room not found" });
+    const roomId = req.params.id;
+
+    // 1. Kiểm tra phòng có tồn tại không
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy phòng để cập nhật" });
+    }
 
     const oldHotelId = room.hotel?.toString();
-    const newHotelId = req.body.hotel;
+    let newHotelId = req.body.hotel;
 
-    if (req.body.photos) {
+    // 2. NGĂN CHẶN LỖI CAST OBJECTID: Nếu hotel gửi lên là chuỗi rỗng, dùng lại ID cũ
+    if (newHotelId === "" || !newHotelId) {
+      newHotelId = oldHotelId;
+      req.body.hotel = oldHotelId; 
+    }
+
+    // 3. Xử lý xóa ảnh cũ trên Cloudinary (nếu ảnh đó không còn trong mảng photos mới)
+    if (req.body.photos && Array.isArray(req.body.photos)) {
       const photosToDelete = room.photos.filter(
         (oldPhoto) => !req.body.photos.find((newPhoto) => newPhoto.public_id === oldPhoto.public_id)
       );
+      
       if (photosToDelete.length > 0) {
-        await Promise.all(photosToDelete.map((photo) => cloudinary.uploader.destroy(photo.public_id)));
+        await Promise.all(
+          photosToDelete.map((photo) => cloudinary.uploader.destroy(photo.public_id))
+        );
       }
     }
 
+    // 4. Cập nhật dữ liệu phòng vào Database
     const updatedRoom = await Room.findByIdAndUpdate(
-      req.params.id,
+      roomId,
       { $set: req.body },
       { new: true, runValidators: true }
     );
 
+    // 5. Logic chuyển phòng từ Khách sạn A sang Khách sạn B (nếu có đổi hotelId)
     if (newHotelId && oldHotelId !== newHotelId) {
+      // Xóa phòng khỏi danh sách của khách sạn cũ
       if (oldHotelId) {
-        await Hotel.findByIdAndUpdate(oldHotelId, { $pull: { rooms: req.params.id } });
+        await Hotel.findByIdAndUpdate(oldHotelId, { $pull: { rooms: roomId } });
         await syncHotelPrice(oldHotelId);
       }
-      await Hotel.findByIdAndUpdate(newHotelId, { $addToSet: { rooms: req.params.id } });
+      // Thêm phòng vào danh sách của khách sạn mới
+      await Hotel.findByIdAndUpdate(newHotelId, { $addToSet: { rooms: roomId } });
       await syncHotelPrice(newHotelId);
     } else if (oldHotelId) {
+      // Nếu không đổi khách sạn, chỉ cần đồng bộ lại giá (phòng có thể đổi giá/trạng thái)
       await syncHotelPrice(oldHotelId);
     }
 
-    res.status(200).json({ success: true, data: updatedRoom });
+    res.status(200).json({ 
+      success: true, 
+      message: "Cập nhật phòng thành công", 
+      data: updatedRoom 
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Lỗi updateRoom:", error);
+
+    // Trả về lỗi 400 nếu lỗi do định dạng ID (CastError)
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Định dạng ID không hợp lệ: ${error.value}. Vui lòng kiểm tra lại ID khách sạn.` 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      message: "Lỗi server khi cập nhật phòng", 
+      error: error.message 
+    });
   }
 };
 

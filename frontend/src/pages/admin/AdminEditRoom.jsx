@@ -45,8 +45,9 @@ export default function AdminEditRoom() {
     const fetchRoom = async () => {
       try {
         const res = await getRoomById(roomId);
-        const room = res.data; // Giả định Backend trả về trực tiếp object hoặc .data
+        const room = res.data.data; 
         
+        if (!room) throw new Error("Không có dữ liệu phòng");
         setName(room.name || "");
         setType(room.type || "single");
         setPrice(room.price || "");
@@ -54,12 +55,20 @@ export default function AdminEditRoom() {
         setDiscount(room.discount || 0);
         setStatus(room.status || "active");
         setDesc(room.desc || "");
-        setHotelId(typeof room.hotel === "string" ? room.hotel : room.hotel?._id || "");
-        setFreeCancel(room.cancellationPolicy?.freeCancelBeforeHours || 24);
-        setRefund(room.cancellationPolicy?.refundPercent || 100);
         setAmenities(room.amenities || []);
         setExistingPhotos(room.photos || []);
+        setFreeCancel(room.cancellationPolicy?.freeCancelBeforeHours ?? 24);
+        setRefund(room.cancellationPolicy?.refundPercent ?? 100);
+
+        const id = room.hotel?._id || room.hotel; 
+        if (id) {
+          setHotelId(id.toString());
+        } else {
+          console.warn("Cảnh báo: Phòng này không có Hotel ID gắn kèm!");
+        }
+
       } catch (err) {
+        console.error(err);
         triggerToast("Không thể tải thông tin phòng", "error");
       } finally {
         setLoading(false);
