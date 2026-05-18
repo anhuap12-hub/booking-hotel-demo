@@ -1,3 +1,4 @@
+// src/controllers/chat.controller.js
 import { classifyIntent, generalReply, formatRecommendationReply } from "../config/openaiService.js";
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
@@ -8,68 +9,80 @@ export const chatWithAI = async (req, res) => {
     const { message } = req.body;
     if (!message) return res.status(400).json({ success: false, message: "Message is required" });
 
-    const intent = await classifyIntent(message);
-    let reply;
+    // Tăng tính ổn định bằng cách trim và lowercase
+    const lowerMsg = message.toLowerCase().trim();
+    
+    // Gọi AI phân loại intent
+    let intent;
+    try {
+      intent = await classifyIntent(message);
+    } catch (err) {
+      console.error("OpenAI Classify Error:", err);
+      intent = "general"; // Fail-safe: nếu AI lỗi, coi như chat thông thường
+    }
+
+    let reply = "";
 
     if (intent === "database") {
-      const lowerMsg = message.toLowerCase();
-
-      // 1. Xử lý tìm Khách sạn (Dùng Regex linh hoạt hơn)
+      // 1. Xử lý tìm Khách sạn theo Thành phố
       if (lowerMsg.includes("khách sạn") || lowerMsg.includes("ở")) {
-        // Trích xuất tên thành phố bỏ dấu câu cuối câu
         const cityMatch = message.match(/(?:ở|tại)\s+([a-zA-ZÀ-ỹ\s]+)/i);
         const city = cityMatch ? cityMatch[1].replace(/[?.,!]/g, "").trim() : null;
 
         if (city) {
           const hotels = await Hotel.find({ 
-            city: { $regex: city, $options: "i" }, // Tìm kiếm không phân biệt hoa thường
+            city: { $regex: city, $options: "i" },
             status: "active" 
           }).limit(3);
 
           if (hotels.length > 0) {
-            // Dùng hàm bổ trợ để AI viết câu trả lời dựa trên list hotels
-            reply = await formatRecommendationReply(hotels);
-            reply += "\n" + hotels.map(h => `- ${h.name}: ${h.cheapestPrice.toLocaleString()} VNĐ`).join("\n");
+            const aiFormatted = await formatRecommendationReply(hotels);
+            const hotelList = hotels.map(h => `- ${h.name}: ${h.cheapestPrice.toLocaleString()} VNĐ`).join("\n");
+            reply = `${aiFormatted}\n${hotelList}`;
           } else {
-            reply = `Tiếc quá, mình chưa tìm thấy khách sạn nào tại ${city}. Bạn thử khu vực khác nhé?`;
+            reply = `Tiếc quá, hệ thống hiện chưa có đối tác khách sạn nào tại ${city}. Bạn có muốn tìm ở khu vực lân cận không?`;
           }
         }
       } 
       
-      // 2. Xử lý tìm Phòng
-      else if (lowerMsg.includes("phòng")) {
+      // 2. Xử lý tìm Phòng (Nếu reply vẫn trống)
+      if (!reply && lowerMsg.includes("phòng")) {
         const rooms = await Room.find({ status: "active" }).limit(3).populate("hotel");
-        reply = "Dưới đây là một số phòng trống 'hot' nhất hiện nay:\n" +
-                rooms.map(r => `- ${r.name} (${r.hotel?.name}): ${r.finalPrice.toLocaleString()} VNĐ`).join("\n");
+        if (rooms.length > 0) {
+          reply = "Coffee Stay AI vừa tìm thấy một vài lựa chọn phòng trống dành cho bạn:\n" +
+                  rooms.map(r => `- ${r.name} (${r.hotel?.name}): ${r.finalPrice.toLocaleString()} VNĐ`).join("\n");
+        }
       }
 
       // 3. Xử lý Booking của tôi
-      else if (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking") || lowerMsg.includes("đặt")) {
+      if (!reply && (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking") || lowerMsg.includes("đặt"))) {
         const bookings = await Booking.find({ user: req.user._id })
           .sort({ createdAt: -1 })
           .limit(2)
           .populate("hotel");
 
         if (bookings.length === 0) {
-          reply = "Bạn hiện chưa có lịch đặt phòng nào trên hệ thống Coffee Stay.";
+          reply = "Lịch sử của bạn đang trống. Hãy đặt ngay một phòng tại Coffee Stay để trải nghiệm nhé!";
         } else {
-          reply = "Lịch sử đặt phòng gần nhất của bạn đây:\n" +
+          reply = "Đây là thông tin đặt phòng gần đây của bạn:\n" +
                   bookings.map(b => `- ${b.hotel?.name}, ngày: ${new Date(b.checkIn).toLocaleDateString()}, trạng thái: ${b.status}`).join("\n");
         }
       }
+    }
 
-      // Fallback nếu không khớp case nào trong database
-      if (!reply) {
-        reply = await generalReply(message);
-      }
-    } else {
-      // Intent là general
+    // FINAL FALLBACK: Nếu không khớp database hoặc là intent "general"
+    if (!reply) {
       reply = await generalReply(message);
     }
 
-    res.json({ success: true, reply });
+    return res.json({ success: true, reply });
+
   } catch (error) {
-    console.error("Chat error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Chat Controller Fatal Error:", error);
+    // Trả về một câu trả lời thân thiện thay vì báo lỗi hệ thống cho khách hàng
+    res.status(200).json({ 
+      success: true, 
+      reply: "Hệ thống AI đang bận xử lý dữ liệu một chút. Bạn có thể thử lại sau vài giây hoặc liên hệ nhân viên qua Zalo để được hỗ trợ tức thì nhé!" 
+    });
   }
 };

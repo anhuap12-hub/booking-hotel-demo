@@ -30,9 +30,9 @@ export default function AdminEditRoom() {
   const [amenities, setAmenities] = useState([]);
   const [newAmenity, setNewAmenity] = useState("");
 
-  // --- Photo States (Đồng bộ logic Hotel nhưng thêm ID) ---
+  // --- Photo States ---
   const [existingPhotos, setExistingPhotos] = useState([]); 
-  const [newPhotos, setNewPhotos] = useState([]); // Mảng chứa object { id, file }
+  const [newPhotos, setNewPhotos] = useState([]); 
 
   // --- UI States ---
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,6 @@ export default function AdminEditRoom() {
     fetchRoom();
   }, [roomId]);
 
-  // Giải phóng bộ nhớ preview khi unmount
   useEffect(() => {
     return () => newPhotos.forEach(p => URL.revokeObjectURL(p.preview));
   }, [newPhotos]);
@@ -77,7 +76,6 @@ export default function AdminEditRoom() {
     const selectedFiles = Array.from(e.target.files);
     const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
     
-    // Tạo object mới chứa cả file và preview để quản lý bằng 1 ID duy nhất
     const newItems = imageFiles.map(file => ({
       id: `${file.name}-${Date.now()}-${Math.random()}`,
       file: file,
@@ -88,14 +86,20 @@ export default function AdminEditRoom() {
     e.target.value = null;
   };
 
+  // --- LOGIC XÓA ẢNH ĐÃ SỬA ---
   const handleDeletePhoto = (id, isExisting) => {
-    if (!window.confirm("Bỏ ảnh này?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn bỏ ảnh này?")) return;
+
     if (isExisting) {
+      // Xóa ảnh cũ: Lọc chính xác theo public_id
       setExistingPhotos(prev => prev.filter(p => p.public_id !== id));
     } else {
-      const photoToDelete = newPhotos.find(p => p.id === id);
-      if (photoToDelete) URL.revokeObjectURL(photoToDelete.preview);
-      setNewPhotos(prev => prev.filter(p => p.id !== id));
+      // Xóa ảnh mới: Revoke URL trước khi xóa khỏi state để giải phóng RAM
+      setNewPhotos(prev => {
+        const target = prev.find(p => p.id === id);
+        if (target) URL.revokeObjectURL(target.preview);
+        return prev.filter(p => p.id !== id);
+      });
     }
   };
 
@@ -130,7 +134,6 @@ export default function AdminEditRoom() {
         compressedFiles.forEach(file => uploadForm.append("photos", file));
         const uploadRes = await uploadBatch(uploadForm);
         
-        // Map lại đúng format {url, public_id} giống Hotel
         newlyUploadedPhotos = uploadRes.data.data.map(item => ({
           url: item.url,
           public_id: item.public_id
