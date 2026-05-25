@@ -13,11 +13,11 @@ export const chatWithAI = async (req, res) => {
     const lowerMsg = message.toLowerCase().trim();
     const intent = await classifyIntent(message);
     
-    let replyText = ""; // Chứa lời nhắn của AI
-    let hotelData = []; // Chứa danh sách object khách sạn để hiện List
+    let replyText = "";
+    let hotelData = [];  
 
     if (intent === "database") {
-      // A. TÌM THEO ĐỊA DANH
+      // TÌM THEO ĐỊA DANH
       const locationMatch = message.match(/(?:ở|tại|khu vực|khách sạn)\s+([a-zA-ZÀ-ỹ\s]+)/i);
       const searchTerm = locationMatch ? locationMatch[1].trim() : null;
 
@@ -32,16 +32,14 @@ export const chatWithAI = async (req, res) => {
         }).limit(5);
 
         if (hotels.length > 0) {
-          // Lấy câu dẫn từ Gemini
           replyText = await formatRecommendationReply(hotels);
-          // Gán dữ liệu khách sạn vào mảng để Frontend vẽ Card
           hotelData = hotels; 
         } else {
           replyText = `Tiếc quá, Coffee Stay chưa có dữ liệu khách sạn tại "${searchTerm}". Bạn thử tìm khu vực khác nhé?`;
         }
       }
 
-      // B. XỬ LÝ BOOKING (Nếu không tìm địa danh)
+      // XỬ LÝ BOOKING 
       if (!replyText && (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking"))) {
         if (!req.user?._id) {
           replyText = "Bạn vui lòng đăng nhập để mình kiểm tra lịch sử đặt phòng nhé!";
@@ -55,7 +53,6 @@ export const chatWithAI = async (req, res) => {
             replyText = "Bạn chưa có đơn đặt phòng nào trên hệ thống.";
           } else {
             replyText = "Đây là các yêu cầu đặt phòng gần nhất của bạn:";
-            // Phần này có thể tùy biến trả về danh sách booking nếu bạn muốn làm Card cho Booking
           }
         }
       }
