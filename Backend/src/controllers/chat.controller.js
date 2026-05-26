@@ -11,21 +11,21 @@ export const chatWithAI = async (req, res) => {
     const { message } = req.body;
     if (!message) return res.status(400).json({ success: false, message: "Message is required" });
 
-    // 1. Dùng AI phân tích ý định và bóc tách thực thể (NER)
-    // classifyIntent bây giờ sẽ trả về 1 Object JSON chứa các criteria
+    // 1. Lấy thông tin người dùng từ request (đã qua middleware protect)
+    const userName = req.user?.username || "Anh/Chị";
+
+    // 2. Dùng AI phân tích ý định và bóc tách thực thể (NER)
     const analysis = await classifyIntent(message);
     
     let replyText = "";
     let hotelData = [];
 
-    // 2. Xử lý truy vấn Database dựa trên phân tích của AI
+    // 3. Xử lý truy vấn Database dựa trên phân tích của AI
     if (analysis.intent === "database") {
       let query = { status: "active" };
 
-      // Lọc theo Loại hình (Hotel, Resort, Homestay...)
       if (analysis.type) query.type = analysis.type;
 
-      // Lọc theo Địa điểm
       if (analysis.location) {
         const searchSlug = toSlug(analysis.location);
         query.$or = [
@@ -34,24 +34,21 @@ export const chatWithAI = async (req, res) => {
         ];
       }
 
-      // Lọc theo Khoảng giá (CheapestPrice trên Hotel)
       if (analysis.maxPrice || analysis.minPrice) {
         query.cheapestPrice = {};
         if (analysis.maxPrice) query.cheapestPrice.$lte = analysis.maxPrice;
         if (analysis.minPrice) query.cheapestPrice.$gte = analysis.minPrice;
       }
 
-      // Lọc theo Tiện nghi (Amenities) - Dùng $in để linh hoạt hơn
       if (analysis.amenities && analysis.amenities.length > 0) {
-        query.amenities = { $in: analysis.amenities.map(a => new RegExp(a, "i")) };
+        // Sử dụng $all để tìm khách sạn có đầy đủ các tiện ích yêu cầu
+        query.amenities = { $all: analysis.amenities.map(a => new RegExp(a, "i")) };
       }
 
-      // Lọc theo Đánh giá (Rating)
       if (analysis.rating) {
         query.rating = { $gte: analysis.rating };
       }
 
-      // Lọc theo Số lượng khách (Kết nối sang Model Room)
       if (analysis.guests) {
         const eligibleRooms = await Room.find({ 
           maxPeople: { $gte: analysis.guests },
@@ -62,28 +59,30 @@ export const chatWithAI = async (req, res) => {
         query._id = { $in: hotelIds };
       }
 
-      // Thực hiện tìm kiếm khách sạn
       const hotels = await Hotel.find(query)
         .sort({ rating: -1, cheapestPrice: 1 })
         .limit(6);
 
       if (hotels.length > 0) {
-        // Tạo câu trả lời thông minh dựa trên kết quả tìm thấy
         const count = hotels.length;
         const loc = analysis.location ? ` tại ${analysis.location}` : "";
-        replyText = `Dạ, Coffee Stay tìm thấy ${count} chỗ nghỉ${loc} phù hợp với yêu cầu của Anh/Chị. Mời Anh/Chị tham khảo ạ:`;
+        // Gọi tên người dùng trong phản hồi tìm kiếm
+        replyText = `Dạ ${userName}, Coffee Stay đã tìm thấy ${count} chỗ nghỉ${loc} phù hợp với yêu cầu của mình. Mời mình tham khảo ạ:`;
         hotelData = hotels;
       } else {
-        replyText = `Tiếc quá, hiện tại em chưa tìm thấy chỗ nghỉ nào khớp hoàn toàn với yêu cầu của Anh/Chị. Anh/Chị thử điều chỉnh lại khu vực hoặc khoảng giá xem sao nhé!`;
+        // Gọi tên người dùng khi không tìm thấy kết quả
+        replyText = `Tiếc quá ${userName} ơi, hiện tại em chưa tìm thấy chỗ nghỉ nào khớp hoàn toàn với yêu cầu của mình. Bạn thử điều chỉnh lại khu vực hoặc khoảng giá xem sao nhé!`;
       }
     }
 
-    // 3. Xử lý kiểm tra Đơn đặt phòng (Booking)
+    // 4. Xử lý kiểm tra Đơn đặt phòng (Booking)
     const lowerMsg = message.toLowerCase();
-    if (!replyText && (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking") || lowerMsg.includes("lịch sử"))) {
+    const isBookingQuery = lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking") || lowerMsg.includes("lịch sử");
+    
+    if (!replyText && isBookingQuery) {
       const userId = req.user?._id || req.user?.id;
       if (!userId) {
-        replyText = "Anh/Chị vui lòng đăng nhập để hệ thống có thể kiểm tra lịch sử đặt phòng nhé!";
+        replyText = "Dạ, bạn vui lòng đăng nhập để hệ thống có thể kiểm tra lịch sử đặt phòng giúp mình nhé!";
       } else {
         const bookings = await Booking.find({ user: userId })
           .sort({ createdAt: -1 })
@@ -91,18 +90,17 @@ export const chatWithAI = async (req, res) => {
           .populate("hotel");
 
         if (bookings.length === 0) {
-          replyText = "Dạ, hiện tại Anh/Chị chưa có đơn đặt phòng nào trên hệ thống Coffee Stay ạ.";
+          replyText = `Dạ ${userName}, hiện tại mình chưa có đơn đặt phòng nào trên hệ thống Coffee Stay ạ.`;
         } else {
-          replyText = "Đây là thông tin các yêu cầu đặt phòng gần nhất của Anh/Chị:";
+          replyText = `Chào ${userName}, đây là thông tin các yêu cầu đặt phòng gần nhất của mình:`;
         }
       }
     }
 
-    // 4. Phản hồi chung (Tán gẫu/Chào hỏi) nếu không rơi vào các trường hợp trên
-   if (!replyText) {
-  const userName = req.user?.username || "Anh/Chị"; 
-  replyText = await generalReply(message, userName); 
-}
+    // 5. Phản hồi chung (Tán gẫu/Chào hỏi) nếu không rơi vào các trường hợp trên
+    if (!replyText) {
+      replyText = await generalReply(message, userName);
+    }
 
     return res.json({ 
       success: true, 
@@ -113,9 +111,11 @@ export const chatWithAI = async (req, res) => {
 
   } catch (error) {
     console.error("Chat Error:", error);
+    // Lấy lại tên người dùng cho phần catch để đồng bộ
+    const userName = req.user?.username || "Anh/Chị";
     res.json({ 
       success: true, 
-      reply: "Dạ, hệ thống AI đang bận, Anh/Chị vui lòng gửi lại tin nhắn sau ít giây nhé!",
+      reply: `Dạ ${userName}, hệ thống AI đang bận một chút, mình vui lòng gửi lại tin nhắn sau ít giây nhé!`,
       hotels: [] 
     });
   }
