@@ -121,46 +121,57 @@ export default function ChatSupport() {
 
                       {/* Hotel Carousel - Hiển thị khi bot trả về danh sách khách sạn */}
                       {m.hotels?.length > 0 && (
-                        <Box sx={{ 
-                          display: "flex", gap: 2, overflowX: "auto", pb: 1.5, mt: 1.5, width: "100%",
-                          "&::-webkit-scrollbar": { height: 6 },
-                          "&::-webkit-scrollbar-thumb": { backgroundColor: "rgba(194, 165, 109, 0.4)", borderRadius: 10 }
-                        }}>
-                          {m.hotels.map((h) => (
-                            <Paper key={h._id} onClick={() => { setOpen(false); navigate(`/hotels/${h._id}`); }} elevation={2}
-                              sx={{ 
-                                minWidth: 240, borderRadius: 3, overflow: "hidden", cursor: "pointer", bgcolor: "#fff",
-                                border: "1px solid rgba(0,0,0,0.05)", position: "relative",
-                                "&:hover": { transform: "translateY(-4px)", boxShadow: "0 6px 16px rgba(0,0,0,0.1)" }, 
-                                transition: "0.3s cubic-bezier(0.4, 0, 0.2, 1)" 
-                              }}
-                            >
-                              {/* Badge loại hình */}
-                              <Box sx={{
-                                position: "absolute", top: 8, left: 8, bgcolor: "rgba(28, 27, 25, 0.8)", color: "#C2A56D",
-                                px: 1, py: 0.3, borderRadius: 1.5, fontSize: 9, fontWeight: 700, textTransform: "uppercase", zIndex: 1
-                              }}>
-                                {h.type || 'Hotel'}
-                              </Box>
+  <Box sx={{ 
+    display: "flex", gap: 1.5, overflowX: "auto", pb: 1, mt: 1.5, width: "100%",
+    "&::-webkit-scrollbar": { height: 4 },
+    "&::-webkit-scrollbar-thumb": { backgroundColor: "rgba(194, 165, 109, 0.3)", borderRadius: 10 }
+  }}>
+    {m.hotels.map((h) => (
+      <Paper key={h._id} onClick={() => { setOpen(false); navigate(`/hotels/${h._id}`); }} elevation={1}
+        sx={{ 
+          minWidth: 200, // Thu nhỏ chiều rộng card
+          maxWidth: 200,
+          borderRadius: 2.5, overflow: "hidden", cursor: "pointer", bgcolor: "#fff",
+          border: "1px solid #EAE7E0", position: "relative",
+          "&:hover": { transform: "translateY(-2px)", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }, 
+          transition: "0.2s ease-in-out" 
+        }}
+      >
+        {/* Badge loại hình - Thu nhỏ lại */}
+        <Box sx={{
+          position: "absolute", top: 6, left: 6, bgcolor: "rgba(28, 27, 25, 0.8)", color: "#C2A56D",
+          px: 0.8, py: 0.2, borderRadius: 1, fontSize: 8, fontWeight: 700, textTransform: "uppercase", zIndex: 1
+        }}>
+          {h.type || 'Hotel'}
+        </Box>
 
-                              <img src={h.photos?.[0]?.url} alt={h.name} style={{ width: "100%", height: 130, objectFit: "cover" }} />
-                              
-                              <Box sx={{ p: 1.5 }}>
-                                <Typography fontSize={14} fontWeight={700} noWrap sx={{ color: "#1C1B19", mb: 0.5 }}>{h.name}</Typography>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                  <Typography fontSize={11} color="text.secondary">{h.city}</Typography>
-                                  <Typography fontSize={14} fontWeight={700} color="#C2A56D">{h.cheapestPrice?.toLocaleString()}đ</Typography>
-                                </Stack>
-                                <Button fullWidth size="small" variant="contained"
-                                  sx={{ mt: 1.5, fontSize: 11, bgcolor: "#1C1B19", borderRadius: 2, textTransform: "none", "&:hover": { bgcolor: "#C2A56D" } }}
-                                >
-                                  Xem chi tiết
-                                </Button>
-                              </Box>
-                            </Paper>
-                          ))}
-                        </Box>
-                      )}
+        <img src={h.photos?.[0]?.url} alt={h.name} style={{ width: "100%", height: 100, objectFit: "cover" }} />
+        
+        <Box sx={{ p: 1 }}>
+          <Typography fontSize={13} fontWeight={700} noWrap sx={{ color: "#1C1B19", mb: 0.2 }}>
+            {h.name}
+          </Typography>
+          
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+            <Typography fontSize={10} color="text.secondary">{h.city}</Typography>
+            <Typography fontSize={12} fontWeight={700} color="#C2A56D">
+              {h.cheapestPrice?.toLocaleString()}đ
+            </Typography>
+          </Stack>
+
+          <Button fullWidth size="small" variant="contained"
+            sx={{ 
+              py: 0.5, fontSize: 10, bgcolor: "#1C1B19", borderRadius: 1.5, 
+              textTransform: "none", "&:hover": { bgcolor: "#C2A56D" } 
+            }}
+          >
+            Xem ngay
+          </Button>
+        </Box>
+      </Paper>
+    ))}
+  </Box>
+)}
                     </Box>
                   ))}
                   

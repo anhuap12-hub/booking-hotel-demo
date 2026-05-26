@@ -18,6 +18,7 @@ req.user = {
   _id: decoded.id, 
   id: decoded.id,  
   role: decoded.role,
+  username: decoded.username
 };
     next();
   } catch (error) {

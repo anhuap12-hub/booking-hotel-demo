@@ -104,13 +104,13 @@ export const login = async (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: user._id, role: user.role, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      { id: user._id },
+      { id: user._id,  },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "7d" }
     );
@@ -174,7 +174,7 @@ export const refreshToken = async (req, res) => {
       }
 
       const newAccessToken = jwt.sign(
-        { id: user._id, role: user.role },
+        { id: user._id, role: user.role, username: user.username },
         process.env.JWT_SECRET,
         { expiresIn: "15m" }
       );

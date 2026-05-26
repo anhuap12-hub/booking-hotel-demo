@@ -5,29 +5,42 @@ const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
 
 export const classifyIntent = async (message) => {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      console.error("Missing GEMINI_API_KEY");
-      return "general";
-    }
+    const prompt = `
+      Bạn là bộ não phân tích ý định khách hàng cho hệ thống Coffee Stay. 
+      Nhiệm vụ: Phân tích tin nhắn và trả về JSON chuẩn.
 
-    const prompt = `Bạn là trợ lý phân loại ý định cho Coffee Stay. 
-    Trả về 'database' nếu khách tìm phòng/khách sạn/đơn hàng. 
-    Trả về 'general' nếu chào hỏi/tán gẫu. 
-    Tin nhắn: "${message}"`;
+      Các trường thông tin cần trích xuất:
+      - intent: "database" (nếu tìm phòng/khách sạn/xem đơn hàng) hoặc "general" (nếu chào hỏi/tán gẫu).
+      - location: Địa danh khách muốn đi (ví dụ: "Hà Nội", "Đà Lạt").
+      - type: Loại hình ("hotel", "resort", "villa", "homestay").
+      - maxPrice: Giá tối đa khách có thể trả (số).
+      - minPrice: Giá tối thiểu (số).
+      - amenities: Mảng các tiện nghi khách cần (ví dụ: ["Wifi", "Hồ bơi", "Điều hòa"]).
+      - guests: Số lượng người (số).
+      - rating: Mức đánh giá tối thiểu từ 1-10 (số).
+
+      Tin nhắn: "${message}"
+
+      CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH. 
+      Ví dụ: {"intent": "database", "location": "Hà Nội", "maxPrice": 2000000, "amenities": ["Hồ bơi"]}
+    `;
 
     const result = await model.generateContent(prompt);
-    const text = result.response.text().toLowerCase().replace(/[^a-z]/g, "").trim();
+    const text = result.response.text().trim();
     
-    return text.includes("database") ? "database" : "general";
+    // Tìm và trích xuất JSON trong trường hợp AI trả về kèm markdown
+    const jsonMatch = text.match(/\{.*\}/s);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : { intent: "general" };
   } catch (error) {
-    console.error("Gemini Classify Error Details:", error);
-    return "general"; 
+    console.error("Gemini Parse Error:", error);
+    return { intent: "general" };
   }
 };
 
-export const generalReply = async (message) => {
+export const generalReply = async (message, userName = "Anh/Chị") => {
   try {
-    const prompt = `Bạn là Coffee Stay Concierge, trợ lý ảo thân thiện. Trả lời ngắn gọn, lịch sự tin nhắn này (tối đa 2 câu): "${message}"`;
+    const prompt = `Bạn là Coffee Stay Concierge. Hãy trả lời thân thiện khách hàng tên là ${userName}. 
+    Trả lời ngắn gọn, lịch sự (tối đa 2 câu): "${message}"`;
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
   } catch (error) {
