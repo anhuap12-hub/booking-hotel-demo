@@ -17,53 +17,89 @@ export const chatWithAI = async (req, res) => {
     let hotelData = [];  
 
     if (intent === "database") {
-      // TÌM THEO ĐỊA DANH
-      const locationMatch = message.match(/(?:ở|tại|khu vực|khách sạn)\s+([a-zA-ZÀ-ỹ\s]+)/i);
+      // 1. Trích xuất và chuẩn hóa Loại hình (Sửa lỗi homstay/homestay)
+      const typeMatch = message.match(/(resort|khách sạn|hotel|villa|homestay|homstay)/i);
+      let searchType = typeMatch ? typeMatch[1].toLowerCase() : null;
+      
+      const typeMapping = {
+        "khách sạn": "hotel", "hotel": "hotel", "resort": "resort",
+        "villa": "villa", "homestay": "homestay", "homstay": "homestay"
+      };
+      const dbType = typeMapping[searchType] || null;
+
+      // 2. Trích xuất địa danh
+      const locationMatch = message.match(/(?:ở|tại|khu vực)\s+([a-zA-ZÀ-ỹ\s]+)/i);
       const searchTerm = locationMatch ? locationMatch[1].trim() : null;
 
-      if (searchTerm) {
-        const searchSlug = toSlug(searchTerm);
-        const hotels = await Hotel.find({
-          status: "active",
-          $or: [
-            { citySlug: { $regex: searchSlug, $options: "i" } },
-            { searchText: { $regex: searchSlug, $options: "i" } }
-          ]
-        }).limit(5);
-
-        if (hotels.length > 0) {
-          replyText = await formatRecommendationReply(hotels);
-          hotelData = hotels; 
-        } else {
-          replyText = `Tiếc quá, Coffee Stay chưa có dữ liệu khách sạn tại "${searchTerm}". Bạn thử tìm khu vực khác nhé?`;
-        }
+      // 3. MỚI: Lấy danh sách Amenities ĐỘNG từ database
+      const dynamicAmenities = await Hotel.distinct("amenities");
+      
+      let foundAmenities = [];
+      if (dynamicAmenities.length > 0) {
+        dynamicAmenities.forEach(amenity => {
+          // Nếu trong tin nhắn có chứa tên tiện ích (không phân biệt hoa thường)
+          const regex = new RegExp(amenity, "i");
+          if (regex.test(lowerMsg)) {
+            foundAmenities.push(amenity);
+          }
+        });
       }
 
-      // XỬ LÝ BOOKING 
-      if (!replyText && (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking"))) {
-        if (!req.user?._id) {
-          replyText = "Bạn vui lòng đăng nhập để mình kiểm tra lịch sử đặt phòng nhé!";
-        } else {
-          const bookings = await Booking.find({ user: req.user._id })
-            .sort({ createdAt: -1 })
-            .limit(3)
-            .populate("hotel");
+      // 4. Xây dựng Query tìm kiếm
+      let query = { status: "active" };
 
-          if (bookings.length === 0) {
-            replyText = "Bạn chưa có đơn đặt phòng nào trên hệ thống.";
-          } else {
-            replyText = "Đây là các yêu cầu đặt phòng gần nhất của bạn:";
-          }
-        }
+      if (dbType) query.type = dbType;
+      
+      if (searchTerm) {
+        const searchSlug = toSlug(searchTerm);
+        query.$or = [
+          { citySlug: { $regex: searchSlug, $options: "i" } },
+          { searchText: { $regex: searchSlug, $options: "i" } }
+        ];
+      }
+
+      // Tìm kiếm theo các tiện ích đã trích xuất được từ database
+      if (foundAmenities.length > 0) {
+        query.amenities = { $all: foundAmenities };
+      }
+
+      // 5. Thực hiện truy vấn (Lấy tối đa 6 Card)
+      const hotels = await Hotel.find(query).limit(6);
+
+      if (hotels.length > 0) {
+        const typeText = searchType || "chỗ nghỉ";
+        const locationText = searchTerm ? ` tại ${searchTerm}` : "";
+        const amenityText = foundAmenities.length > 0 ? ` có ${foundAmenities.join(", ")}` : "";
+        
+        replyText = `Đây là danh sách ${typeText}${locationText}${amenityText} phù hợp nhất cho Anh/Chị:`;
+        hotelData = hotels; 
+      } else {
+        const typeText = searchType || "chỗ nghỉ";
+        const locationText = searchTerm ? ` ở ${searchTerm}` : "";
+        const amenityText = foundAmenities.length > 0 ? ` có ${foundAmenities.join(", ")}` : "";
+        
+        replyText = `Dạ, hiện tại Coffee Stay chưa có ${typeText}${locationText}${amenityText}. Anh/Chị thử thay đổi yêu cầu xem sao nhé!`;
+        hotelData = [];
       }
     }
 
-    // C. PHẢN HỒI CHUNG
+    // --- Giữ nguyên logic xử lý Booking và Phản hồi chung của Anh ---
+    if (!replyText && (lowerMsg.includes("đơn hàng") || lowerMsg.includes("booking"))) {
+      if (!req.user?._id) {
+        replyText = "Bạn vui lòng đăng nhập để mình kiểm tra lịch sử đặt phòng nhé!";
+      } else {
+        const bookings = await Booking.find({ user: req.user._id })
+          .sort({ createdAt: -1 })
+          .limit(3)
+          .populate("hotel");
+        replyText = bookings.length === 0 ? "Bạn chưa có đơn đặt phòng nào." : "Đây là các yêu cầu đặt phòng gần nhất của bạn:";
+      }
+    }
+
     if (!replyText) {
       replyText = await generalReply(message);
     }
 
-    // QUAN TRỌNG: Trả về Object gồm cả chữ và mảng dữ liệu
     return res.json({ 
       success: true, 
       reply: replyText, 
@@ -72,6 +108,6 @@ export const chatWithAI = async (req, res) => {
 
   } catch (error) {
     console.error("Chat Error:", error);
-    res.json({ success: true, reply: "Hệ thống AI đang gặp chút gián đoạn." });
+    res.json({ success: true, reply: "Hệ thống AI đang bận một chút, Anh thử lại nhé!" });
   }
 };
