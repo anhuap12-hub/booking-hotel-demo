@@ -56,7 +56,6 @@ export default function Recommendation() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }} ref={containerRef}>
-      {/* HEADER: ĐÃ CHỈNH ICON NGANG HÀNG */}
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 4 }}>
         <SmartToyIcon sx={{ color: "#C2A56D", fontSize: 28 }} />
         <Box>
@@ -90,84 +89,108 @@ export default function Recommendation() {
                 bgcolor: "#1C1B19",
                 color: "#F1F0EE",
                 boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
-                minHeight: { md: 300 }, // THU NHỎ CHIỀU CAO CARD
+                // CHIỀU CAO CỐ ĐỊNH TẠI ĐÂY
+                height: { md: "320px" }, 
                 border: "1px solid rgba(194, 165, 109, 0.1)",
               }}
             >
-              {/* CONTENT SECTION */}
-              <Box sx={{ p: { xs: 3, md: 5 }, flex: 1.2, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                  <LocationOnIcon sx={{ fontSize: 16, color: "#C2A56D" }} />
-                  <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(241,240,238,0.7)" }}>
-                    {hotel.city}
-                  </Typography>
-                  <Chip 
-                    icon={<StarsIcon sx={{ fontSize: "12px !important", color: "#1C1B19 !important" }} />}
-                    label={hotel.rating || "5.0"} 
-                    size="small"
-                    sx={{ bgcolor: "#C2A56D", color: "#1C1B19", fontWeight: 800, height: 20, fontSize: 10 }}
-                  />
-                </Stack>
-
-                <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: { xs: 24, md: 32 }, fontWeight: 900, mb: 1, lineHeight: 1.2 }}>
-                  {hotel.name}
-                </Typography>
-
-                {/* MÔ TẢ THỰC TẾ CỦA KHÁCH SẠN (Giới hạn 3 dòng) */}
-                <Typography sx={{ 
-                  fontSize: "0.875rem", 
-                  color: "rgba(241,240,238,0.5)", 
-                  mb: 3, 
-                  fontWeight: 300,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  lineHeight: 1.6
-                }}>
-                  {hotel.description || "Khám phá không gian nghỉ dưỡng sang trọng với dịch vụ đẳng cấp và tầm nhìn tuyệt đẹp tại điểm đến lý tưởng này."}
-                </Typography>
-
-                <Stack direction="row" alignItems="center" spacing={3} sx={{ mb: 3 }}>
-                  <Box>
-                    <Typography variant="caption" sx={{ color: "#C2A56D", fontSize: "0.65rem", fontWeight: 700, display: "block" }}>GIÁ TỪ</Typography>
-                    <Typography variant="h5" fontWeight={900}>
-                      {finalPrice > 0 ? `${Math.round(finalPrice).toLocaleString("vi-VN")} ₫` : "Liên hệ"}
+              {/* CONTENT SECTION: CHIẾM 60% CHIỀU RỘNG */}
+              <Box sx={{ 
+                p: { xs: 3, md: 4 }, 
+                flex: 1.5, 
+                display: "flex", 
+                flexDirection: "column", 
+                justifyContent: "space-between", // Giúp các phần tử giãn đều trong khung cố định
+                height: "100%"
+              }}>
+                <Box>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <LocationOnIcon sx={{ fontSize: 16, color: "#C2A56D" }} />
+                    <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(241,240,238,0.7)" }}>
+                      {hotel.city}
                     </Typography>
-                  </Box>
-                  {discount > 0 && (
-                    <Chip label={`-${discount}%`} size="small" sx={{ bgcolor: "#E74C3C", color: "#fff", fontWeight: 900, borderRadius: "6px" }} />
-                  )}
-                </Stack>
+                    <Chip 
+                      icon={<StarsIcon sx={{ fontSize: "12px !important", color: "#1C1B19 !important" }} />}
+                      label={hotel.rating || "5.0"} 
+                      size="small"
+                      sx={{ bgcolor: "#C2A56D", color: "#1C1B19", fontWeight: 800, height: 20, fontSize: 10 }}
+                    />
+                  </Stack>
 
-                <Button
-                  onClick={() => navigate(`/hotels/${hotel._id}`)}
-                  endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
-                  sx={{
-                    alignSelf: "flex-start",
-                    px: 4, py: 1,
-                    borderRadius: "100px",
-                    bgcolor: "#C2A56D",
-                    color: "#1C1B19",
-                    fontWeight: 800,
-                    fontSize: "0.8rem",
-                    "&:hover": { bgcolor: "#fff", transform: "translateX(5px)" },
-                    transition: "0.3s"
-                  }}
-                >
-                  Xem chi tiết
-                </Button>
+                  <Typography sx={{ 
+                    fontFamily: "'Playfair Display', serif", 
+                    fontSize: { xs: 22, md: 28 }, 
+                    fontWeight: 900, 
+                    mb: 1, 
+                    lineHeight: 1.2,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden"
+                  }}>
+                    {hotel.name}
+                  </Typography>
+
+                  <Typography sx={{ 
+                    fontSize: "0.85rem", 
+                    color: "rgba(241,240,238,0.5)", 
+                    fontWeight: 300,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3, // Giữ tối đa 3 dòng để không phá vỡ layout cố định
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    lineHeight: 1.5
+                  }}>
+                    {hotel.description || "Khám phá không gian nghỉ dưỡng sang trọng với dịch vụ đẳng cấp tại điểm đến lý tưởng này."}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={3} sx={{ mb: 2 }}>
+                    <Box>
+                      <Typography variant="caption" sx={{ color: "#C2A56D", fontSize: "0.6rem", fontWeight: 700, display: "block" }}>GIÁ TỪ</Typography>
+                      <Typography variant="h5" fontWeight={900}>
+                        {finalPrice > 0 ? `${Math.round(finalPrice).toLocaleString("vi-VN")} ₫` : "Liên hệ"}
+                      </Typography>
+                    </Box>
+                    {discount > 0 && (
+                      <Chip label={`-${discount}%`} size="small" sx={{ bgcolor: "#E74C3C", color: "#fff", fontWeight: 900, borderRadius: "6px", height: 24 }} />
+                    )}
+                  </Stack>
+
+                  <Button
+                    onClick={() => navigate(`/hotels/${hotel._id}`)}
+                    endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
+                    sx={{
+                      px: 4, py: 0.8,
+                      borderRadius: "100px",
+                      bgcolor: "#C2A56D",
+                      color: "#1C1B19",
+                      fontWeight: 800,
+                      fontSize: "0.75rem",
+                      "&:hover": { bgcolor: "#fff", transform: "translateX(5px)" },
+                      transition: "0.3s"
+                    }}
+                  >
+                    Xem chi tiết
+                  </Button>
+                </Box>
               </Box>
 
-              {/* IMAGE SECTION */}
-              <Box sx={{ flex: 0.9, position: "relative", overflow: "hidden", minHeight: { xs: 220, md: "auto" } }}>
+              {/* IMAGE SECTION: CHIẾM 40% CHIỀU RỘNG, CHIỀU CAO KHỚP VỚI PARENT */}
+              <Box sx={{ 
+                flex: 1, 
+                position: "relative", 
+                overflow: "hidden", 
+                height: { xs: "200px", md: "100%" } // Cố định chiều cao khớp với card
+              }}>
                 <MotionBox
                   component="img"
                   style={{ y: yImage }}
                   src={hotel.photos?.[0]?.url || "https://via.placeholder.com/600x400"}
                   sx={{
                     width: "100%",
-                    height: "120%",
+                    height: "140%", // Tăng một chút để hiệu ứng parallax mượt mà bên trong khung cố định
                     objectFit: "cover",
                     filter: "brightness(0.7)",
                   }}
