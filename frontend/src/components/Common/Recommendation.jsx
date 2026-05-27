@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Box, Typography, Grid, Card, CardMedia, CardContent,
-  Button, CircularProgress, Paper, Avatar, Stack, Chip, Container
+  Button, CircularProgress, Paper, Avatar, Stack, Chip, Container, Fade
 } from "@mui/material";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -52,6 +52,7 @@ export default function Recommendation() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
+      {/* AI ADVISOR HEADER */}
       <Paper 
         elevation={0} 
         sx={{ 
@@ -83,7 +84,8 @@ export default function Recommendation() {
         Đề xuất dành riêng cho bạn
       </Typography>
 
-      <Grid container spacing={4}>
+      {/* GRID CONTAINER */}
+      <Grid container spacing={4} alignItems="stretch"> {/* alignItems stretch để các item cùng cao */}
         {hotels.map((hotel) => {
           const bestRoom = getBestPriceInfo(hotel.rooms);
           const originalPrice = Number(bestRoom?.price) || 0;
@@ -93,96 +95,102 @@ export default function Recommendation() {
 
           return (
             <Grid item xs={12} sm={6} md={4} key={hotel._id} sx={{ display: 'flex' }}>
-              <Card
-                sx={{
-                  borderRadius: 4,
-                  boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
-                  transition: "all 0.3s ease",
-                  width: "100%", // Đảm bảo card chiếm hết chiều rộng grid
-                  display: "flex",
-                  flexDirection: "column",
-                  "&:hover": { transform: "translateY(-10px)", boxShadow: "0 20px 50px rgba(0,0,0,0.12)" }
-                }}
-              >
-                {/* 1. ĐỒNG BỘ KHUNG ẢNH */}
-                <Box sx={{ position: "relative", pt: "75%", overflow: "hidden", flexShrink: 0 }}> 
-                  <CardMedia
-                    component="img"
-                    image={hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
-                    alt={hotel.name}
-                    sx={{ 
-                        position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
-                        objectFit: "cover" // Ảnh không bao giờ bị méo
-                    }}
-                  />
-                  {hasDiscount && (
-                    <Chip 
-                      label={`-${discountPercent}%`} 
-                      sx={{ position: "absolute", top: 15, left: 15, bgcolor: "#E74C3C", color: "#fff", fontWeight: 700, borderRadius: '8px' }} 
+              <Fade in timeout={500}>
+                <Card
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
+                    transition: "all 0.3s ease",
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column", // Đặt hướng dọc cho Card
+                    height: "100%", // Chiếm hết chiều cao Grid Item
+                    "&:hover": { transform: "translateY(-10px)", boxShadow: "0 20px 50px rgba(0,0,0,0.12)" }
+                  }}
+                >
+                  {/* 1. MEDIA SECTION (CỐ ĐỊNH TỶ LỆ 4:3) */}
+                  <Box sx={{ position: "relative", pt: "75%", overflow: "hidden", flexShrink: 0 }}> 
+                    <CardMedia
+                      component="img"
+                      image={hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
+                      alt={hotel.name}
+                      sx={{ 
+                          position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
+                          objectFit: "cover" 
+                      }}
                     />
-                  )}
-                  <Chip 
-                    icon={<StarIcon sx={{ fontSize: "14px !important", color: "#C2A56D !important" }} />}
-                    label={hotel.rating || "5.0"}
-                    sx={{ position: "absolute", top: 15, right: 15, bgcolor: "#fff", fontWeight: 700, color: "#1C1B19" }} 
-                  />
-                </Box>
-
-                <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-                  <Stack direction="row" alignItems="center" spacing={0.5} mb={1}>
-                    <LocationOnIcon sx={{ fontSize: 16, color: "#C2A56D" }} />
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase' }}>
-                      {hotel.city}
-                    </Typography>
-                  </Stack>
-
-                  {/* 2. ĐỒNG BỘ CHIỀU CAO TIÊU ĐỀ */}
-                  <Typography 
-                    variant="h6" fontWeight={700} mb={2} 
-                    sx={{ 
-                      color: "#1C1B19", 
-                      minHeight: '3.2rem', // Ép chiều cao tối thiểu cho 2 dòng
-                      overflow: 'hidden',
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' 
-                    }}
-                  >
-                    {hotel.name}
-                  </Typography>
-
-                  {/* 3. ĐẨY PHẦN GIÁ XUỐNG DƯỚI CÙNG */}
-                  <Box sx={{ mt: 'auto' }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 600 }}>GIÁ TỪ</Typography>
-                        <Stack direction="row" spacing={1} alignItems="baseline">
-                          <Typography variant="h6" fontWeight={800} color="#C2A56D">
-                            {finalPrice > 0 
-                              ? `${Math.round(finalPrice).toLocaleString("vi-VN")} ₫` 
-                              : "Liên hệ"}
-                          </Typography>
-                          {hasDiscount && (
-                            <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
-                              {originalPrice.toLocaleString("vi-VN")}
-                            </Typography>
-                          )}
-                        </Stack>
-                      </Box>
-                      <Button
-                        variant="contained"
-                        component={RouterLink}
-                        to={`/hotels/${hotel._id}`}
-                        sx={{ 
-                          bgcolor: "#1C1B19", borderRadius: "10px", 
-                          px: 2, textTransform: "none", fontWeight: 600,
-                          "&:hover": { bgcolor: "#C2A56D" } 
-                        }}
-                      >
-                        Chi tiết
-                      </Button>
-                    </Stack>
+                    {hasDiscount && (
+                      <Chip 
+                        label={`-${discountPercent}%`} 
+                        sx={{ position: "absolute", top: 15, left: 15, bgcolor: "#E74C3C", color: "#fff", fontWeight: 700, borderRadius: '8px' }} 
+                      />
+                    )}
+                    <Chip 
+                      icon={<StarIcon sx={{ fontSize: "14px !important", color: "#C2A56D !important" }} />}
+                      label={hotel.rating || "5.0"}
+                      sx={{ position: "absolute", top: 15, right: 15, bgcolor: "#fff", fontWeight: 700, color: "#1C1B19" }} 
+                    />
                   </Box>
-                </CardContent>
-              </Card>
+
+                  {/* 2. CONTENT SECTION */}
+                  <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
+                    <Stack direction="row" alignItems="center" spacing={0.5} mb={1}>
+                      <LocationOnIcon sx={{ fontSize: 16, color: "#C2A56D" }} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase' }}>
+                        {hotel.city}
+                      </Typography>
+                    </Stack>
+
+                    {/* Tiêu đề khống chế tối đa 2 dòng để đều layout */}
+                    <Typography 
+                      variant="h6" fontWeight={700} mb={2} 
+                      sx={{ 
+                        color: "#1C1B19", 
+                        minHeight: '3.2rem', 
+                        overflow: 'hidden',
+                        display: '-webkit-box', 
+                        WebkitLineClamp: 2, 
+                        WebkitBoxOrient: 'vertical' 
+                      }}
+                    >
+                      {hotel.name}
+                    </Typography>
+
+                    {/* 3. FOOTER SECTION (Đẩy xuống đáy Card) */}
+                    <Box sx={{ mt: 'auto', pt: 2, borderTop: "1px dashed rgba(0,0,0,0.05)" }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ fontWeight: 600 }}>GIÁ TỪ</Typography>
+                          <Stack direction="row" spacing={1} alignItems="baseline">
+                            <Typography variant="h6" fontWeight={800} color="#C2A56D">
+                              {finalPrice > 0 
+                                ? `${Math.round(finalPrice).toLocaleString("vi-VN")} ₫` 
+                                : "Liên hệ"}
+                            </Typography>
+                            {hasDiscount && (
+                              <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
+                                {originalPrice.toLocaleString("vi-VN")}
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Box>
+                        <Button
+                          variant="contained"
+                          component={RouterLink}
+                          to={`/hotels/${hotel._id}`}
+                          sx={{ 
+                            bgcolor: "#1C1B19", borderRadius: "10px", 
+                            px: 2, textTransform: "none", fontWeight: 600,
+                            "&:hover": { bgcolor: "#C2A56D" } 
+                          }}
+                        >
+                          Chi tiết
+                        </Button>
+                      </Stack>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Fade>
             </Grid>
           );
         })}
