@@ -15,20 +15,15 @@ export default function Recommendation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Logic lấy thông tin giá tốt nhất - Đã cập nhật để xử lý Object rooms
   const getBestPriceInfo = (rooms) => {
     if (!Array.isArray(rooms) || rooms.length === 0) return null;
-
     return rooms.reduce((best, current) => {
-      // Ép kiểu Number để đảm bảo tính toán chính xác
       const currentPrice = Number(current.price) || 0;
       const currentDiscount = Number(current.discount) || 0;
       const currentFinal = currentPrice * (1 - currentDiscount / 100);
-
       const bestPrice = Number(best.price) || 0;
       const bestDiscount = Number(best.discount) || 0;
       const bestFinal = bestPrice * (1 - bestDiscount / 100);
-      
       return currentFinal < bestFinal ? current : best;
     }, rooms[0]);
   };
@@ -57,7 +52,6 @@ export default function Recommendation() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
-      {/* AI ADVISOR BANNER */}
       <Paper 
         elevation={0} 
         sx={{ 
@@ -92,32 +86,34 @@ export default function Recommendation() {
       <Grid container spacing={4}>
         {hotels.map((hotel) => {
           const bestRoom = getBestPriceInfo(hotel.rooms);
-          
-          // Tính toán an toàn
           const originalPrice = Number(bestRoom?.price) || 0;
           const discountPercent = Number(bestRoom?.discount) || 0;
           const finalPrice = originalPrice * (1 - discountPercent / 100);
           const hasDiscount = discountPercent > 0;
 
           return (
-            <Grid item xs={12} sm={6} md={4} key={hotel._id}>
+            <Grid item xs={12} sm={6} md={4} key={hotel._id} sx={{ display: 'flex' }}>
               <Card
                 sx={{
                   borderRadius: 4,
                   boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
                   transition: "all 0.3s ease",
-                  height: "100%",
+                  width: "100%", // Đảm bảo card chiếm hết chiều rộng grid
                   display: "flex",
                   flexDirection: "column",
                   "&:hover": { transform: "translateY(-10px)", boxShadow: "0 20px 50px rgba(0,0,0,0.12)" }
                 }}
               >
-                <Box sx={{ position: "relative", pt: "66.67%", overflow: "hidden" }}> 
+                {/* 1. ĐỒNG BỘ KHUNG ẢNH */}
+                <Box sx={{ position: "relative", pt: "75%", overflow: "hidden", flexShrink: 0 }}> 
                   <CardMedia
                     component="img"
                     image={hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300"}
                     alt={hotel.name}
-                    sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                    sx={{ 
+                        position: "absolute", top: 0, left: 0, width: "100%", height: "100%", 
+                        objectFit: "cover" // Ảnh không bao giờ bị méo
+                    }}
                   />
                   {hasDiscount && (
                     <Chip 
@@ -140,16 +136,20 @@ export default function Recommendation() {
                     </Typography>
                   </Stack>
 
+                  {/* 2. ĐỒNG BỘ CHIỀU CAO TIÊU ĐỀ */}
                   <Typography 
                     variant="h6" fontWeight={700} mb={2} 
                     sx={{ 
-                      color: "#1C1B19", height: '3.2rem', overflow: 'hidden',
+                      color: "#1C1B19", 
+                      minHeight: '3.2rem', // Ép chiều cao tối thiểu cho 2 dòng
+                      overflow: 'hidden',
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' 
                     }}
                   >
                     {hotel.name}
                   </Typography>
 
+                  {/* 3. ĐẨY PHẦN GIÁ XUỐNG DƯỚI CÙNG */}
                   <Box sx={{ mt: 'auto' }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-end">
                       <Box>

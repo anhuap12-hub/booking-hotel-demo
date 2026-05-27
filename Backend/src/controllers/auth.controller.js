@@ -8,7 +8,7 @@ export const getFrontendUrl = () => {
   const url = process.env.CLIENT_URL || "http://localhost:5173";
   return url.endsWith("/") ? url.slice(0, -1) : url;
 };
-
+const isDev = process.env.NODE_ENV === "development";
 export const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -106,7 +106,7 @@ export const login = async (req, res) => {
     const accessToken = jwt.sign(
       { id: user._id, role: user.role, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "2h" }
     );
 
     const refreshToken = jwt.sign(
@@ -119,10 +119,10 @@ export const login = async (req, res) => {
     await user.save();
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: !isDev, // Nếu là dev thì false (chạy được HTTP), nếu là prod thì true
+    sameSite: isDev ? "lax" : "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     const userResponse = user.toObject();
@@ -150,9 +150,9 @@ export const logout = async (req, res) => {
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-    });
+      secure: !isDev,
+      sameSite: isDev ? "lax" : "none",
+     });
 
     res.json({ message: "Đã đăng xuất thành công" });
   } catch (error) {

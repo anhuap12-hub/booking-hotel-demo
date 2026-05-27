@@ -45,8 +45,14 @@ export default function FilterSidebar({ filters = {}, setFilters, cities = [], a
       <Box mb={4}>
         <Typography fontSize={13} fontWeight={700} gutterBottom>Thành phố</Typography>
         <Select
-          fullWidth size="small" value={currentCity} displayEmpty
-          onChange={(e) => safeSetFilters((f) => ({ ...f, city: e.target.value }))}
+          fullWidth 
+          size="small" 
+          value={currentCity} 
+          displayEmpty
+          onChange={(e) => {
+            const val = e.target.value;
+            safeSetFilters((f) => ({ ...f, city: val }));
+          }}
           sx={{ 
             fontSize: 13, 
             borderRadius: "10px",
@@ -56,7 +62,11 @@ export default function FilterSidebar({ filters = {}, setFilters, cities = [], a
           }}
         >
           <MenuItem value="" sx={{ fontSize: 13 }}>Tất cả thành phố</MenuItem>
-          {cities.map((c) => (<MenuItem key={c} value={c} sx={{ fontSize: 13 }}>{c}</MenuItem>))}
+          {cities.map((c) => (
+            <MenuItem key={c} value={c} sx={{ fontSize: 13 }}>
+              {c}
+            </MenuItem>
+          ))}
         </Select>
       </Box>
 

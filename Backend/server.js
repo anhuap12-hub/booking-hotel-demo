@@ -19,11 +19,6 @@ import chatRoutes from "./src/routes/chat.route.js";
 import recommendRoutes from "./src/routes/recommend.route.js";
 const app = express();
 
-/* ===================== MIDDLEWARE ===================== */
-app.use(express.json());
-app.use(cookieParser());
-
-app.use("/api/webhooks", webhookRoutes);
 /* ===================== CORS (FIXED) ===================== */
 const allowedOrigins = process.env.CLIENT_URL
   .split(",")
@@ -45,6 +40,10 @@ app.use(
     credentials: true,
   })
 );
+app.use("/api/webhooks", webhookRoutes);
+/* ===================== MIDDLEWARE ===================== */
+app.use(express.json());
+app.use(cookieParser());
 /* ===================== DB ===================== */
 connectDB();
 

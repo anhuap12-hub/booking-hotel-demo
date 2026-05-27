@@ -10,17 +10,12 @@ export const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) return res.status(400).json({ success: false, message: "Message is required" });
-
-    // 1. Lấy thông tin người dùng từ request (đã qua middleware protect)
     const userName = req.user?.username || "Anh/Chị";
-
-    // 2. Dùng AI phân tích ý định và bóc tách thực thể (NER)
     const analysis = await classifyIntent(message);
     
     let replyText = "";
     let hotelData = [];
 
-    // 3. Xử lý truy vấn Database dựa trên phân tích của AI
     if (analysis.intent === "database") {
       let query = { status: "active" };
 
@@ -41,7 +36,6 @@ export const chatWithAI = async (req, res) => {
       }
 
       if (analysis.amenities && analysis.amenities.length > 0) {
-        // Sử dụng $all để tìm khách sạn có đầy đủ các tiện ích yêu cầu
         query.amenities = { $all: analysis.amenities.map(a => new RegExp(a, "i")) };
       }
 
