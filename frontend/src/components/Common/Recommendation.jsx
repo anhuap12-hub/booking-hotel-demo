@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import {
-  Box, Typography, Button, CircularProgress, Paper, Avatar, Stack, Chip, Container
+  Box, Typography, Button, CircularProgress, Paper, Stack, Chip, Container
 } from "@mui/material";
 import { motion, useScroll, useTransform } from "framer-motion";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -16,23 +16,20 @@ const MotionBox = motion(Box);
 export default function Recommendation() {
   const navigate = useNavigate();
   const [hotels, setHotels] = useState([]);
-  const [aiIntro, setAiIntro] = useState("");
   const [loading, setLoading] = useState(true);
   const containerRef = useRef(null);
 
-  // Hiệu ứng Parallax cho ảnh giống Deals Section
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
   });
-  const yImage = useTransform(scrollYProgress, [0, 1], ["-15%", "15%"]);
+  const yImage = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await getRecommendations();
         setHotels(res.data.data || []);
-        setAiIntro(res.data.intro || "");
       } catch (err) {
         console.error("Error fetching recommendations:", err);
       } finally {
@@ -58,21 +55,21 @@ export default function Recommendation() {
   if (hotels.length === 0) return null;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 10 }} ref={containerRef}>
-      {/* HEADER GIỐNG DEALS SECTION */}
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 6 }}>
-        <SmartToyIcon sx={{ color: "#C2A56D", fontSize: 32 }} />
+    <Container maxWidth="lg" sx={{ py: 6 }} ref={containerRef}>
+      {/* HEADER: ĐÃ CHỈNH ICON NGANG HÀNG */}
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 4 }}>
+        <SmartToyIcon sx={{ color: "#C2A56D", fontSize: 28 }} />
         <Box>
-          <Typography sx={{ textTransform: "uppercase", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.4em", color: "#C2A56D", mb: 0.5 }}>
+          <Typography sx={{ textTransform: "uppercase", fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.3em", color: "#C2A56D" }}>
             AI Personalized
           </Typography>
-          <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: { xs: 28, md: 36 }, fontWeight: 900, color: "#1C1B19" }}>
+          <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: { xs: 24, md: 30 }, fontWeight: 900, color: "#1C1B19", mt: -0.5 }}>
             Đề xuất dành riêng cho bạn
           </Typography>
         </Box>
       </Stack>
 
-      <Stack spacing={6}>
+      <Stack spacing={4}>
         {hotels.map((hotel, index) => {
           const bestRoom = getBestPriceInfo(hotel.rooms);
           const discount = Number(bestRoom?.discount) || 0;
@@ -81,88 +78,98 @@ export default function Recommendation() {
           return (
             <MotionPaper
               key={hotel._id}
-              initial={{ y: 50, opacity: 0 }}
+              initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.8, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
               sx={{
-                borderRadius: "40px",
+                borderRadius: "24px",
                 overflow: "hidden",
                 display: "flex",
-                flexDirection: { xs: "column", md: index % 2 === 0 ? "row" : "row-reverse" }, // Đảo chiều xen kẽ cho đẹp
+                flexDirection: { xs: "column", md: index % 2 === 0 ? "row" : "row-reverse" },
                 bgcolor: "#1C1B19",
                 color: "#F1F0EE",
-                boxShadow: "0 40px 80px -20px rgba(0,0,0,0.4)",
-                minHeight: { md: 450 }, // To hơn Deals Section
+                boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+                minHeight: { md: 300 }, // THU NHỎ CHIỀU CAO CARD
                 border: "1px solid rgba(194, 165, 109, 0.1)",
               }}
             >
-              {/* LEFT: CONTENT (Chiếm 55%) */}
-              <Box sx={{ p: { xs: 4, md: 8 }, flex: 1.2, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2, color: "#C2A56D" }}>
-                  <LocationOnIcon sx={{ fontSize: 18 }} />
-                  <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              {/* CONTENT SECTION */}
+              <Box sx={{ p: { xs: 3, md: 5 }, flex: 1.2, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                  <LocationOnIcon sx={{ fontSize: 16, color: "#C2A56D" }} />
+                  <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(241,240,238,0.7)" }}>
                     {hotel.city}
                   </Typography>
                   <Chip 
-                    icon={<StarsIcon sx={{ fontSize: "14px !important", color: "#1C1B19 !important" }} />}
+                    icon={<StarsIcon sx={{ fontSize: "12px !important", color: "#1C1B19 !important" }} />}
                     label={hotel.rating || "5.0"} 
                     size="small"
-                    sx={{ bgcolor: "#C2A56D", color: "#1C1B19", fontWeight: 800, ml: 2 }}
+                    sx={{ bgcolor: "#C2A56D", color: "#1C1B19", fontWeight: 800, height: 20, fontSize: 10 }}
                   />
                 </Stack>
 
-                <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: { xs: 32, md: 48 }, fontWeight: 900, mb: 2, lineHeight: 1.2 }}>
+                <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: { xs: 24, md: 32 }, fontWeight: 900, mb: 1, lineHeight: 1.2 }}>
                   {hotel.name}
                 </Typography>
 
-                <Typography sx={{ fontSize: "1rem", color: "rgba(241,240,238,0.6)", mb: 4, fontWeight: 300, fontStyle: "italic" }}>
-                  "{aiIntro || "Một không gian hoàn hảo được AI lựa chọn dựa trên phong cách của bạn."}"
+                {/* MÔ TẢ THỰC TẾ CỦA KHÁCH SẠN (Giới hạn 3 dòng) */}
+                <Typography sx={{ 
+                  fontSize: "0.875rem", 
+                  color: "rgba(241,240,238,0.5)", 
+                  mb: 3, 
+                  fontWeight: 300,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  lineHeight: 1.6
+                }}>
+                  {hotel.description || "Khám phá không gian nghỉ dưỡng sang trọng với dịch vụ đẳng cấp và tầm nhìn tuyệt đẹp tại điểm đến lý tưởng này."}
                 </Typography>
 
-                <Stack direction="row" alignItems="center" spacing={4} sx={{ mb: 5 }}>
+                <Stack direction="row" alignItems="center" spacing={3} sx={{ mb: 3 }}>
                   <Box>
-                    <Typography variant="caption" sx={{ color: "#C2A56D", letterSpacing: "0.1em", display: "block", mb: 0.5 }}>GIÁ ƯU ĐÃI TỪ</Typography>
-                    <Typography variant="h4" fontWeight={900}>
+                    <Typography variant="caption" sx={{ color: "#C2A56D", fontSize: "0.65rem", fontWeight: 700, display: "block" }}>GIÁ TỪ</Typography>
+                    <Typography variant="h5" fontWeight={900}>
                       {finalPrice > 0 ? `${Math.round(finalPrice).toLocaleString("vi-VN")} ₫` : "Liên hệ"}
                     </Typography>
                   </Box>
                   {discount > 0 && (
-                    <Box sx={{ px: 2, py: 1, bgcolor: "rgba(231, 76, 60, 0.2)", color: "#E74C3C", borderRadius: "12px", border: "1px solid #E74C3C" }}>
-                      <Typography fontWeight={900}>-{discount}%</Typography>
-                    </Box>
+                    <Chip label={`-${discount}%`} size="small" sx={{ bgcolor: "#E74C3C", color: "#fff", fontWeight: 900, borderRadius: "6px" }} />
                   )}
                 </Stack>
 
                 <Button
                   onClick={() => navigate(`/hotels/${hotel._id}`)}
-                  endIcon={<ArrowForwardIcon />}
+                  endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
                   sx={{
                     alignSelf: "flex-start",
-                    px: 5, py: 2,
+                    px: 4, py: 1,
                     borderRadius: "100px",
                     bgcolor: "#C2A56D",
                     color: "#1C1B19",
                     fontWeight: 800,
-                    "&:hover": { bgcolor: "#fff", transform: "translateY(-3px)" },
-                    transition: "0.4s"
+                    fontSize: "0.8rem",
+                    "&:hover": { bgcolor: "#fff", transform: "translateX(5px)" },
+                    transition: "0.3s"
                   }}
                 >
-                  Đặt phòng ngay
+                  Xem chi tiết
                 </Button>
               </Box>
 
-              {/* RIGHT: IMAGE WITH PARALLAX (Chiếm 45%) */}
-              <Box sx={{ flex: 0.8, position: "relative", overflow: "hidden", minHeight: { xs: 300, md: "auto" } }}>
+              {/* IMAGE SECTION */}
+              <Box sx={{ flex: 0.9, position: "relative", overflow: "hidden", minHeight: { xs: 220, md: "auto" } }}>
                 <MotionBox
                   component="img"
                   style={{ y: yImage }}
-                  src={hotel.photos?.[0]?.url || "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg"}
+                  src={hotel.photos?.[0]?.url || "https://via.placeholder.com/600x400"}
                   sx={{
                     width: "100%",
-                    height: "130%",
+                    height: "120%",
                     objectFit: "cover",
-                    filter: "brightness(0.8)",
+                    filter: "brightness(0.7)",
                   }}
                 />
                 <Box sx={{
