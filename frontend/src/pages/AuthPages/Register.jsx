@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-// Import MUI (Sử dụng Destructuring để code gọn hơn)
 import {
   Box, Typography, TextField, Button, Stack, 
   CircularProgress, InputAdornment, Alert, Paper, Fade
@@ -26,19 +25,18 @@ export default function Register() {
   const [serverError, setServerError] = useState("");
   const [errors, setErrors] = useState({});
 
-  // Logic validate giữ nguyên nhưng bọc trong useCallback để tối ưu
+  const primaryBlue = "#0056b3";
+
   const validate = useCallback(() => {
     let temp = {};
     const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 
     if (!form.username.trim()) temp.username = "Họ và tên không được để trống";
-    
     if (!form.email) {
       temp.email = "Vui lòng nhập email";
     } else if (!gmailRegex.test(form.email)) {
       temp.email = "Chỉ chấp nhận định dạng @gmail.com";
     }
-
     if (!form.password) {
       temp.password = "Vui lòng nhập mật khẩu";
     } else if (form.password.length < 6) {
@@ -52,7 +50,6 @@ export default function Register() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    // Xóa lỗi của trường đang gõ
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
@@ -63,7 +60,6 @@ export default function Register() {
 
     setLoading(true);
     try {
-      // Trim dữ liệu trước khi gửi đi để tránh lỗi khoảng trắng
       const submitData = {
         ...form,
         username: form.username.trim(),
@@ -81,24 +77,22 @@ export default function Register() {
   return (
     <Box sx={{
       minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center",
-      bgcolor: "#F9F8F6", p: 2,
-      backgroundImage: "radial-gradient(circle at 2px 2px, rgba(194, 165, 109, 0.05) 1px, transparent 0)",
-      backgroundSize: "40px 40px",
+      bgcolor: "#f0f4f8", p: 2,
     }}>
       <Fade in timeout={800}>
         <Paper component="form" onSubmit={handleSubmit} noValidate
           sx={{
             p: { xs: 4, md: 5 }, borderRadius: "32px", maxWidth: 440, width: "100%",
-            border: "1px solid rgba(194, 165, 109, 0.2)",
-            boxShadow: "0 20px 60px rgba(28,27,25,0.06)",
+            border: "1px solid #e1e8ed",
+            boxShadow: "0 10px 30px rgba(0,86,179,0.1)",
           }}
         >
           <Box sx={{ mb: 4, textAlign: "center" }}>
-            <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: "2.2rem", fontWeight: 800, color: "#1C1B19", mb: 1 }}>
-              Gia nhập
+            <Typography sx={{ fontSize: "2rem", fontWeight: 800, color: primaryBlue, mb: 1 }}>
+              Tạo tài khoản
             </Typography>
-            <Typography variant="body2" color="#72716E">
-              Tạo tài khoản <strong style={{color: "#C2A56D"}}>Coffee Stay</strong> để nhận ưu đãi riêng
+            <Typography variant="body2" color="#666">
+              Gia nhập <strong style={{color: primaryBlue}}>Coffee Stay</strong> để nhận ưu đãi riêng
             </Typography>
           </Box>
 
@@ -110,9 +104,9 @@ export default function Register() {
               value={form.username} onChange={handleChange}
               error={!!errors.username} helperText={errors.username}
               InputProps={{
-                startAdornment: <InputAdornment position="start"><PersonOutlineOutlined sx={{ color: "#A8A7A1" }} /></InputAdornment>,
+                startAdornment: <InputAdornment position="start"><PersonOutlineOutlined sx={{ color: "#999" }} /></InputAdornment>,
               }}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", "&.Mui-focused fieldset": { borderColor: primaryBlue } } }}
             />
 
             <TextField
@@ -120,9 +114,9 @@ export default function Register() {
               value={form.email} onChange={handleChange}
               error={!!errors.email} helperText={errors.email}
               InputProps={{
-                startAdornment: <InputAdornment position="start"><EmailOutlined sx={{ color: "#A8A7A1" }} /></InputAdornment>,
+                startAdornment: <InputAdornment position="start"><EmailOutlined sx={{ color: "#999" }} /></InputAdornment>,
               }}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", "&.Mui-focused fieldset": { borderColor: primaryBlue } } }}
             />
 
             <TextField
@@ -131,32 +125,32 @@ export default function Register() {
               value={form.password} onChange={handleChange}
               error={!!errors.password} helperText={errors.password}
               InputProps={{
-                startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: "#A8A7A1" }} /></InputAdornment>,
+                startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: "#999" }} /></InputAdornment>,
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button onClick={() => setShowPassword(!showPassword)} sx={{ minWidth: 40, color: "#72716E" }}>
+                    <Button onClick={() => setShowPassword(!showPassword)} sx={{ minWidth: 40, color: "#666" }}>
                       {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
                     </Button>
                   </InputAdornment>
                 ),
               }}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", "&.Mui-focused fieldset": { borderColor: primaryBlue } } }}
             />
 
             <Button type="submit" fullWidth disabled={loading} variant="contained"
               sx={{
-                py: 1.8, borderRadius: "12px", fontWeight: 700, bgcolor: "#1C1B19", color: "#C2A56D",
-                "&:hover": { bgcolor: "#333230" }, textTransform: "none", fontSize: "1rem"
+                py: 1.8, borderRadius: "12px", fontWeight: 700, bgcolor: primaryBlue,
+                "&:hover": { bgcolor: "#004494" }, textTransform: "none", fontSize: "1rem"
               }}
             >
-              {loading ? <CircularProgress size={24} sx={{ color: "#C2A56D" }} /> : "Tạo tài khoản"}
+              {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Tạo tài khoản"}
             </Button>
           </Stack>
 
           <Box sx={{ textAlign: "center", mt: 4 }}>
-            <Typography variant="body2" color="#72716E">
+            <Typography variant="body2" color="#666">
               Đã là thành viên?{" "}
-              <Link to="/login" style={{ color: "#1C1B19", textDecoration: "none", fontWeight: 700, borderBottom: "1px solid #C2A56D" }}>
+              <Link to="/login" style={{ color: primaryBlue, textDecoration: "none", fontWeight: 700 }}>
                 Đăng nhập
               </Link>
             </Typography>

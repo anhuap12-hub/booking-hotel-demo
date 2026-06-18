@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-// Import trực tiếp từng component
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
@@ -26,6 +25,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+
+  const primaryBlue = "#0056b3"; // Màu xanh chính
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,9 +54,7 @@ export default function Login() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        bgcolor: "#F9F8F6",
-        backgroundImage: "radial-gradient(circle at 2px 2px, rgba(194, 165, 109, 0.05) 1px, transparent 0)",
-        backgroundSize: "40px 40px",
+        bgcolor: "#f0f4f8",
         p: 2,
       }}
     >
@@ -66,8 +65,8 @@ export default function Login() {
         sx={{
           p: { xs: 4, md: 5 },
           borderRadius: "32px",
-          border: "1px solid rgba(194, 165, 109, 0.2)",
-          boxShadow: "0 20px 60px rgba(28,27,25,0.06)",
+          border: "1px solid #e1e8ed",
+          boxShadow: "0 10px 30px rgba(0,86,179,0.1)",
           maxWidth: 420,
           width: "100%",
           bgcolor: "#FFF",
@@ -76,17 +75,16 @@ export default function Login() {
         <Box sx={{ mb: 4, textAlign: "center" }}>
           <Typography
             sx={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "2.2rem",
+              fontSize: "2rem",
               fontWeight: 800,
-              color: "#1C1B19",
+              color: primaryBlue,
               mb: 1,
             }}
           >
-            Chào mừng
+            Đăng nhập
           </Typography>
-          <Typography sx={{ fontSize: 14, color: "#72716E", letterSpacing: 0.5 }}>
-            Truy cập tài khoản <strong style={{color: "#C2A56D"}}>Coffee Stay</strong> của bạn
+          <Typography sx={{ fontSize: 14, color: "#666" }}>
+            Chào mừng trở lại với <strong style={{color: primaryBlue}}>Coffee Stay</strong>
           </Typography>
         </Box>
 
@@ -107,13 +105,13 @@ export default function Login() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "12px",
-                "&.Mui-focused fieldset": { borderColor: "#C2A56D" },
+                "&.Mui-focused fieldset": { borderColor: primaryBlue },
               },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <EmailOutlined sx={{ color: "#A8A7A1", fontSize: 20 }} />
+                  <EmailOutlined sx={{ color: "#999", fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
@@ -129,18 +127,17 @@ export default function Login() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: "12px",
-                "&.Mui-focused fieldset": { borderColor: "#C2A56D" },
+                "&.Mui-focused fieldset": { borderColor: primaryBlue },
               },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlined sx={{ color: "#A8A7A1", fontSize: 20 }} />
+                  <LockOutlined sx={{ color: "#999", fontSize: 20 }} />
                 </InputAdornment>
               ),
               endAdornment: (
                 <InputAdornment position="end">
-                  
                   <Button
                     onClick={() => setShowPassword(!showPassword)}
                     sx={{
@@ -148,9 +145,8 @@ export default function Login() {
                       width: 40,
                       height: 40,
                       borderRadius: "50%",
-                      color: "#72716E",
-                      p: 0,
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.04)" }
+                      color: "#666",
+                      "&:hover": { bgcolor: "#f0f4f8" }
                     }}
                   >
                     {showPassword ? <VisibilityOff sx={{ fontSize: 20 }} /> : <Visibility sx={{ fontSize: 20 }} />}
@@ -168,20 +164,20 @@ export default function Login() {
               py: 1.8,
               borderRadius: "12px",
               fontWeight: 700,
-              bgcolor: "#1C1B19",
-              color: "#C2A56D",
+              bgcolor: primaryBlue,
               textTransform: "none",
-              "&:hover": { bgcolor: "#333230" },
+              fontSize: "1rem",
+              "&:hover": { bgcolor: "#004494" },
             }}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "#C2A56D" }} /> : "Đăng nhập"}
+            {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Đăng nhập"}
           </Button>
         </Stack>
 
         <Box sx={{ textAlign: "center", mt: 4 }}>
-          <Typography fontSize={14} color="#72716E">
-            Chưa có tài khoản trải nghiệm?{" "}
-            <Link to="/register" style={{ color: "#1C1B19", fontWeight: 700, textDecoration: "none" }}>
+          <Typography fontSize={14} color="#666">
+            Chưa có tài khoản?{" "}
+            <Link to="/register" style={{ color: primaryBlue, fontWeight: 700, textDecoration: "none" }}>
               Đăng ký ngay
             </Link>
           </Typography>
