@@ -10,11 +10,18 @@ import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import { breadcrumbMap } from "./breadcrumbConfig";
 
+// Màu đồng bộ với Booking-style Navbar
+const COLORS = {
+  primary: "#003580",    // Xanh đậm
+  textActive: "#003580", // Xanh đậm cho trang hiện tại
+  textInactive: "#595959", // Xám trung tính cho link trước đó
+  divider: "#E0E0E0"      // Xám nhạt cho border
+};
+
 export default function AppBreadcrumbs({ currentLabel }) {
   const location = useLocation();
   const { id } = useParams();
 
-  // Loại bỏ "home" vì chúng ta đã có icon Trang chủ mặc định
   const segments = location.pathname
     .split("/")
     .filter(Boolean)
@@ -23,24 +30,19 @@ export default function AppBreadcrumbs({ currentLabel }) {
   return (
     <Box
       sx={{
-        bgcolor: "#F9F8F6", // Màu nền giấy cũ rất nhẹ (Cream Pearl)
-        borderBottom: "1px solid rgba(194,165,109,0.15)", // Viền Gold siêu mảnh
-        py: { xs: 1.5, md: 2 },
+        bgcolor: "#FFFFFF", // Nền trắng sạch
+        borderBottom: `1px solid ${COLORS.divider}`,
+        py: { xs: 1.5, md: 1.5 },
       }}
     >
       <Container maxWidth="xl">
         <Breadcrumbs
           separator={
             <NavigateNextIcon
-              sx={{ fontSize: 16, color: "#C2A56D", opacity: 0.6 }}
+              sx={{ fontSize: 16, color: COLORS.textInactive }}
             />
           }
           aria-label="breadcrumb"
-          sx={{
-            "& .MuiBreadcrumbs-ol": {
-              alignItems: "center",
-            },
-          }}
         >
           {/* TRANG CHỦ */}
           <MUILink
@@ -50,14 +52,11 @@ export default function AppBreadcrumbs({ currentLabel }) {
               display: "flex",
               alignItems: "center",
               gap: 0.5,
-              color: "#72716E",
+              color: COLORS.textInactive,
               fontSize: "0.85rem",
               fontWeight: 500,
               textDecoration: "none",
-              transition: "0.3s",
-              "&:hover": {
-                color: "#C2A56D",
-              },
+              "&:hover": { color: COLORS.primary, textDecoration: "underline" },
             }}
           >
             <HomeOutlinedIcon sx={{ fontSize: 18 }} />
@@ -72,7 +71,6 @@ export default function AppBreadcrumbs({ currentLabel }) {
               breadcrumbMap[seg]?.label ||
               seg.charAt(0).toUpperCase() + seg.slice(1);
 
-            // Nếu là ID của hotel, ưu tiên hiển thị tên hotel (currentLabel)
             if (seg === id && currentLabel) {
               label = currentLabel;
             }
@@ -82,9 +80,8 @@ export default function AppBreadcrumbs({ currentLabel }) {
                 key={to}
                 sx={{
                   fontSize: "0.85rem",
-                  fontWeight: 700,
-                  color: "#1C1B19", // Màu Ebony cho trang hiện tại
-                  letterSpacing: 0.2,
+                  fontWeight: 600,
+                  color: COLORS.textActive, // Màu xanh đậm trang hiện tại
                 }}
               >
                 {label}
@@ -97,12 +94,9 @@ export default function AppBreadcrumbs({ currentLabel }) {
                 sx={{
                   fontSize: "0.85rem",
                   fontWeight: 500,
-                  color: "#72716E",
+                  color: COLORS.textInactive,
                   textDecoration: "none",
-                  transition: "0.3s",
-                  "&:hover": {
-                    color: "#C2A56D",
-                  },
+                  "&:hover": { color: COLORS.primary, textDecoration: "underline" },
                 }}
               >
                 {label}

@@ -8,6 +8,7 @@ import CityHotelSections from "../../components/Home/CityHotelSections";
 import { getAllHotels } from "../../api/hotel.api";
 import { NAVBAR_HEIGHT } from "../../components/Layout/Navbar";
 import Recommendation from "../../components/Common/Recommendation";
+
 export default function Home() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ export default function Home() {
     loadData();
   }, []);
 
-  const { cities,  citiesSorted } = useMemo(() => {
+  const { cities, citiesSorted } = useMemo(() => {
     const allCities = [...new Set(hotels.map(h => h.city).filter(Boolean))];
     const allAmenities = [...new Set(hotels.flatMap(h => h.amenities || []))];
     const byCity = hotels.reduce((acc, h) => {
@@ -49,31 +50,37 @@ export default function Home() {
 
       {/* 2. HERO BANNER & STATS */}
       <HeroBanner />
+      {/* Giảm nhẹ margin bottom của QuickStats nếu component này có margin trong nội bộ */}
       <QuickStats hotels={hotels} cities={cities} />
 
-      {/* 3. MAIN CONTENT LAYOUT - Đã loại bỏ Grid Sidebar để Card không bị to */}
-      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 10 } }}>
-        <Stack spacing={10}>
+      {/* 3. MAIN CONTENT LAYOUT */}
+      {/* ĐÃ THU NHỎ PY: TỪ 10 XUỐNG CÒN 5 Ở MÀN HÌNH LỚN */}
+      <Container maxWidth="xl" sx={{ py: { xs: 4, md: 5 } }}>
+        {/* ĐÃ THU NHỎ SPACING: TỪ 10 XUỐNG CÒN 4 KHI LOADING */}
+        <Stack spacing={4}>
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
               <CircularProgress sx={{ color: "#C2A56D" }} />
             </Box>
           ) : (
             <Fade in timeout={800}>
-              <Stack spacing={12}>                  
+              {/* ĐÃ THU NHỎ SPACING GIỮA CÁC SECTIONS: TỪ 12 XUỐNG CÒN 6 (tương đương 48px) */}
+              <Stack spacing={6}>                  
                 {/* Section Gợi ý khách sạn - Nằm trọn chiều ngang Container */}
                 <Box sx={{ 
-                  p: { xs: 2, md: 6 }, 
+                  p: { xs: 2, md: 4 }, // Thu hẹp bớt padding trong của box đen này để gọn gàng hơn
                   bgcolor: "#1C1B19", 
                   borderRadius: { xs: "20px", md: "40px" },
                   color: "white" 
                 }}>
                   <HotelSuggestion hotels={hotels} />
                 </Box>
+
                 {/* Section Gợi ý khách sạn - Recommendation */}
                 <Box sx={{ width: '100%' }}>
-       <Recommendation />
-    </Box>
+                  <Recommendation />
+                </Box>
+
                 {/* Section Khách sạn theo thành phố */}
                 <CityHotelSections citiesSorted={citiesSorted} />
               </Stack>
@@ -83,7 +90,8 @@ export default function Home() {
       </Container>
 
       {/* 4. WHY BOOK SECTION */}
-      <Box sx={{ bgcolor: "white", py: 10 }}>
+      {/* ĐÃ THU NHỎ PY: TỪ 10 XUỐNG CÒN 6 ĐỂ ĐÍT TRANG GẦN LẠI */}
+      <Box sx={{ bgcolor: "white", py: 6 }}>
         <WhyBook />
       </Box>
     </Box>

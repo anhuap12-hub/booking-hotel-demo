@@ -1,91 +1,100 @@
-import { Box, Typography, Grid, Container, Stack } from "@mui/material";
+import { Box, Typography, Stack, Container, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSearch } from "../../context/SearchContext";
 import { motion } from "framer-motion";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { useRef } from "react";
 
 const MotionBox = motion(Box);
 const cap = (s = "") => s.charAt(0).toUpperCase() + s.slice(1);
 
+// Font chữ chuẩn hệ thống của Booking.com
+const bookingFont = '"BlinkMacSystemFont", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial", sans-serif';
+
 export default function PropertiesByType({ properties = [] }) {
   const navigate = useNavigate();
   const { updateSearch } = useSearch();
+  const scrollRef = useRef(null);
 
   const handleGlobalNavigate = (params = {}) => {
     updateSearch({
-      city: "",
-      types: [],
-      rating: null,
-      amenities: [],
-      priceRange: null,
-      ...params,
+      city: "", types: [], rating: null, amenities: [], priceRange: null, ...params,
     });
     navigate("/hotels");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const scroll = (direction) => {
+    const { current } = scrollRef;
+    const scrollAmount = current.offsetWidth * 0.8;
+    current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: { xs: 6, md: 8 }, mb: 8 }}>
-      {/* HEADER SECTION - Đồng bộ với Trending */}
-      <Stack 
-        direction={{ xs: "column", md: "row" }} 
-        justifyContent="space-between" 
-        alignItems={{ xs: "flex-start", md: "center" }} 
-        sx={{ mb: 4 }}
-        spacing={2}
-      >
-        <Box>
-          <Typography
-            sx={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: { xs: "2rem", md: "2.5rem" },
-              fontWeight: 900,
-              color: "#1C1B19",
-              lineHeight: 1.2,
-            }}
-          >
-            Phong cách <Box component="span" sx={{ color: "#C2A56D", fontStyle: "italic", fontWeight: 400 }}>Lưu trú</Box>
-          </Typography>
-        </Box>
-        <Typography 
-          sx={{ 
-            color: "#72716E", 
-            fontSize: "0.9rem", 
-            maxWidth: "400px", 
-            lineHeight: 1.5,
-            borderLeft: { md: "2px solid #C2A56D" },
-            pl: { md: 2 }
-          }}
-        >
-          Lựa chọn không gian nghỉ dưỡng phù hợp với cá tính và nhu cầu của riêng bạn.
+    <Container maxWidth="lg" sx={{ mt: -18, mb: 8, position: "relative" }}>
+      {/* HEADER SECTION - Font chữ tinh gọn */}
+      <Stack sx={{ mb: 4 }}>
+        <Typography sx={{ 
+            fontFamily: bookingFont, 
+            fontSize: "24px", 
+            fontWeight: 700, 
+            color: "#1A1A1A" 
+        }}>
+          Phong cách Lưu trú
         </Typography>
       </Stack>
 
-      {/* GRID SECTION - Đồng bộ chiều cao và hiệu ứng với Trending */}
-      <Grid container spacing={2.5}>
-        {properties.map((p, idx) => (
-          <Grid item xs={12} sm={6} md={3} key={idx}>
-            <MotionBox
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, duration: 0.6 }}
-              onClick={() => handleGlobalNavigate({ types: [p.name] })}
-              sx={{
-                height: { xs: 220, md: 320 }, // Chiều cao 320px giống Trending
-                borderRadius: "24px",
-                overflow: "hidden",
-                cursor: "pointer",
-                position: "relative",
-                bgcolor: "#f0f0f0",
-                "&:hover .prop-img": { transform: "scale(1.1)" },
-                "&:hover .prop-overlay": { background: "linear-gradient(to top, rgba(28,27,25,0.9) 0%, transparent 60%)" },
-                "&:hover .prop-btn": { opacity: 1, transform: "translateX(0)" },
-              }}
-            >
-              {/* IMAGE */}
+      {/* CAROUSEL CONTAINER */}
+      <Box sx={{ position: "relative" }}>
+        <IconButton 
+          onClick={() => scroll("left")}
+          sx={{ position: "absolute", left: -20, top: "40%", zIndex: 10, bgcolor: "white", boxShadow: 2, "&:hover": { bgcolor: "#f8f8f8" } }}
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+
+        <IconButton 
+          onClick={() => scroll("right")}
+          sx={{ position: "absolute", right: -20, top: "40%", zIndex: 10, bgcolor: "white", boxShadow: 2, "&:hover": { bgcolor: "#f8f8f8" } }}
+        >
+          <ChevronRightIcon />
+        </IconButton>
+
+        <Stack
+          ref={scrollRef}
+          direction="row"
+          spacing={2}
+          sx={{
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+            pb: 2,
+            px: 1
+          }}
+        >
+          {properties.map((p, idx) => (
+  <MotionBox
+    key={idx}
+    whileHover={{ y: -4 }}
+    onClick={() => handleGlobalNavigate({ types: [p.name] })} 
+    sx={{
+      flex: "0 0 auto",
+      width: 260,
+      height: 260,
+      borderRadius: "8px",
+      overflow: "hidden",
+      cursor: "pointer",
+      position: "relative",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    }}
+  >
+
+              {/* Ảnh: Nếu nguồn ảnh hỗ trợ resize, hãy thêm params ví dụ: p.img + "?w=600&q=90" */}
               <Box
-                className="prop-img"
                 component="img"
                 src={p.img}
                 alt={p.name}
@@ -93,72 +102,34 @@ export default function PropertiesByType({ properties = [] }) {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  transition: "transform 0.8s ease-in-out",
+                  imageRendering: "crisp-edges", // Giúp ảnh hiển thị sắc nét hơn trên màn hình độ phân giải cao
                 }}
               />
-
-              {/* OVERLAY - Gradient nhẹ giống Trending */}
-              <Box
-                className="prop-overlay"
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 40%)",
-                  transition: "0.4s",
-                  zIndex: 1,
-                }}
-              />
-
-              {/* CONTENT */}
-              <Box
-                sx={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  p: 3,
-                  zIndex: 2,
-                  color: "#fff",
-                }}
-              >
-                <Typography variant="overline" sx={{ letterSpacing: "0.1em", opacity: 0.8, fontSize: "0.7rem" }}>
-                  {p.count} CHỖ NGHỈ
-                </Typography>
-                <Typography
-                  sx={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontWeight: 800,
-                    fontSize: "1.4rem", 
+              <Box sx={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)", zIndex: 1 }} />
+              
+              <Box sx={{ position: "absolute", bottom: 0, left: 0, p: 2, zIndex: 2, color: "#fff" }}>
+                <Typography sx={{ 
+                    fontFamily: bookingFont, 
+                    fontWeight: 700, 
+                    fontSize: "18px", 
                     lineHeight: 1.2,
-                    mb: 0.5,
-                  }}
-                >
+                    mb: 0.5 
+                }}>
                   {cap(p.name)}
                 </Typography>
-                
-                {/* NÚT "XEM NGAY" TRƯỢT NGANG KHI HOVER */}
-                <Stack 
-                  className="prop-btn"
-                  direction="row" 
-                  alignItems="center" 
-                  spacing={1}
-                  sx={{ 
-                    opacity: 0, 
-                    transform: "translateX(-10px)", 
-                    transition: "0.3s",
-                    color: "#C2A56D"
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase" }}>
-                    Khám phá
-                  </Typography>
-                  <ArrowForwardIcon sx={{ fontSize: 14 }} />
-                </Stack>
+                <Typography sx={{ 
+                    fontFamily: bookingFont, 
+                    fontSize: "14px", 
+                    fontWeight: 400,
+                    opacity: 0.9 
+                }}>
+                  {p.count} chỗ nghỉ
+                </Typography>
               </Box>
             </MotionBox>
-          </Grid>
-        ))}
-      </Grid>
+          ))}
+        </Stack>
+      </Box>
     </Container>
   );
 }

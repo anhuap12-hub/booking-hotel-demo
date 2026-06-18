@@ -114,7 +114,9 @@ export default function LandingPage() {
           </Box>
 
           {/* Loại hình chỗ nghỉ  */}
-          <PropertiesByType properties={propertyTypes} />
+          <Box sx={{ mt: -6, position: "relative" }}> 
+  <PropertiesByType properties={propertyTypes} />
+</Box>
 
           {/* Ưu đãi cuối tuần */}
           <Box>
@@ -123,12 +125,6 @@ export default function LandingPage() {
 
         </Stack>
       </Container>
-
-      {/* 3. CTA AREA */}
-      <Box sx={{ mt: 5, bgcolor: "white" }}>
-        <ContactCTA />
-      </Box>
-
       {/* MODAL KHUYẾN MÃI */}
       <GeniusModal open={showGenius} onClose={() => setShowGenius(false)} />
     </Box>

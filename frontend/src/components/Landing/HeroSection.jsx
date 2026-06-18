@@ -1,18 +1,16 @@
 import { Box, Container, Typography, Button, Stack } from "@mui/material";
 import { Link } from "react-router-dom";
-import HomeIcon from '@mui/icons-material/Home';
-import CoffeeIcon from '@mui/icons-material/LocalCafe';
+import BeachAccessIcon from '@mui/icons-material/BeachAccess'; // Đổi icon sang chủ đề biển
 import { keyframes } from "@mui/system";
 
-// Định nghĩa keyframes bằng CSS thuần thông qua MUI
 const float = keyframes`
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
+  50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 `;
 
 const fadeIn = keyframes`
-  from { opacity: 0; transform: translateX(-30px); }
+  from { opacity: 0; transform: translateX(-20px); }
   to { opacity: 1; transform: translateX(0); }
 `;
 
@@ -21,80 +19,83 @@ export default function HeroSection() {
     <Box
       sx={{
         position: "relative",
-        height: { xs: 500, md: 650 },
+        height: { xs: 380, md: 450 },
         display: "flex",
         alignItems: "center",
         overflow: "hidden",
-        bgcolor: "#1c1b19",
+        bgcolor: "#003580", // Màu xanh dương chủ đạo của Booking.com
         animation: "fadeIn 1.2s ease-out"
       }}
     >
-      {/* BACKGROUND */}
+      {/* BACKGROUND - Ảnh biển */}
       <Box
         sx={{
           position: "absolute",
           inset: 0,
-          backgroundImage: "url('https://images.pexels.com/photos/2067628/pexels-photo-2067628.jpeg?auto=compress&cs=tinysrgb&w=1600')",
+          backgroundImage: "url('https://images.pexels.com/photos/1266810/pexels-photo-1266810.jpeg?auto=compress&cs=tinysrgb&w=1600')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          "&::after": {
+          "::after": {
             content: '""',
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(to right, rgba(28,27,25,0.9) 20%, rgba(28,27,25,0.3) 100%)",
+            // Gradient xanh dương nhẹ phủ lên ảnh để tạo sự đồng bộ
+            background: "linear-gradient(to right, rgba(0, 53, 128, 0.85) 30%, rgba(0, 53, 128, 0.3) 100%)",
           }
         }}
       />
 
-      {/* FLOATING ELEMENTS - Dùng CSS Animation thay cho Motion */}
+      {/* FLOATING ELEMENT - Icon biển */}
       <Box
         sx={{
           position: "absolute",
-          right: "12%",
-          top: "25%",
+          right: "10%",
+          top: "20%",
           zIndex: 2,
-          color: "rgba(194,165,109,0.3)",
+          color: "rgba(255, 255, 255, 0.15)",
           display: { xs: "none", md: "block" },
-          animation: `${float} 3s ease-in-out infinite`
+          animation: `${float} 4s ease-in-out infinite`
         }}
       >
-        <HomeIcon sx={{ fontSize: 120 }} />
+        <BeachAccessIcon sx={{ fontSize: 120 }} />
       </Box>
 
       {/* MAIN CONTENT */}
       <Container maxWidth="xl" sx={{ position: "relative", zIndex: 3 }}>
         <Box 
-          maxWidth={700}
-          sx={{ animation: `${fadeIn} 1s ease-out both`, animationDelay: "0.4s" }}
+          maxWidth={600}
+          sx={{ 
+            animation: `${fadeIn} 1s ease-out both`, 
+            animationDelay: "0.3s",
+            pl: { xs: 1, md: 4 }
+          }}
         >
           <Typography
             sx={{
               fontFamily: `"Playfair Display", serif`,
-              fontSize: { xs: 42, md: 72 },
+              fontSize: { xs: "2rem", md: "3rem" },
               fontWeight: 900,
               color: "#ffffff",
-              mb: 2,
-              lineHeight: 1.1,
+              mb: 1.5,
+              lineHeight: 1.2,
             }}
           >
-            Nơi bình yên <br /> 
-            <Box component="span" sx={{ 
-              color: "#c2a56d",
-              textShadow: "0 0 20px rgba(194,165,109,0.3)" 
-            }}>gọi tên bạn</Box>
+            Nơi dừng chân <br /> 
+            <Box component="span" sx={{ color: "#febb02" }}> {/* Màu vàng CTA của Booking */}
+              mà bạn mong muốn
+            </Box>
           </Typography>
 
           <Typography
             sx={{
-              fontSize: { xs: 16, md: 20 },
-              color: "rgba(255,255,255,0.7)",
-              mb: 5,
-              maxWidth: 520,
-              lineHeight: 1.8,
+              fontSize: { xs: "0.9rem", md: "1rem" },
+              color: "rgba(255,255,255,0.9)",
+              mb: 3.5,
+              maxWidth: 480,
+              lineHeight: 1.6,
             }}
           >
-            Trải nghiệm những không gian lưu trú tinh tuyển, nơi mỗi tách cà phê 
-            và mỗi góc nhỏ đều mang đậm phong vị thượng lưu tại <b>Coffee Stay</b>.
+            Khám phá những resort ven biển và hotel sang trọng cùng  <b>Coffee Stay</b>.
           </Typography>
 
           <Stack direction="row" spacing={2}>
@@ -103,20 +104,21 @@ export default function HeroSection() {
               to="/hotels"
               variant="contained"
               sx={{
-                px: 6, py: 2,
-                borderRadius: "12px",
-                textTransform: "uppercase",
-                fontWeight: 800,
-                bgcolor: "#c2a56d",
-                color: "#1c1b19",
+                px: 4, py: 1.2,
+                borderRadius: "4px", // Bo góc nhẹ đặc trưng Booking
+                textTransform: "none",
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                bgcolor: "#febb02", // Màu vàng thương hiệu
+                color: "#003580", // Chữ xanh dương
                 "&:hover": { 
-                  bgcolor: "#fff", 
-                  transform: "translateY(-3px)" 
+                  bgcolor: "#e5a800", 
+                  transform: "translateY(-2px)" 
                 },
-                transition: "all 0.4s"
+                transition: "all 0.3s"
               }}
             >
-              Khám phá ngay
+              Tìm kiếm khách sạn ngay
             </Button>
           </Stack>
         </Box>

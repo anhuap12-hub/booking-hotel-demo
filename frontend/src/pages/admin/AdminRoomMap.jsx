@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Box, Grid, Paper, Typography, Stack, Chip, CircularProgress, 
-  Popover, Button, Divider, Alert, Snackbar 
+  Box, Paper, Typography, Stack, CircularProgress, 
+  Popover, Button, Table, TableBody, TableCell, TableContainer, 
+  TableHead, TableRow, IconButton, Snackbar, Alert 
 } from '@mui/material';
 import { getAdminRoomMap, updateRoomStatus } from '../../api/admin.api';
 import BuildIcon from '@mui/icons-material/Build';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const statusMap = {
   active: { color: '#4caf50', label: 'Trống' },
-  available: { color: '#4caf50', label: 'Trống' },
   occupied: { color: '#f44336', label: 'Đang ở' },
   booked: { color: '#ff9800', label: 'Đã đặt' },
   maintenance: { color: '#757575', label: 'Bảo trì' },
-  inactive: { color: '#212121', label: 'Ngừng bán' },
+  inactive: { color: '#212121', label: 'Ngừng hoạt động' },
 };
 
 export default function AdminRoomMap() {
@@ -22,219 +22,107 @@ export default function AdminRoomMap() {
   const [loading, setLoading] = useState(true);
   const [anchorEl, setAnchorEl] = useState(null);
   const [popoverData, setPopoverData] = useState(null);
-  
-  // Trạng thái thông báo (Toast)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => { fetchRooms(); }, []);
 
   const fetchRooms = async () => {
-    try {
-      const res = await getAdminRoomMap();
-      setRooms(res.data);
-    } catch (err) {
-      console.error(err);
-      showSnackbar("Không thể tải sơ đồ phòng", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const res = await getAdminRoomMap();
+    setRooms(res.data.data || res.data); 
+  } catch (err) {
+    showSnackbar("Không thể tải sơ đồ phòng", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const handleOpenPopover = (event, room) => {
-    setAnchorEl(event.currentTarget);
-    setPopoverData(room);
-  };
-
-  const handleUpdateStatus = async (roomId, newStatus) => {
-    try {
-      await updateRoomStatus(roomId, newStatus);
-      showSnackbar("Cập nhật trạng thái thành công!");
-      setAnchorEl(null);
-      fetchRooms(); // Reload dữ liệu
-    } catch (error) {
-      showSnackbar("Lỗi khi cập nhật trạng thái", error);
-    }
-  };
-
-  if (loading) return (
-    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" py={20}>
-      <CircularProgress />
-      <Typography sx={{ mt: 2 }} color="text.secondary">Đang tải sơ đồ phòng...</Typography>
-    </Box>
-  );
+  if (loading) return <Box display="flex" justifyContent="center" py={20}><CircularProgress /></Box>;
 
   return (
     <Box p={3} sx={{ bgcolor: '#f8f9fa', minHeight: '100vh' }}>
-      {/* HEADER SECTION */}
-      <Box mb={4}>
-        <Typography variant="h5" fontWeight={800} color="#1a2027">Sơ Đồ Phòng Real-time</Typography>
-        <Stack direction="row" spacing={3} mt={2}>
-  <Typography variant="body2">Tổng: <b>{rooms.length}</b></Typography>
-  
-  {/* Sửa: Lọc theo 'active' thay vì 'available' */}
-  <Typography variant="body2" color="success.main">
-    
-Trống: <b>{rooms.filter(r => ['active', 'available'].includes(r.displayStatus)).length}</b>
-  </Typography>
-  
-  <Typography variant="body2" color="error.main">
-    Đang ở: <b>{rooms.filter(r => r.displayStatus === 'occupied').length}</b>
-  </Typography>
-  
-  <Typography variant="body2" color="warning.main">
-    Đã đặt: <b>{rooms.filter(r => r.displayStatus === 'booked').length}</b>
-  </Typography>
-</Stack>
-      </Box>
+      <Typography variant="h5" fontWeight={800} mb={3}>Sơ Đồ Phòng Real-time</Typography>
       
-      {/* CHÚ THÍCH (LEGEND) */}
-      <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 3, border: '1px solid #eee' }}>
-        <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap>
-          {Object.entries(statusMap).map(([key, value]) => (
-            <Stack key={key} direction="row" alignItems="center" spacing={1}>
-              <Box sx={{ width: 14, height: 14, bgcolor: value.color, borderRadius: '4px' }} />
-              <Typography variant="caption" fontWeight={600} color="text.secondary">{value.label}</Typography>
-            </Stack>
-          ))}
-        </Stack>
-      </Paper>
+      {/* STATS SECTION */}
+      <Stack direction="row" spacing={2} mb={3}>
+        {Object.entries(statusMap).map(([key, val]) => (
+          <Box key={key} sx={{ px: 2, py: 1, borderRadius: 1, border: '1px solid #ddd', bgcolor: '#fff' }}>
+            <Typography variant="body2" fontWeight={700}>{val.label}: {rooms.filter(r => r.displayStatus === key).length}</Typography>
+          </Box>
+        ))}
+      </Stack>
+<TableContainer component={Paper} sx={{ borderRadius: 2, border: '1px solid #e0e0e0', boxShadow: 'none' }}>
+  <Table>
+    <TableHead sx={{ bgcolor: '#f9f9f9' }}>
+      <TableRow>
+        <TableCell sx={{ fontWeight: 800 }}>Lưu trú</TableCell>
+        <TableCell sx={{ fontWeight: 800 }}>Địa chỉ</TableCell>
+        <TableCell sx={{ fontWeight: 800 }}>Phòng</TableCell>
+        <TableCell sx={{ fontWeight: 800 }}>Tên khách</TableCell>
+        <TableCell sx={{ fontWeight: 800 }}>Số liên hệ</TableCell>
+        <TableCell sx={{ fontWeight: 800 }}>Trạng thái</TableCell>
+        <TableCell sx={{ fontWeight: 800 }} align="center">Thao tác</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {rooms.map((room) => {
+        const status = statusMap[room.displayStatus] || { color: '#000', label: room.displayStatus };
+        return (
+          <TableRow key={room._id} hover>
+            <TableCell>{room.hotelName || "N/A"}</TableCell>
+            <TableCell sx={{ fontSize: '0.85rem', color: '#666' }}>{room.hotelAddress || "N/A"}</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>{room.roomName}</TableCell>
+            <TableCell>{room.bookingDetails?.customerName || "Đang trống"}</TableCell>
+            <TableCell>
+              {room.bookingDetails?.customerPhone ? `Số ĐT: ${room.bookingDetails.customerPhone}` : "Đang trống"}
+            </TableCell>
+            <TableCell>
+              <Box sx={{ 
+                px: 1.5, py: 0.5, borderRadius: 1, display: 'inline-block',
+                bgcolor: `${status.color}15`, color: status.color, 
+                fontWeight: 700, fontSize: '0.85rem', border: `1px solid ${status.color}`
+              }}>
+                {status.label}
+              </Box>
+            </TableCell>
+            <TableCell align="center">
+              <IconButton onClick={(e) => { setAnchorEl(e.currentTarget); setPopoverData(room); }}>
+                <SettingsIcon />
+              </IconButton>
+            </TableCell>
+          </TableRow>
+        );
+      })}
+    </TableBody>
+  </Table>
+</TableContainer>
 
-      {/* GRID PHÒNG */}
-      {rooms.length === 0 ? (
-        <Alert severity="info">Hiện chưa có dữ liệu phòng nào được tạo.</Alert>
-      ) : (
-        <Grid container spacing={2.5}>
-          {rooms.map((room) => (
-            <Grid item xs={12} sm={6} md={4} lg={2.4} key={room._id}> 
-              <Paper
-                elevation={0}
-                onClick={(e) => handleOpenPopover(e, room)}
-                sx={{
-                  p: 2.5,
-                  cursor: 'pointer',
-                  borderRadius: 4,
-                  border: '1px solid #eef0f2',
-                  borderTop: `6px solid ${statusMap[room.displayStatus].color}`,
-                  bgcolor: '#fff',
-                  transition: 'all 0.25s ease-in-out',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  '&:hover': { 
-                    transform: 'translateY(-6px)', 
-                    boxShadow: '0 12px 24px rgba(0,0,0,0.08)',
-                    borderColor: statusMap[room.displayStatus].color 
-                  }
-                }}
-              >
-                <Box>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                    <Typography variant="h6" fontWeight={800} sx={{ color: '#2d3436', lineHeight: 1.2 }}>
-                      {room.roomName}
-                    </Typography>
-                    <MeetingRoomIcon sx={{ color: '#dfe6e9', fontSize: 20 }} />
-                  </Stack>
-                  <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" sx={{ mt: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {room.roomType}
-                  </Typography>
-                  <Typography variant="caption" color="text.disabled">{room.hotelName}</Typography>
-                </Box>
-
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mt={3}>
-                  <Chip 
-                    label={statusMap[room.displayStatus].label} 
-                    size="small" 
-                    sx={{ 
-                      fontWeight: 800, 
-                      fontSize: '0.6rem', 
-                      bgcolor: statusMap[room.displayStatus].color, 
-                      color: '#fff',
-                      px: 0.5
-                    }} 
-                  />
-                  <Typography variant="subtitle2" fontWeight={800} color="#2d3436">
-  {room.price ? `${room.price.toLocaleString()}đ` : 'Liên hệ'}
-</Typography>
-                </Stack>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-
-      {/* CHI TIẾT KHI CLICK (POPOVER) */}
-      <Popover
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-        PaperProps={{ sx: { borderRadius: 4, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', minWidth: 280, p: 1 } }}
-      >
+      <Popover open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={() => setAnchorEl(null)}>
         {popoverData && (
-          <Box p={1.5}>
-            {popoverData.bookingDetails ? (
-              <Box mb={2} p={2} sx={{ bgcolor: '#fff5f5', borderRadius: 3, border: '1px solid #ffe3e3' }}>
-                <Typography variant="subtitle2" color="error" fontWeight={800} mb={1}>Thông tin khách đang thuê</Typography>
-                <Typography variant="body2" sx={{ mb: 0.5 }}><b>Khách:</b> {popoverData.bookingDetails.customerName}</Typography>
-                <Typography variant="body2" sx={{ mb: 0.5 }}><b>Trả phòng:</b> {new Date(popoverData.bookingDetails.checkOut).toLocaleDateString('vi-VN')}</Typography>
-                <Typography variant="body2"><b>Thanh toán:</b> 
-                   <Chip label={popoverData.bookingDetails.paymentStatus} size="small" color="primary" sx={{ ml: 1, height: 18, fontSize: '0.6rem' }} />
-                </Typography>
-              </Box>
-            ) : (
-              <Box mb={2} p={2} sx={{ bgcolor: '#f0fff4', borderRadius: 3, border: '1px solid #c6f6d5' }}>
-                <Typography variant="subtitle2" fontWeight={800} color="success.main">Phòng trống</Typography>
-                <Typography variant="caption" color="text.secondary">Sẵn sàng để đón khách hoặc thực hiện bảo trì định kỳ.</Typography>
-              </Box>
-            )}
-
-            <Stack spacing={1.5}>
-               {popoverData.displayStatus === 'maintenance' ? (
-                 <Button 
-                    fullWidth 
-                    variant="contained" 
-                    color="success" 
-                    startIcon={<CheckCircleIcon />}
-                    onClick={() => handleUpdateStatus(popoverData._id, 'active')}
-                    sx={{ borderRadius: 2, fontWeight: 700 }}
-                 >
-                   Hoàn tất bảo trì
-                 </Button>
-               ) : (
-                 !popoverData.bookingDetails && (
-                   <Button 
-                      fullWidth 
-                      variant="outlined" 
-                      color="inherit" 
-                      startIcon={<BuildIcon />}
-                      onClick={() => handleUpdateStatus(popoverData._id, 'maintenance')}
-                      sx={{ borderRadius: 2, fontWeight: 700, borderColor: '#ddd' }}
-                   >
-                     Bắt đầu bảo trì
-                   </Button>
-                 )
-               )}
-            </Stack>
+          <Box p={2} sx={{ width: 260 }}>
+            <Typography variant="subtitle1" fontWeight={800} mb={1}>{popoverData.roomName}</Typography>
+            <Button 
+              fullWidth variant="contained" 
+              color={popoverData.displayStatus === 'maintenance' ? 'success' : 'inherit'}
+              startIcon={popoverData.displayStatus === 'maintenance' ? <CheckCircleIcon /> : <BuildIcon />}
+              onClick={async () => {
+                await updateRoomStatus(popoverData._id, popoverData.displayStatus === 'maintenance' ? 'active' : 'maintenance');
+                setAnchorEl(null);
+                fetchRooms();
+              }}
+            >
+              {popoverData.displayStatus === 'maintenance' ? 'Hoàn tất bảo trì' : 'Chuyển bảo trì'}
+            </Button>
           </Box>
         )}
       </Popover>
 
-      {/* THÔNG BÁO (TOAST) */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
-          {snackbar.message}
-        </Alert>
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({...snackbar, open: false})}>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>
   );

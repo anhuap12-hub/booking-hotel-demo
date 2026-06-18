@@ -15,12 +15,11 @@ export default function DealsSection() {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Hiệu ứng Parallax nhẹ cho ảnh
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
   });
-  const yImage = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
+  const yImage = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
 
   useEffect(() => {
     getAllHotels()
@@ -41,59 +40,50 @@ export default function DealsSection() {
   if (!loading && maxDiscount === 0) return null;
 
   return (
-    <Container maxWidth="lg" sx={{ mb: { xs: 10, md: 15 }, mt: 5 }} ref={containerRef}>
+    // GIỮ NGUYÊN HOÀN HẢO KHOẢNG CÁCH LỀ NGOÀI CỦA BẠN
+    <Container maxWidth="lg" sx={{ mb: -12, mt: 1, position: "relative" }} ref={containerRef}>
+      
       {/* HEADER SECTION */}
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 6 }}>
-        <StarsIcon sx={{ color: "#C2A56D", fontSize: 32 }} />
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2.5 }}>
+        <StarsIcon sx={{ color: "#006CE4", fontSize: 22 }} /> {/* Đổi icon sang xanh lam chuẩn Booking */}
         <Box>
           <Typography
             sx={{
-              textTransform: "uppercase",
-              fontSize: "0.7rem",
-              fontWeight: 800,
-              letterSpacing: "0.4em",
-              color: "#C2A56D",
-              mb: 0.5
+              fontFamily: "Inter, -apple-system, sans-serif",
+              fontSize: { xs: "1.25rem", md: "1.35rem" },
+              fontWeight: 700,
+              color: "#1A1A1A",
+              lineHeight: 1.2,
             }}
           >
-            Exclusive Benefits
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: { xs: 28, md: 36 },
-              fontWeight: 900,
-              color: "#1C1B19",
-              lineHeight: 1,
-            }}
-          >
-            Đặc quyền thành viên
+            Ưu đãi
           </Typography>
         </Box>
       </Stack>
 
+      {/* MAIN BANNER - Chuyển hoàn toàn sang tông nền sáng dịu mắt */}
       <MotionPaper
-        initial={{ y: 50, opacity: 0 }}
+        initial={{ y: 30, opacity: 0 }}
         whileInView={{ y: 0, opacity: 1 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        elevation={0} // Bỏ bóng đổ đen nặng nề
         sx={{
-          borderRadius: "40px",
+          borderRadius: "12px",
           overflow: "hidden",
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
-          bgcolor: "#1C1B19", 
-          color: "#F1F0EE",
-          boxShadow: "0 60px 100px -30px rgba(0,0,0,0.5)",
+          bgcolor: "#EBF3FF", // ĐÃ ĐỔI: Màu xanh nhạt dịu mát cao cấp, cực hợp nền trắng
+          color: "#1A1A1A",   // ĐÃ ĐỔI: Chữ chuyển sang màu tối để dễ đọc
           position: "relative",
-          border: "1px solid rgba(194, 165, 109, 0.2)",
+          border: "1px solid #D6E6FE", // Khung viền mảnh tinh tế
         }}
       >
         {/* LEFT: TEXT CONTENT */}
         <Box
           sx={{
-            p: { xs: 6, md: 10 },
-            flex: 1.2,
+            p: { xs: 4, md: 5 },
+            flex: 1.3,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -101,75 +91,76 @@ export default function DealsSection() {
             zIndex: 2
           }}
         >
+          {/* Tiêu đề trong Banner */}
           <Typography
             sx={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: { xs: 40, md: 56 },
-              fontWeight: 900,
-              lineHeight: 1.05,
-              mb: 3,
-              letterSpacing: "-0.03em"
+              fontFamily: "Inter, -apple-system, sans-serif",
+              fontSize: { xs: "1.5rem", md: "1.8rem" },
+              fontWeight: 800,
+              lineHeight: 1.2,
+              mb: 1.5,
+              color: "#1A1A1A"
             }}
           >
-            Nghệ thuật <br /> 
-            <Box component="span" sx={{ color: "#C2A56D", fontStyle: "italic", fontWeight: 400 }}>Sống chậm</Box>
+            Ưu đãi mùa du lịch{" "}
+        
           </Typography>
 
           {loading ? (
-            <Box sx={{ mb: 4 }}>
-              <Skeleton sx={{ bgcolor: "rgba(255,255,255,0.05)", mb: 1 }} width="85%" height={24} />
-              <Skeleton sx={{ bgcolor: "rgba(255,255,255,0.05)" }} width="65%" height={24} />
+            <Box sx={{ mb: 3 }}>
+              <Skeleton sx={{ bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} width="50%" height={16} />
+              <Skeleton sx={{ bgcolor: "rgba(0,0,0,0.06)" }} width="65%" height={16} />
             </Box>
           ) : (
             <Typography
               sx={{
-                fontSize: { xs: 17, md: 19 },
-                lineHeight: 1.8,
-                color: "rgba(241,240,238,0.6)",
-                maxWidth: 480,
-                mb: 6,
-                fontWeight: 300
+                fontFamily: "Inter, sans-serif",
+                fontSize: { xs: "0.875rem", md: "0.925rem" },
+                lineHeight: 1.6,
+                color: "#4A4A4A", // Màu xám đậm sắc nét, đọc lâu không mỏi mắt
+                maxWidth: 440,
+                mb: 4,
+                fontWeight: 400
               }}
             >
-              Tận hưởng kỳ nghỉ thượng lưu với ưu đãi giới hạn lên đến{" "}
+              Tận hưởng kỳ nghỉ với ưu đãi giới hạn lên đến{" "}
               <Box 
                 component="span" 
                 sx={{ 
-                  color: "#C2A56D", 
-                  fontFamily: "'Playfair Display', serif", 
-                  fontSize: "1.8rem", 
-                  fontWeight: 900,
-                  mx: 0.5 
+                  color: "#D4111E", // Đổi màu đỏ/cam nổi bật đặc trưng của nhãn giảm giá Booking
+                  fontSize: "1rem", 
+                  fontWeight: 700,
+                  mx: 0.2 
                 }}
               >
                 {maxDiscount}%
-              </Box>. 
-              Nơi mỗi khoảnh khắc đều được trân trọng như một tác phẩm nghệ thuật.
+              </Box>
+              . Vi vu du lịch với các ưu đãi. An tâm nghỉ dưỡng.    
             </Typography>
           )}
 
+          {/* Button - Chuyển sang nút xanh đậm tương phản cao */}
           <Button
             onClick={() => navigate("/deals")}
             endIcon={<ArrowForwardIcon />}
             component={motion.button}
-            whileHover={{ gap: "20px" }}
+            whileHover={{ gap: "12px" }}
             sx={{
               alignSelf: "flex-start",
-              px: 6,
-              py: 2.2,
-              borderRadius: "100px",
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-              fontWeight: 800,
-              fontSize: 13,
-              bgcolor: "#C2A56D",
-              color: "#1C1B19",
-              transition: "0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-              "& .MuiButton-endIcon": { transition: "0.3s" },
+              px: 4,
+              py: 1.2,
+              borderRadius: "6px",
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.875rem", 
+              bgcolor: "#006CE4", // Xanh dương thương hiệu Booking nổi bật trên nền nhạt
+              color: "#FFFFFF",
+              transition: "0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              "& .MuiButton-endIcon": { transition: "0.3s", fontSize: "16px" }, 
               "&:hover": {
-                bgcolor: "#fff",
-                color: "#1C1B19",
-                transform: "translateY(-5px)"
+                bgcolor: "#0053B3",
+                color: "#FFFFFF",
+                transform: "translateY(-2px)"
               },
             }}
           >
@@ -180,9 +171,9 @@ export default function DealsSection() {
         {/* RIGHT: IMAGE SECTION WITH PARALLAX */}
         <Box
           sx={{
-            flex: 0.8,
+            flex: 0.7,
             position: "relative",
-            minHeight: { xs: 400, md: "auto" },
+            minHeight: { xs: 200, md: "auto" },
             overflow: "hidden"
           }}
         >
@@ -193,18 +184,18 @@ export default function DealsSection() {
             alt="luxury-resort"
             sx={{
               width: "100%",
-              height: "120%", // Cao hơn container để có không gian chạy parallax
+              height: "116%", 
               objectFit: "cover",
-              filter: "brightness(0.7) contrast(1.1)",
+              filter: "brightness(1) contrast(1.1)", // Tăng độ sáng ảnh để tệp với nền mới
             }}
           />
-          {/* Subtle Overlay */}
+          {/* Lớp phủ mờ Gradient hòa vào màu nền xanh nhạt bên trái */}
           <Box sx={{
             position: "absolute",
             top: 0, left: 0, width: "100%", height: "100%",
             background: {
-              xs: "linear-gradient(to top, #1C1B19 5%, transparent 60%)",
-              md: "linear-gradient(to right, #1C1B19 0%, transparent 50%)"
+              xs: "linear-gradient(to top, #EBF3FF 5%, transparent 10%)",
+              md: "linear-gradient(to right, #EBF3FF 0%, transparent 10%)"
             }
           }} />
         </Box>

@@ -17,7 +17,7 @@ export default function HotelHeaderSummary({ hotel }) {
         variant="h1"
         sx={{
           fontFamily: "'Playfair Display', serif",
-          fontSize: { xs: "2rem", md: "2.8rem" },
+          fontSize: { xs: "2rem", md: "2rem" },
           fontWeight: 900,
           color: "#1C1B19",
           mb: 1.5,

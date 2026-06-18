@@ -2,23 +2,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import axios from "../../api/axios";
 import {
-  Button,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Typography,
-  Stack,
-  Paper,
-  TableContainer,
-  CircularProgress,
-  Box,
-  TextField,
-  MenuItem,
-  Avatar,
-  Chip,
+  Button, Table, TableHead, TableRow, TableCell, TableBody,
+  Typography, Stack, Paper, TableContainer, CircularProgress,
+  Box, TextField, MenuItem, Avatar, Chip, IconButton
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 const AdminHotels = () => {
   const [hotels, setHotels] = useState([]);
@@ -26,7 +16,6 @@ const AdminHotels = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [cityFilter, setCityFilter] = useState("all");
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,204 +23,103 @@ const AdminHotels = () => {
       try {
         const res = await axios.get("/hotels");
         setHotels(res.data.data || res.data || []);
-      } catch (err) {
-        console.error("Error fetching hotels:", err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error(err); } 
+      finally { setLoading(false); }
     };
     fetchHotels();
   }, []);
 
   const filteredHotels = useMemo(() => {
-    return hotels.filter((hotel) => {
-      const matchesName = (hotel.name || "").toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = typeFilter === "all" || hotel.type === typeFilter;
-      const matchesCity = cityFilter === "all" || hotel.city === cityFilter;
-      return matchesName && matchesType && matchesCity;
+    return hotels.filter((h) => {
+      return (h.name || "").toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (typeFilter === "all" || h.type === typeFilter) &&
+        (cityFilter === "all" || h.city === cityFilter);
     });
   }, [hotels, searchTerm, typeFilter, cityFilter]);
 
-  const uniqueCities = useMemo(() => {
-    const cities = hotels.map((h) => h.city).filter(Boolean);
-    return ["all", ...new Set(cities)];
-  }, [hotels]);
+  const uniqueCities = useMemo(() => ["all", ...new Set(hotels.map((h) => h.city).filter(Boolean))], [hotels]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa khách sạn này và toàn bộ phòng liên quan?")) return;
+    if (!window.confirm("Xóa khách sạn này?")) return;
     try {
       await axios.delete(`/hotels/${id}`);
       setHotels((prev) => prev.filter((h) => h._id !== id));
-    } catch (err) {
-      alert(err.response?.data?.message || "Lỗi khi xóa khách sạn");
-    }
+    } catch (err) { alert("Lỗi xóa khách sạn"); }
   };
 
-  if (loading)
-    return (
-      <Box display="flex" justifyContent="center" py={10}>
-        <CircularProgress sx={{ color: "#3E2C1C" }} />
-      </Box>
-    );
+  if (loading) return <Box display="flex" justifyContent="center" py={10}><CircularProgress sx={{ color: '#2D3436' }} /></Box>;
 
   return (
-    <Stack spacing={3} sx={{ p: { xs: 2, md: 4 } }}>
+    <Stack spacing={3} sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8F9FA', minHeight: '100vh' }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h4" fontWeight="bold" color="#3E2C1C">
-          Quản Lý Khách Sạn
-        </Typography>
-        <Button
-          variant="contained"
-          component={Link}
-          to="/admin/hotels/new"
-          sx={{ bgcolor: "#3E2C1C", "&:hover": { bgcolor: "#2F2116" }, textTransform: 'none' }}
-        >
-          Thêm Khách Sạn Mới
-        </Button>
+        <Box>
+          <Typography variant="h4" fontWeight="800" sx={{ color: '#2D3436' }}>Danh mục Khách sạn</Typography>
+        </Box>
+        <Button variant="contained" component={Link} to="/admin/hotels/new" startIcon={<AddIcon />}
+          sx={{ bgcolor: '#2D3436', '&:hover': { bgcolor: '#000' }, borderRadius: 2 }}>Thêm mới</Button>
       </Stack>
 
-      <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #E5E2DC' }} elevation={0}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <TextField
-            label="Tìm theo tên..."
-            size="small"
-            fullWidth
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <TextField
-            select
-            label="Loại hình"
-            size="small"
-            sx={{ minWidth: 150 }}
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-          >
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value="hotel">Khách sạn</MenuItem>
-            <MenuItem value="apartment">Căn hộ</MenuItem>
-            <MenuItem value="resort">Resort</MenuItem>
-            <MenuItem value="villa">Villa</MenuItem>
-          </TextField>
-          <TextField
-            select
-            label="Thành phố"
-            size="small"
-            sx={{ minWidth: 150 }}
-            value={cityFilter}
-            onChange={(e) => setCityFilter(e.target.value)}
-          >
-            {uniqueCities.map((city) => (
-              <MenuItem key={city} value={city}>
-                {city === "all" ? "Tất cả thành phố" : city}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Stack>
+      <Paper sx={{ p: 2, borderRadius: 3, display: 'flex', gap: 2, boxShadow: 'none', border: '1px solid #EEE' }}>
+        <TextField label="Tìm tên..." size="small" fullWidth value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <TextField select label="Loại" size="small" sx={{ minWidth: 120 }} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <MenuItem value="all">Tất cả</MenuItem>
+          {['hotel', 'apartment', 'resort', 'villa'].map(t => <MenuItem key={t} value={t}>{t.toUpperCase()}</MenuItem>)}
+        </TextField>
       </Paper>
 
-      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E2DC' }}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ bgcolor: "#F9F8F6" }}>
-              <TableCell><b>Thông tin khách sạn</b></TableCell>
-              <TableCell><b>Địa điểm</b></TableCell>
-              <TableCell align="center"><b>Trạng thái</b></TableCell>
-              <TableCell align="center"><b>Quy mô</b></TableCell>
-              <TableCell align="center"><b>Hành động</b></TableCell>
+      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 'none', border: '1px solid #EEE' }}>
+        <Table sx={{ tableLayout: 'fixed', minWidth: 900 }}>
+          <TableHead sx={{ bgcolor: '#F4F6F8' }}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700, width: '25%' }}>Khách sạn</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: '15%' }}>Địa điểm</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: '12%' }} align="center">Trạng thái</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: '18%' }} align="center">Trạng thái phòng</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: '10%' }} align="center">Số phòng</TableCell>
+              <TableCell sx={{ fontWeight: 700, width: '20%' }} align="center">Hành động</TableCell>
             </TableRow>
           </TableHead>
-
           <TableBody>
-            {filteredHotels.length > 0 ? (
-              filteredHotels.map((hotel) => (
-                <TableRow key={hotel._id} hover>
+            {filteredHotels.map((hotel) => {
+              const roomsList = Array.isArray(hotel.rooms) ? hotel.rooms : [];
+              const hasMaintenance = roomsList.some(r => r.status === 'maintenance');
+              const hasActive = roomsList.some(r => r.status === 'active');
+              
+              return (
+                <TableRow key={hotel._id} hover sx={{ '& td': { borderBottom: '1px solid #EEE', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }}>
                   <TableCell>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar
-                        src={hotel.photos?.[0]?.url || ""} 
-                        variant="rounded"
-                        sx={{ width: 55, height: 55, border: "1px solid #eee", bgcolor: '#F0EBE3', color: '#3E2C1C' }}
-                      >
-                        {hotel.name?.charAt(0)}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {hotel.name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ textTransform: "uppercase", color: "#C2A56D", fontWeight: 600 }}>
-                          {hotel.type}
-                        </Typography>
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ overflow: 'hidden' }}>
+                      <Avatar src={hotel.photos?.[0]?.url} variant="rounded" sx={{ width: 45, height: 45 }} />
+                      <Box sx={{ overflow: 'hidden' }}>
+                        <Typography fontWeight="700" noWrap>{hotel.name}</Typography>
+                        <Typography variant="caption" sx={{ color: '#636E72', textTransform: 'uppercase' }}>{hotel.type}</Typography>
                       </Box>
                     </Stack>
                   </TableCell>
-
                   <TableCell>
-                    <Typography variant="body2" fontWeight={500}>{hotel.city}</Typography>
-                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 200 }}>
-                      {hotel.address}
-                    </Typography>
+                    <Typography variant="body2" fontWeight="600">{hotel.city}</Typography>
+                    <Typography variant="caption" sx={{ display: 'block' }}>{hotel.address}</Typography>
                   </TableCell>
-
                   <TableCell align="center">
-                    <Chip 
-                      label={hotel.status === "active" ? "Hoạt động" : "Tạm ngưng"}
-                      color={hotel.status === "active" ? "success" : "default"}
-                      size="small"
-                      variant="soft"
-                      sx={{ fontWeight: 600, fontSize: '0.75rem' }}
-                    />
+                    <Chip label={hotel.status === "active" ? "Hoạt động" : "Tạm dừng"} color={hotel.status === "active" ? "success" : "default"} size="small" />
                   </TableCell>
-
                   <TableCell align="center">
-                    <Typography variant="body2" fontWeight={600}>
-                      {hotel.rooms?.length || 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">phòng</Typography>
+                    <Chip label={hasMaintenance ? "Có bảo trì" : (hasActive ? "Sẵn sàng" : "Chưa có")} 
+                          color={hasMaintenance ? "warning" : "info"} size="small" variant="outlined" />
                   </TableCell>
-
+                  <TableCell align="center">{roomsList.length} phòng</TableCell>
                   <TableCell align="center">
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        sx={{ color: '#3E2C1C', borderColor: '#3E2C1C' }}
-                        onClick={() => navigate(`/admin/hotels/${hotel._id}/edit`)}
-                      >
-                        Sửa
-                      </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        sx={{ bgcolor: '#C2A56D', '&:hover': { bgcolor: '#B1945C' } }}
-                        onClick={() => navigate(`/admin/hotels/${hotel._id}/rooms`)}
-                      >
-                        Phòng
-                      </Button>
-                      <Button
-                        variant="text"
-                        size="small"
-                        color="error"
-                        onClick={() => handleDelete(hotel._id)}
-                      >
-                        Xóa
-                      </Button>
-                    </Stack>
+                    <IconButton size="small" color="primary" onClick={() => navigate(`/admin/hotels/${hotel._id}/edit`)}><EditIcon fontSize="small"/></IconButton>
+                    <IconButton size="small" sx={{ color: '#D63031' }} onClick={() => handleDelete(hotel._id)}><DeleteOutlineIcon fontSize="small"/></IconButton>
+                    <Button variant="outlined" size="small" sx={{ ml: 1, borderRadius: 2 }} onClick={() => navigate(`/admin/hotels/${hotel._id}/rooms`)}>Quản lý</Button>
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                  <Typography color="text.secondary">Không tìm thấy khách sạn nào khớp với bộ lọc</Typography>
-                </TableCell>
-              </TableRow>
-            )}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
     </Stack>
   );
 };
-
 export default AdminHotels;

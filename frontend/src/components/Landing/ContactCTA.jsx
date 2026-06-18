@@ -9,76 +9,74 @@ import LoginIcon from "@mui/icons-material/Login";
 
 export default function ContactCTA() {
   return (
-    <Container maxWidth="xl" sx={{ mb: 10 }}>
+    <Container maxWidth="md" sx={{ mb: 8 }}>
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 4, md: 6 },
-          borderRadius: 5,
+          p: { xs: 3, md: 5 },
+          borderRadius: 4,
           textAlign: "center",
-          color: "#f5f5f5",
-          background:
-            "linear-gradient(145deg, #2c2a28 0%, #1f1e1c 100%)",
+          color: "#1a1a1a",
+          // Màu xanh đậm hơn để bớt "mờ", thêm shadow để nổi khối
+          background: "linear-gradient(135deg, #e6f0ff 0%, #dbe9ff 100%)",
+          border: "1px solid #c2d6ff", 
+          boxShadow: "0 4px 12px rgba(0, 53, 128, 0.08)",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* subtle light */}
-        <Box
-          sx={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 60%)",
-          }}
-        />
-
         <Typography
-          variant="h3"
+          variant="h4"
           gutterBottom
           sx={{
-            fontFamily: "Playfair Display, serif",
-            fontWeight: 600,
-            letterSpacing: "-0.5px",
+            fontFamily: "'Playfair Display', serif",
+            fontWeight: 700,
+            fontSize: { xs: "1.75rem", md: "2.2rem" },
+            position: "relative",
+            zIndex: 1
           }}
         >
           Trải nghiệm ưu đãi{" "}
-          <Box component="span" sx={{ color: "#c7a76c" }}>
+          <Box component="span" sx={{ color: "#003580" }}>
             Genius
           </Box>
         </Typography>
 
         <Typography
           sx={{
-            mb: 4,
-            maxWidth: 520,
+            mb: 3,
+            maxWidth: 500,
             mx: "auto",
-            color: "rgba(255,255,255,0.75)",
-            fontSize: 15,
+            color: "#4a4a4a",
+            fontSize: { xs: "0.95rem", md: "1rem" },
+            lineHeight: 1.5,
+            position: "relative",
+            zIndex: 1
           }}
         >
-          Đăng nhập để mở khóa mức giá tinh tuyển và đặc quyền dành riêng cho
-          những kỳ nghỉ mang dấu ấn riêng.
+          Đăng nhập để mở khóa mức giá và các ưu đãi dành riêng cho kỳ nghỉ của bạn.
         </Typography>
 
         <Button
           variant="contained"
-          size="large"
+          size="medium"
           startIcon={<LoginIcon />}
           href="/login"
           sx={{
-            px: 4.5,
-            py: 1.5,
-            fontWeight: 500,
-            fontFamily: "Inter, sans-serif",
-            bgcolor: "#c7a76c",
-            color: "#1f1e1c",
-            borderRadius: 999,
+            px: 4,
+            py: 1.2,
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            fontFamily: "'Inter', sans-serif",
+            bgcolor: "#003580", 
+            color: "#ffffff",
+            borderRadius: 2,
             textTransform: "none",
-            boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
+            boxShadow: "0 2px 8px rgba(0, 53, 128, 0.25)", // Thêm shadow cho nút
+            transition: "all 0.2s ease",
             "&:hover": {
-              bgcolor: "#d6b980",
-              transform: "translateY(-2px)",
+              bgcolor: "#00224f",
+              boxShadow: "0 4px 16px rgba(0, 53, 128, 0.3)",
             },
           }}
         >

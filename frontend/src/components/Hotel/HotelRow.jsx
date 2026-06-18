@@ -1,136 +1,118 @@
 import React, { useMemo, memo } from "react";
 import { Box, Typography, Paper, Stack, Button } from "@mui/material";
-import { LocationOn, Star } from "@mui/icons-material";
+import { LocationOn, Star, ChevronRight, CheckCircleOutline } from "@mui/icons-material";
 
-// Dùng memo để ngăn Component vẽ lại khi không cần thiết
+const BLUE = "#0056b3";
+
 const HotelRow = memo(({ hotel, navigate }) => {
-  const priceInfo = useMemo(() => {
-    if (!hotel.rooms?.length) return null;
-    return hotel.rooms
-      .map((r) => ({
-        curr: (r.price || 0) * (1 - (r.discount || 0) / 100),
-      }))
-      .sort((a, b) => a.curr - b.curr)[0];
-  }, [hotel.rooms]);
+ const priceInfo = useMemo(() => {
+  if (!hotel.rooms?.length) return null;
+  
+  // Tìm phòng có giá cuối cùng thấp nhất
+  const cheapestRoom = hotel.rooms.reduce((min, cur) => {
+    const curFinal = (cur.price || 0) * (1 - (cur.discount || 0) / 100);
+    const minFinal = (min.price || 0) * (1 - (min.discount || 0) / 100);
+    return curFinal < minFinal ? cur : min;
+  }, hotel.rooms[0]);
+
+  const final = Math.round(cheapestRoom.price * (1 - (cheapestRoom.discount || 0) / 100));
+  
+  return {
+    original: cheapestRoom.price,
+    final: final,
+    hasDiscount: (cheapestRoom.discount || 0) > 0
+  };
+}, [hotel.rooms]);
+
+  // Lấy câu đầu tiên của mô tả (cắt theo dấu chấm hoặc giới hạn ký tự)
+  const firstDesc = useMemo(() => {
+    if (!hotel.desc) return "";
+    return hotel.desc.split(/[.!?]/)[0] + ".";
+  }, [hotel.desc]);
 
   return (
     <Paper
       elevation={0}
       onClick={() => navigate(`/hotels/${hotel._id}`)}
       sx={{
-        p: 0,
-        mb: 4,
-        borderRadius: "24px",
+        p: 1.5,
+        mb: 2,
+        borderRadius: "16px",
         display: "flex",
-        overflow: "hidden",
-        border: "1px solid rgba(194, 165, 109, 0.2)",
-        // Responsive: Mobile hiện cột, Desktop hiện hàng
+        alignItems: "stretch", // Chuyển sang stretch để các khối cao bằng nhau
+        border: "1px solid #e0e0e0",
         flexDirection: { xs: "column", sm: "row" },
-        transition: "all 0.4s ease",
+        transition: "all 0.3s ease",
         cursor: "pointer",
-        "&:hover": {
-          transform: "translateY(-4px)",
-          borderColor: "#C2A56D",
-          boxShadow: "0 20px 40px rgba(28, 27, 25, 0.08)",
-        },
+        "&:hover": { borderColor: BLUE, boxShadow: "0 4px 12px rgba(0, 86, 179, 0.15)" },
       }}
     >
-      {/* KHỐI CHỨA ẢNH - Đã sửa để đồng bộ kích thước */}
-      <Box
-        sx={{
-          // Độ rộng: Mobile full, Desktop cố định
-          width: { xs: "100%", sm: 260, md: 300 },
-          // Chiều cao: Cố định cho cả 2 để đồng bộ khuôn
-          height: { xs: 220, sm: 240 }, 
-          overflow: "hidden",
-          flexShrink: 0, // Đảm bảo khối ảnh không bị bóp méo
-        }}
-      >
-        <Box
-          component="img"
-          // Ưu tiên hotel.images theo cấu trúc cũ hoặc hotel.photos tùy data của bạn
-          src={hotel.images?.[0] || hotel.photos?.[0]?.url || "https://via.placeholder.com/400x300?text=Coffee+Stay"}
-          sx={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover", // Quan trọng nhất để ảnh không bị méo
-            transition: "transform 0.6s ease",
-            "&:hover": { transform: "scale(1.1)" },
-          }}
-        />
+      {/* ẢNH */}
+      <Box sx={{ width: { xs: "100%", sm: 200 }, height: 160, overflow: "hidden", borderRadius: "12px", flexShrink: 0 }}>
+        <Box component="img" src={hotel.images?.[0] || hotel.photos?.[0]?.url} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </Box>
 
-      {/* KHỐI NỘI DUNG */}
-      <Box sx={{ flex: 1, p: 3, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            fontFamily: "'Playfair Display', serif",
-            fontWeight: 800,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis", // Cắt tên khách sạn nếu quá dài
-          }}
-        >
-          {hotel.name}
-        </Typography>
+      {/* NỘI DUNG */}
+      <Box sx={{ flex: 1, px: 2, py: 0.5, display: "flex", flexDirection: "column", minWidth: 0, gap: 0.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ color: "#333", lineHeight: 1.2 }}>{hotel.name}</Typography>
+          
+          {hotel.rating && (
+            <Box sx={{ display: "flex", alignItems: "center", bgcolor: "#fff9c4", px: 1, py: 0.2, borderRadius: "6px", border: "1px solid #fbc02d", ml: 1, flexShrink: 0 }}>
+              <Star sx={{ fontSize: 13, color: "#fbc02d", mr: 0.3 }} />
+              <Typography fontSize={11} fontWeight={700} color="#856404">{hotel.rating.toFixed(1)}</Typography>
+            </Box>
+          )}
+        </Box>
 
-        <Stack direction="row" spacing={2} alignItems="center" mb={2} mt={1}>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Star sx={{ fontSize: 18, color: "#C2A56D" }} />
-            <Typography fontWeight={800}>{hotel.rating || "Mới"}</Typography>
-          </Stack>
-          <Typography variant="body2" color="#A8A7A1" sx={{ display: 'flex', alignItems: 'center' }}>
-            <LocationOn sx={{ fontSize: 16, mr: 0.5 }} /> {hotel.city}
-          </Typography>
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <LocationOn sx={{ fontSize: 13, color: "text.secondary" }} />
+          <Typography variant="caption" color="text.secondary">{hotel.city}</Typography>
         </Stack>
 
-        <Typography
-          variant="body2"
-          color="#72716E"
-          sx={{
-            mb: 2,
-            display: "-webkit-box",
-            WebkitLineClamp: 2, // Giới hạn đúng 2 dòng mô tả
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            height: "3em", // Giữ khoảng trống cố định cho 2 dòng
-          }}
-        >
-          {hotel.desc}
-        </Typography>
+        {/* MÔ TẢ NGẮN (Câu đầu tiên) */}
+        <Typography 
+  variant="body2" 
+  color="text.secondary" 
+  sx={{ 
+    fontSize: "0.8rem", 
+    overflow: "hidden", 
+    display: "-webkit-box", 
+    WebkitLineClamp: 2, // Hiển thị đúng 2 dòng
+    WebkitBoxOrient: "vertical",
+    mb: 0.5,
+    minHeight: "2.4em" // Giữ chiều cao tối thiểu cho 2 dòng kể cả khi desc ngắn
+  }}
+>
+  {firstDesc}
+</Typography>
 
-        {/* PHẦN GIÁ VÀ NÚT - Luôn nằm dưới cùng của Card */}
-        <Box
-          sx={{
-            mt: "auto",
-            pt: 2,
-            borderTop: "1px dashed rgba(194, 165, 109, 0.2)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h5" fontWeight={900}>
-            {priceInfo ? `${Math.round(priceInfo.curr).toLocaleString()}₫` : "Liên hệ"}
-            <Typography component="span" variant="caption" sx={{ ml: 0.5 }}>
-              /đêm
-            </Typography>
-          </Typography>
-          <Button
-            variant="contained"
-            sx={{
-              bgcolor: "#1C1B19",
-              color: "#C2A56D",
-              borderRadius: "10px",
-              textTransform: "none",
-              px: 3,
-              "&:hover": { bgcolor: "#2c2a27" }
-            }}
-          >
-            Chi tiết
-          </Button>
-        </Box>
+        {/* Tiện ích */}
+        <Stack direction="row" spacing={1.5} sx={{ mt: 0.5 }}>
+          {(hotel.amenities || []).slice(0, 3).map((item, i) => (
+            <Stack key={i} direction="row" alignItems="center" spacing={0.3}>
+              <CheckCircleOutline sx={{ fontSize: 12, color: BLUE }} />
+              <Typography fontSize={11} color="text.secondary">{item}</Typography>
+            </Stack>
+          ))}
+        </Stack>
+<Box sx={{ mt: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", pt: 1, borderTop: "1px solid #eee" }}>
+  <Box>
+    {priceInfo?.hasDiscount && (
+      <Typography variant="caption" sx={{ color: "text.secondary", textDecoration: "line-through", mr: 1, display: "block", fontSize: "0.75rem" }}>
+        {priceInfo.original.toLocaleString()}₫
+      </Typography>
+    )}
+    <Typography variant="h6" fontWeight={800} color="#000" sx={{ lineHeight: 1 }}>
+      {priceInfo ? `${priceInfo.final.toLocaleString()}₫` : "Liên hệ"}
+      <Typography component="span" variant="caption" sx={{ ml: 0.5, color: "text.secondary" }}>/đêm</Typography>
+    </Typography>
+  </Box>
+  
+  <Button variant="contained" endIcon={<ChevronRight />} sx={{ bgcolor: BLUE, borderRadius: 2, textTransform: "none", fontSize: "0.75rem", py: 0.5 }}>
+    Chi tiết
+  </Button>
+</Box>
       </Box>
     </Paper>
   );

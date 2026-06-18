@@ -23,13 +23,13 @@ export default function HotelMap({ hotel }) {
       <Typography
         sx={{
           fontFamily: "Playfair Display, serif",
-          fontSize: "1.4rem",
+          fontSize: "1.3rem",
           fontWeight: 500,
           color: "text.primary",
           mb: 0.5,
         }}
       >
-        Vị trí & khu vực xung quanh
+        Vị trí và khu vực xung quanh
       </Typography>
 
       <Typography

@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-// Thay đổi cách import thành import trực tiếp từng component
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
@@ -21,6 +20,15 @@ import {
 import { useAuth } from "../../context/AuthContext";
 
 export const NAVBAR_HEIGHT = 110;
+
+// Bảng màu Booking Style
+const COLORS = {
+  primary: "#003580", // Xanh đậm Booking
+  secondary: "#FFFFFF", // Trắng
+  accent: "#FFB700",   // Vàng nhấn (nút đăng ký)
+  text: "#FFFFFF",     // Chữ trắng trên nền xanh
+  hover: "rgba(255, 255, 255, 0.15)"
+};
 
 export default function Navbar() {
   const { pathname } = useLocation();
@@ -47,29 +55,21 @@ export default function Navbar() {
         right: 0,
         height: NAVBAR_HEIGHT,
         zIndex: 1200,
-        bgcolor: "#1C1B19",
-        color: "#F1F0EE",
-        borderBottom: "1px solid rgba(194,165,109,0.15)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+        bgcolor: COLORS.primary, // Nền xanh Booking
+        color: COLORS.text,
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
       }}
     >
       <Container maxWidth="xl" sx={{ height: "100%" }}>
-        {/* ================= TOP: BRAND & ACCOUNT ================= */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ height: "55%", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
-        >
+        {/* TOP: BRAND & ACCOUNT */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ height: "55%" }}>
           <Typography
             component={Link}
             to="/"
             sx={{
-              fontFamily: "'Playfair Display', serif",
               fontSize: 24,
               fontWeight: 800,
-              letterSpacing: -0.5,
-              color: "#C2A56D",
+              color: COLORS.secondary,
               textDecoration: "none",
             }}
           >
@@ -78,34 +78,11 @@ export default function Navbar() {
 
           {!user ? (
             <Stack direction="row" spacing={1}>
-              <Button
-                component={Link}
-                to="/login"
-                startIcon={<Login sx={{ fontSize: 18 }} />}
-                sx={{
-                  color: "#F1F0EE",
-                  textTransform: "none",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  "&:hover": { color: "#C2A56D" },
-                }}
-              >
+              <Button component={Link} to="/login" sx={{ color: COLORS.secondary, textTransform: "none", "&:hover": { bgcolor: COLORS.hover } }}>
                 Đăng nhập
               </Button>
-              <Button
-                component={Link}
-                to="/register"
-                variant="contained"
-                sx={{
-                  bgcolor: "#C2A56D",
-                  color: "#1C1B19",
-                  textTransform: "none",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  borderRadius: "8px",
-                  px: 3,
-                  "&:hover": { bgcolor: "#D4BC8E" },
-                }}
+              <Button component={Link} to="/register" variant="contained"
+                sx={{ bgcolor: COLORS.secondary, color: COLORS.primary, textTransform: "none", fontWeight: 700, borderRadius: "2px", "&:hover": { bgcolor: "#f0f0f0" } }}
               >
                 Đăng ký
               </Button>
@@ -113,76 +90,40 @@ export default function Navbar() {
           ) : (
             <Stack direction="row" spacing={3} alignItems="center">
               <Stack direction="row" spacing={1} alignItems="center">
-                <Avatar 
-                  sx={{ width: 32, height: 32, bgcolor: "#C2A56D", fontSize: 14, fontWeight: 700, color: "#1C1B19" }}
-                >
+                <Avatar sx={{ width: 32, height: 32, bgcolor: COLORS.secondary, color: COLORS.primary, fontSize: 14, fontWeight: 700 }}>
                   {user.username.charAt(0).toUpperCase()}
                 </Avatar>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#F1F0EE" }}>
-                  {user.username}
-                </Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{user.username}</Typography>
               </Stack>
               <Tooltip title="Đăng xuất">
-      
-                <Button 
-                  onClick={logout} 
-                  sx={{ 
-                    minWidth: 32, 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: "50%", 
-                    color: "rgba(255,255,255,0.5)", 
-                    p: 0,
-                    "&:hover": { color: "#ff4d4f", bgcolor: "rgba(255,77,79,0.1)" } 
-                  }}
-                >
-                  <Logout sx={{ fontSize: 18 }} />
+                <Button onClick={logout} sx={{ color: COLORS.secondary, minWidth: 32, "&:hover": { bgcolor: COLORS.hover } }}>
+                  <Logout />
                 </Button>
               </Tooltip>
             </Stack>
           )}
         </Stack>
 
-        {/* ================= BOTTOM: NAVIGATION ================= */}
+        {/* BOTTOM: NAVIGATION */}
         <Stack direction="row" spacing={1} sx={{ height: "45%", alignItems: "center" }}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = item.isHome
-              ? pathname === "/"
-              : pathname.startsWith(item.path);
+            const active = item.isHome ? pathname === "/" : pathname.startsWith(item.path);
 
             return (
-              <Box
-                key={item.label}
-                component={Link}
-                to={item.path}
+              <Box key={item.label} component={Link} to={item.path}
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  px: 2,
-                  height: "100%",
-                  color: active ? "#C2A56D" : "rgba(241, 240, 238, 0.6)",
+                  display: "flex", alignItems: "center", gap: 1, px: 2, height: "100%",
+                  color: active ? COLORS.secondary : "rgba(255,255,255,0.7)",
                   textDecoration: "none",
-                  position: "relative",
+                  bgcolor: active ? "rgba(255,255,255,0.15)" : "transparent",
+                  borderRadius: "10px",
                   transition: "0.3s",
-                  "&:hover": { color: "#C2A56D" },
-                  "&::after": active ? {
-                    content: '""',
-                    position: "absolute",
-                    bottom: 0,
-                    left: "15%",
-                    right: "15%",
-                    height: "3px",
-                    bgcolor: "#C2A56D",
-                    borderRadius: "4px 4px 0 0",
-                  } : {},
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.1)" },
                 }}
               >
                 <Icon sx={{ fontSize: 18 }} />
-                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500, letterSpacing: 0.5 }}>
-                  {item.label}
-                </Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500 }}>{item.label}</Typography>
               </Box>
             );
           })}

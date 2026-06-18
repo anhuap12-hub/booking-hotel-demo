@@ -205,24 +205,34 @@ export const getAdminRoomMap = async (req, res) => {
     const { hotelId } = req.query;
     const now = new Date();
     const query = hotelId ? { hotel: hotelId } : {};
-    const rooms = await Room.find(query).populate("hotel", "name").sort({ name: 1 });
 
+    // 1. Lấy tất cả phòng và populate tên khách sạn
+    const rooms = await Room.find(query).populate("hotel", "name address").sort({ name: 1 });
+
+    // 2. Lấy các booking đang ở (có checkIn <= now <= checkOut)
     const activeBookings = await Booking.find({
-      status: { $in: ["pending", "confirmed"] },
+      status: { $in: ["confirmed", "completed"] }, // Thêm 'completed' nếu cần
       checkIn: { $lte: now },
       checkOut: { $gte: now },
-    }).populate("user", "name email");
-
-    const roomMap = rooms.map((room) => {
-      const currentBooking = activeBookings.find(b => b.room?.toString() === room._id.toString());
-      return {
-        _id: room._id,
-        roomName: room.name,
-        displayStatus: currentBooking ? "occupied" : room.status,
-        bookingDetails: currentBooking || null
-      };
     });
-    res.json(roomMap);
+
+    // 3. Map dữ liệu
+    const roomMap = rooms.map((room) => {
+  const currentBooking = activeBookings.find(b => b.room?.toString() === room._id.toString());
+  return {
+    _id: room._id,
+    roomName: room.name,
+    hotelName: room.hotel?.name || "N/A",
+    hotelAddress: room.hotel?.address || "N/A", // Lấy địa chỉ
+    displayStatus: currentBooking ? "occupied" : room.status,
+    bookingDetails: currentBooking ? {
+        customerName: currentBooking.guest?.name || "Khách hàng",
+        customerPhone: currentBooking.guest?.phone || "Chưa có SĐT"
+    } : null
+  };
+});
+
+    res.json({ success: true, data: roomMap });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

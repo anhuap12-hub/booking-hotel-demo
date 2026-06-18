@@ -60,7 +60,7 @@ export default function HotelDetail() {
     return () => { isInitialMount.current = true; };
   }, [id, fetchHotelData]);
 
-  return (
+ return (
     <Box sx={{ bgcolor: "#FFFFFF", minHeight: "100vh", pb: 12 }}>
       <Container maxWidth="xl" sx={{ pt: 2 }}>
         {!hotel ? (
@@ -73,23 +73,30 @@ export default function HotelDetail() {
               </Suspense>
 
               <Container maxWidth="lg" sx={{ px: { xs: 2, md: 0 } }}>
-                <Box sx={{ mt: 6 }}>
+                <Box sx={{ mt: 1 }}> 
                   <Suspense fallback={<Skeleton height={100} />}>
                     <HotelHeaderSummary hotel={hotel} />
                   </Suspense>
                 </Box>
 
-                <Divider sx={{ my: 6, opacity: 0.6 }} />
+                <Divider sx={{ my: 2, opacity: 0.6 }} />
 
-                <Grid container spacing={8}>
-                  <Grid item xs={12} md={7.5}>
-                    <Stack spacing={8}>
+                {/* BỐ CỤC GRID CHUẨN */}
+                <Grid container spacing={4}>
+                  
+                  {/* CỘT TRÁI: Nội dung chính (chiếm 8/12 phần) */}
+                  <Grid item xs={12} md={8}>
+                    <Stack spacing={3}>
                       <Suspense fallback={<Skeleton height={200} />}>
                         <HotelDescription hotel={hotel} />
                       </Suspense>
 
                       <Suspense fallback={<Skeleton height={250} />}>
                         <HotelAmenities amenities={hotel.amenities || []} />
+                      </Suspense>
+
+                      <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
+                        <HotelMap hotel={hotel} />
                       </Suspense>
 
                       <Divider />
@@ -102,23 +109,18 @@ export default function HotelDetail() {
                           onReviewSuccess={fetchHotelData} 
                         />
                       </Suspense>
-
-                      <Divider />
-
-                      {/* PHẦN MAP: Đã đồng bộ truyền nguyên object hotel */}
-                      <Suspense fallback={<Skeleton variant="rectangular" height={450} sx={{ borderRadius: "24px" }} />}>
-                         <HotelMap hotel={hotel} />
-                      </Suspense>
                     </Stack>
                   </Grid>
 
-                  <Grid item xs={12} md={4.5}>
-                    <Box sx={{ position: "sticky", top: 100 }}>
+                  {/* CỘT PHẢI: RightSideBar (chiếm 4/12 phần) */}
+                  <Grid item xs={12} md={4}>
+                    <Box sx={{ position: "sticky", top: 100 }}> 
                       <Suspense fallback={<Skeleton variant="rectangular" height={500} sx={{ borderRadius: "32px" }} />}>
                         <RightSideBar hotel={hotel} />
                       </Suspense>
                     </Box>
                   </Grid>
+
                 </Grid>
               </Container>
             </Box>

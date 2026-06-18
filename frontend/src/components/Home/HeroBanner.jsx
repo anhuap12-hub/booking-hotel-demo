@@ -38,7 +38,7 @@ export default function HeroBanner() {
             lineHeight: 1.2,
             mb: 1,
           }}>
-            Tìm nơi dừng chân <Box component="span" sx={{ color: "#C2A56D" }}>hoàn hảo</Box>
+            Tìm nơi dừng chân <Box component="span" sx={{ color: "#C2A56D" }}>của bạn</Box>
           </Typography>
           <Typography sx={{ 
             color: "rgba(255,255,255,0.9)", 
@@ -46,7 +46,7 @@ export default function HeroBanner() {
             maxWidth: "600px",
             mx: "auto"
           }}>
-            Khám phá không gian nghỉ dưỡng thượng lưu tại Coffee Stay
+            Hàng triệu khách sạn, villa và nhiều lựa chọn khác đang chờ bạn khám phá.
           </Typography>
         </Box>
       </Stack>

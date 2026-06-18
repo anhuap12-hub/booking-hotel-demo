@@ -13,7 +13,7 @@ import {
 import { 
   HotelOutlined, Close, MeetingRoomOutlined, 
   CalendarMonthOutlined, AccountBalanceWalletOutlined,
-  HistoryEduOutlined, InfoOutlined
+  HistoryEduOutlined, InfoOutlined, StarBorderOutlined
 } from "@mui/icons-material";
 
 /* ================= HELPERS - CONFIGURATION ================= */
@@ -28,13 +28,15 @@ const STATUS_CONFIG = {
   cancelled: { label: "Đã hủy", color: "#A8A7A1", bg: "#F1F1F1" },
 };
 
-const InfoRow = ({ icon: IconComponent, label, value, color = "#1C1B19" }) => (
+const InfoRow = ({ icon: IconComponent, label, value, color = "#1C1B19", iconColor = "#0056b3" }) => (
   <Stack direction="row" spacing={2} alignItems="center">
-    <Avatar sx={{ bgcolor: '#F9F8F6', width: 42, height: 42, borderRadius: "12px", border: '1px solid rgba(194, 165, 109, 0.1)' }}>
-      {IconComponent && <IconComponent sx={{ fontSize: 20, color: '#C2A56D' }} />}
+    <Avatar sx={{ bgcolor: '#F9F8F6', width: 42, height: 42, borderRadius: "12px", border: '1px solid rgba(0, 86, 179, 0.1)' }}>
+      {IconComponent && <IconComponent sx={{ fontSize: 20, color: iconColor }} />}
     </Avatar>
     <Box>
-      <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Typography>
+      <Typography variant="caption" sx={{ color: "#1C1B19", fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {label}
+      </Typography>
       <Typography variant="body2" sx={{ fontWeight: 700, color: color }}>{value || "—"}</Typography>
     </Box>
   </Stack>
@@ -71,20 +73,15 @@ export default function MyBookings() {
 
   useEffect(() => { fetchBookings(); }, []);
 
-const getBookingStatus = (booking) => {
+  const getBookingStatus = (booking) => {
     const { paymentStatus, status, totalPrice, depositAmount } = booking;
-    
     if (paymentStatus === 'REFUNDED') return 'refunded';
     if (paymentStatus === 'REFUND_PENDING') return 'refund_pending';
     if (status === 'cancelled') return 'cancelled';
-
-    // ✅ ĐỒNG BỘ LOGIC VỚI CARD
     const isPaidFull = paymentStatus === 'PAID' && depositAmount >= totalPrice;
     const hasDeposited = depositAmount > 0 && depositAmount < totalPrice;
-
     if (isPaidFull) return 'confirmed'; 
     if (hasDeposited || paymentStatus === 'DEPOSITED') return 'deposited'; 
-    
     return 'pending';
   };
 
@@ -117,30 +114,13 @@ const getBookingStatus = (booking) => {
             </Typography>
             <Typography variant="body2" sx={{ color: "#72716E", mt: 1 }}>Xem lại lịch trình và quản lý giao dịch</Typography>
           </Box>
-          <Chip 
-            label={`${bookings.length} Đơn đặt`} 
-            sx={{ fontWeight: 700, bgcolor: "#1C1B19", color: "#C2A56D", borderRadius: "8px" }} 
-          />
+          <Chip label={`${bookings.length} Đơn đặt`} sx={{ fontWeight: 700, bgcolor: "#1C1B19", color: "#C2A56D", borderRadius: "8px" }} />
         </Stack>
 
         <Paper elevation={0} sx={{ borderRadius: "16px", p: 0.5, bgcolor: "rgba(28, 27, 25, 0.04)", mb: 5 }}>
-          <Tabs 
-            value={tab} 
-            onChange={(_, v) => setTab(v)} 
-            variant="scrollable" 
-            scrollButtons="auto" 
-            sx={{ '& .MuiTabs-indicator': { display: 'none' } }}
-          >
+          <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTabs-indicator': { display: 'none' } }}>
             {Object.keys(STATUS_CONFIG).map((key) => (
-              <Tab 
-                key={key} 
-                label={STATUS_CONFIG[key].label} 
-                value={key} 
-                sx={{
-                  borderRadius: "12px", minHeight: 44, fontWeight: 700, textTransform: "none", color: "#72716E", mx: 0.5,
-                  '&.Mui-selected': { bgcolor: "white", color: "#C2A56D", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }
-                }} 
-              />
+              <Tab key={key} label={STATUS_CONFIG[key].label} value={key} sx={{ borderRadius: "12px", minHeight: 44, fontWeight: 700, textTransform: "none", color: "#72716E", mx: 0.5, '&.Mui-selected': { bgcolor: "white", color: "#C2A56D", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" } }} />
             ))}
           </Tabs>
         </Paper>
@@ -163,11 +143,7 @@ const getBookingStatus = (booking) => {
                     onView={(b) => setSelectedBooking(b)} 
                   />
                   {getBookingStatus(booking) === 'pending' && (
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate(`/checkout/${booking.room?._id || booking.room}`, { state: booking })}
-                      sx={{ position: 'absolute', right: 20, bottom: 20, bgcolor: '#C2A56D', color: '#fff', borderRadius: '8px', fontWeight: 700, px: 3, '&:hover': { bgcolor: '#A68D5B' } }}
-                    >
+                    <Button variant="contained" onClick={() => navigate(`/checkout/${booking.room?._id || booking.room}`, { state: booking })} sx={{ position: 'absolute', right: 20, bottom: 20, bgcolor: '#C2A56D', color: '#fff', borderRadius: '8px', fontWeight: 700, px: 3, '&:hover': { bgcolor: '#A68D5B' } }}>
                       Thanh toán cọc ngay
                     </Button>
                   )}
@@ -179,136 +155,72 @@ const getBookingStatus = (booking) => {
       </Container>
 
       {/* DETAIL DIALOG */}
-      <Dialog 
-        open={!!selectedBooking && !isRefundDialogOpen} 
-        onClose={() => setSelectedBooking(null)} 
-        fullWidth maxWidth="xs" 
-        PaperProps={{ sx: { borderRadius: "28px" } }}
-      >
+      <Dialog open={!!selectedBooking && !isRefundDialogOpen} onClose={() => setSelectedBooking(null)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "28px" } }}>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>Chi tiết kỳ nghỉ</Typography>
-          {/* ĐÃ THAY THẾ ICONBUTTON BẰNG BUTTON GỌN NHẸ */}
-          <Button 
-            onClick={() => setSelectedBooking(null)} 
-            minwidth={0} 
-            sx={{ minWidth: 40, color: 'text.secondary' }}
-          >
-            <Close />
-          </Button>
+          <Button onClick={() => setSelectedBooking(null)} sx={{ minWidth: 40, color: 'text.secondary' }}><Close /></Button>
         </DialogTitle>
+<DialogContent>
+  {selectedBooking && (
+    <Stack spacing={3} sx={{ mt: 1 }}>
+      {/* Box Mã đơn */}
+      <Box sx={{ px: 1 }}>
+        <Typography variant="overline" sx={{ color: '#1C1B19', fontWeight: 900, mb: 1, display: 'block', fontSize: 16 }}>
+          Mã đơn: #{selectedBooking._id?.slice(-6).toUpperCase()}
+        </Typography>
+        <Stack spacing={2}>
+          <InfoRow icon={HotelOutlined} label="Khách sạn" value={selectedBooking.hotel?.name || selectedBooking.roomSnapshot?.hotelName} />
+          <InfoRow icon={MeetingRoomOutlined} label="Hạng phòng" value={selectedBooking.room?.name || selectedBooking.roomSnapshot?.name} />
+          <InfoRow icon={CalendarMonthOutlined} label="Lịch trình" value={`${new Date(selectedBooking.checkIn).toLocaleDateString("vi-VN")} - ${new Date(selectedBooking.checkOut).toLocaleDateString("vi-VN")}`} />
+        </Stack>
+      </Box>
 
-        <DialogContent>
-          {selectedBooking && (
-            <Stack spacing={3} sx={{ mt: 1 }}>
-              <Box sx={{ p: 2.5, borderRadius: "20px", bgcolor: '#F9F8F6', border: '1px solid #EAE9E2' }}>
-                <Typography variant="overline" sx={{ color: '#C2A56D', fontWeight: 900, mb: 1, display: 'block' }}>Mã đơn: #{selectedBooking._id?.slice(-6).toUpperCase()}</Typography>
-                <Stack spacing={2}>
-                  <InfoRow icon={HotelOutlined} label="Khách sạn" value={selectedBooking.hotel?.name || selectedBooking.roomSnapshot?.hotelName} />
-                  <InfoRow icon={MeetingRoomOutlined} label="Hạng phòng" value={selectedBooking.room?.name || selectedBooking.roomSnapshot?.name} />
-                  <InfoRow icon={CalendarMonthOutlined} label="Lịch trình" value={`${new Date(selectedBooking.checkIn).toLocaleDateString("vi-VN")} - ${new Date(selectedBooking.checkOut).toLocaleDateString("vi-VN")}`} />
-                </Stack>
-              </Box>
+      {/* Thông tin khách hàng */}
+      <Box sx={{ px: 1 }}>
+        <Typography variant="subtitle2" sx={{ color: "#1C1B19", fontWeight: 800, mb: 2, fontSize: 16 }}>Thông tin khách hàng</Typography>
+        <Stack spacing={2}>
+          <InfoRow icon={AccountBalanceWalletOutlined} label="Người đặt" value={selectedBooking.guest?.name || "Chưa cập nhật"} />
+          <InfoRow icon={InfoOutlined} label="Số điện thoại" value={selectedBooking.guest?.phone || "Chưa cập nhật"} />
+        </Stack>
+      </Box>
 
-              <Box sx={{ px: 1 }}>
-                <Typography variant="subtitle2" sx={{ color: "#1C1B19", fontWeight: 800, mb: 2 }}>Thông tin thanh toán</Typography>
-                <Stack spacing={2}>
-                  <InfoRow 
-                    icon={AccountBalanceWalletOutlined} 
-                    label="Tổng tiền phòng" 
-                    value={`${selectedBooking.totalPrice?.toLocaleString()} VND`} 
-                  />
-                  <InfoRow 
-                    icon={HistoryEduOutlined} 
-                    label="Tiền đã trả" 
-                    value={`${selectedBooking.depositAmount?.toLocaleString()} VND`}
-                    color={getBookingStatus(selectedBooking) === 'confirmed' ? "#10b981" : "#0288d1"} 
-                  />
-                  {selectedBooking.paymentStatus === 'DEPOSITED' && (
-                    <Box sx={{ ml: 7, p: 2, bgcolor: 'rgba(2, 136, 209, 0.05)', borderRadius: '12px', border: '1px dashed #0288d1' }}>
-                      <Typography variant="caption" sx={{ color: "#0288d1", fontWeight: 700, display: 'block' }}>
-                        CÒN LẠI PHẢI TRẢ TẠI QUẦY:
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 900, color: "#1C1B19" }}>
-                        {(selectedBooking.totalPrice - selectedBooking.depositAmount).toLocaleString()} VND
-                      </Typography>
-                      <Stack direction="row" spacing={0.5} alignItems="center" mt={0.5}>
-                        <InfoOutlined sx={{ fontSize: 14, color: '#0288d1' }} />
-                        <Typography variant="caption" sx={{ color: "#72716E" }}>Thanh toán khi nhận phòng</Typography>
-                      </Stack>
-                    </Box>
-                  )}
-                </Stack>
-              </Box>
-
-              <Box sx={{ 
-                p: 2, 
-                borderRadius: "16px", 
-                bgcolor: STATUS_CONFIG[getBookingStatus(selectedBooking)].bg, 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center' 
-              }}>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>Trạng thái:</Typography>
-                <Typography sx={{ fontWeight: 800, color: STATUS_CONFIG[getBookingStatus(selectedBooking)].color }}>
-                  {STATUS_CONFIG[getBookingStatus(selectedBooking)].label}
+      {/* Thông tin thanh toán */}
+      <Box sx={{ px: 1 }}>
+        <Typography variant="subtitle2" sx={{ color: "#1C1B19", fontWeight: 800, mb: 2, fontSize: 16 }}>Thông tin thanh toán</Typography>
+        <Stack spacing={2}>
+          <InfoRow icon={HistoryEduOutlined} label="Tổng tiền phòng" value={`${selectedBooking.totalPrice?.toLocaleString()} VND`} />
+          <InfoRow icon={HistoryEduOutlined} label="Tiền đã trả" value={`${selectedBooking.depositAmount?.toLocaleString()} VND`} color="#1C1B19" />
+          
+          {/* Logic Box Thanh toán */}
+          {['cancelled', 'refunded', 'refund_pending'].includes(getBookingStatus(selectedBooking)) ? (
+            <Box sx={{ p: 2, bgcolor: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px dashed #ef4444' }}>
+              <Typography variant="body2" sx={{ color: "#b91c1c", fontWeight: 700, textAlign: 'center' }}>
+                Bạn đã hủy lịch đặt phòng này.
+              </Typography>
+            </Box>
+          ) : (
+            (selectedBooking.totalPrice - selectedBooking.depositAmount > 0) && (
+              <Box sx={{ p: 2, bgcolor: 'rgba(0, 86, 179, 0.05)', borderRadius: '12px', border: '1px dashed #0056b3' }}>
+                <Typography variant="caption" sx={{ color: "#0056b3", fontWeight: 700, display: 'block' }}>CÒN LẠI PHẢI TRẢ TẠI QUẦY:</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: "#1C1B19" }}>
+                  {(selectedBooking.totalPrice - selectedBooking.depositAmount).toLocaleString()} VND
                 </Typography>
               </Box>
-            </Stack>
+            )
           )}
-        </DialogContent>
+        </Stack>
+      </Box>
+    </Stack>
+  )}
+</DialogContent>
 
-        <DialogActions sx={{ p: 3, flexDirection: 'column', gap: 1 }}>
-          <Button 
-            fullWidth 
-            variant="contained" 
-            onClick={() => setSelectedBooking(null)} 
-            sx={{ bgcolor: '#1C1B19', color: '#C2A56D', borderRadius: '12px', py: 1.5, fontWeight: 700, '&:hover': { bgcolor: '#333' } }}
-          >
-            Quay lại
-          </Button>
-          
-          {selectedBooking && ['deposited', 'confirmed'].includes(getBookingStatus(selectedBooking)) && (
-            <Button 
-              fullWidth 
-              color="error" 
-              onClick={() => setIsRefundDialogOpen(true)}
-              sx={{ fontWeight: 700, textTransform: 'none' }}
-            >
-              Yêu cầu hủy & hoàn tiền
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      {/* DIALOG YÊU CẦU HOÀN TIỀN */}
-      <Dialog 
-        open={isRefundDialogOpen} 
-        onClose={() => setIsRefundDialogOpen(false)} 
-        fullWidth maxWidth="xs" 
-        PaperProps={{ sx: { borderRadius: "28px" } }}
-      >
-        <DialogTitle sx={{ fontWeight: 800 }}>Thông tin hoàn tiền</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">Vui lòng cung cấp STK để chúng tôi xử lý hoàn tiền cọc.</Typography>
-            <TextField fullWidth label="Ngân hàng" variant="outlined" size="small" onChange={(e) => setRefundForm({...refundForm, bankName: e.target.value})} />
-            <TextField fullWidth label="Số tài khoản" variant="outlined" size="small" onChange={(e) => setRefundForm({...refundForm, accountNumber: e.target.value})} />
-            <TextField fullWidth label="Tên chủ tài khoản" placeholder="VIET HOA KHONG DAU" variant="outlined" size="small" onChange={(e) => setRefundForm({...refundForm, accountHolder: e.target.value})} />
-            <TextField fullWidth label="Lý do hủy" multiline rows={2} variant="outlined" size="small" onChange={(e) => setRefundForm({...refundForm, reason: e.target.value})} />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button onClick={() => setIsRefundDialogOpen(false)} sx={{ color: '#72716E' }}>Hủy bỏ</Button>
-          <Button 
-            variant="contained" 
-            color="error" 
-            onClick={handleRefundRequest} 
-            disabled={!refundForm.accountNumber || !refundForm.bankName}
-            sx={{ borderRadius: '10px' }}
-          >
-            Gửi yêu cầu
-          </Button>
-        </DialogActions>
+       <DialogActions sx={{ p: 3, flexDirection: 'column', gap: 1 }}>
+  <Button fullWidth variant="contained" onClick={() => setSelectedBooking(null)} sx={{ bgcolor: '#0056b3', color: '#FFFFFF', borderRadius: '12px', py: 1.5, fontWeight: 700 }}>Quay lại</Button>
+  
+  {selectedBooking && ['deposited', 'confirmed'].includes(getBookingStatus(selectedBooking)) && (
+    <Button fullWidth color="error" onClick={() => setIsRefundDialogOpen(true)} sx={{ fontWeight: 700, textTransform: 'none' }}>Yêu cầu hủy & hoàn tiền</Button>
+  )}
+</DialogActions>
       </Dialog>
     </Box>
   );

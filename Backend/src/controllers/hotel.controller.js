@@ -30,7 +30,10 @@ export const getAllHotels = async (req, res) => {
         { type: { $regex: keyword, $options: "i" } }
       ];
     }
-    if (city) query.citySlug = city;
+    if (city) {
+    const slug = normalize(city); // Chuẩn hóa lại từ input người dùng
+    query.citySlug = slug;
+}
     if (types) query.type = { $in: types.split(",") };
     if (amenities) query.amenities = { $all: amenities.split(",") };
 
