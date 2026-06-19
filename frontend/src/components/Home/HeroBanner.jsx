@@ -31,7 +31,7 @@ export default function HeroBanner() {
       <Stack spacing={2} alignItems="center" sx={{ width: "100%", px: 2, zIndex: 2 }}>
         <Box sx={{ textAlign: "center" }}>
           <Typography sx={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'Inter', sans-serif",
             fontWeight: 900,
             fontSize: { xs: "2.2rem", md: "4rem" },
             color: "#fff",

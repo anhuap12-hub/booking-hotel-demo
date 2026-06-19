@@ -17,8 +17,8 @@ const theme = createTheme({
     secondary: { main: '#C2A56D' } // Gold
   },
   typography: {
-    fontFamily: "'Playfair Display', serif",
-    h5: { fontFamily: "'Playfair Display', serif", fontWeight: 800 }
+    fontFamily: "'Inter', sans-serif",
+    h5: { fontFamily: "'Inter', sans-serif", fontWeight: 800 }
   },
   components: {
     MuiOutlinedInput: {

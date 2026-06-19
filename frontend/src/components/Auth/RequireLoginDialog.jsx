@@ -91,7 +91,7 @@ export default function RequireLoginDialog({ open, onClose, onLogin }) {
               <Box>
                 <Typography
                   sx={{
-                    fontFamily: "'Playfair Display', serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: { xs: "1.4rem", md: "1.6rem" },
                     fontWeight: 800,
                     color: "#1C1B19",

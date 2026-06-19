@@ -49,7 +49,7 @@ export default function RoomList({ rooms, hotel, loading }) {
           <SearchOffOutlinedIcon sx={{ fontSize: 60, color: "#C2A56D", mb: 1 }} />
           <Typography 
             variant="h6" 
-            sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, color: "#1C1B19" }}
+            sx={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, color: "#1C1B19" }}
           >
             Chưa tìm thấy phòng phù hợp
           </Typography>

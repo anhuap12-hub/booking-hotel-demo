@@ -37,7 +37,7 @@ export default function BookingSideBar({ hotel }) {
               fontSize: 28, 
               fontWeight: 800, 
               color: "#1C1B19",
-              fontFamily: "'Playfair Display', serif" 
+              fontFamily: "'Inter', sans-serif" 
             }}
           >
             {hotel.cheapestPrice?.toLocaleString() || "—"} ₫

@@ -83,7 +83,7 @@ export default function Login() {
           >
             Đăng nhập
           </Typography>
-          <Typography sx={{ fontSize: 14, color: "#666" }}>
+          <Typography sx={{ fontSize: 14, color: "#333" }}>
             Chào mừng trở lại với <strong style={{color: primaryBlue}}>Coffee Stay</strong>
           </Typography>
         </Box>
@@ -111,7 +111,7 @@ export default function Login() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <EmailOutlined sx={{ color: "#999", fontSize: 20 }} />
+                  <EmailOutlined sx={{ color: "#333", fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
@@ -133,7 +133,7 @@ export default function Login() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlined sx={{ color: "#999", fontSize: 20 }} />
+                  <LockOutlined sx={{ color: "#333", fontSize: 20 }} />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -145,7 +145,7 @@ export default function Login() {
                       width: 40,
                       height: 40,
                       borderRadius: "50%",
-                      color: "#666",
+                      color: "#333",
                       "&:hover": { bgcolor: "#f0f4f8" }
                     }}
                   >
@@ -175,7 +175,7 @@ export default function Login() {
         </Stack>
 
         <Box sx={{ textAlign: "center", mt: 4 }}>
-          <Typography fontSize={14} color="#666">
+          <Typography fontSize={14} color="#333">
             Chưa có tài khoản?{" "}
             <Link to="/register" style={{ color: primaryBlue, fontWeight: 700, textDecoration: "none" }}>
               Đăng ký ngay

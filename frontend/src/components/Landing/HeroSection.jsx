@@ -72,7 +72,7 @@ export default function HeroSection() {
         >
           <Typography
             sx={{
-              fontFamily: `"Playfair Display", serif`,
+              fontFamily: `"Inter", sans-serif`,
               fontSize: { xs: "2rem", md: "3rem" },
               fontWeight: 900,
               color: "#ffffff",

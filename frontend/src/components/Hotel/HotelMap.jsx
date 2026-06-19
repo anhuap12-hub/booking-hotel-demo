@@ -22,7 +22,7 @@ export default function HotelMap({ hotel }) {
     <Box>
       <Typography
         sx={{
-          fontFamily: "Playfair Display, serif",
+          fontFamily: "Inter, sans-serif",
           fontSize: "1.3rem",
           fontWeight: 500,
           color: "text.primary",

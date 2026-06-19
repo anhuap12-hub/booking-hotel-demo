@@ -112,7 +112,7 @@ export default function HotelRoom() {
             <Typography variant="h3" sx={{ 
               color: "#000000", // Xanh đậm chủ đạo
               fontWeight: 800, 
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "'Inter', sans-serif",
               mb: 1,
               fontSize: { xs: "1.8rem", md: "2rem" },
             }}>
@@ -164,7 +164,7 @@ export default function HotelRoom() {
             {/* LIST AREA */}
             <Box flex={1}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: "#003580", fontFamily: "'Playfair Display', serif" }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: "#003580", fontFamily: "'Inter', sans-serif" }}>
               Phòng sẵn có 
               <span style={{ color: '#0056b3', fontSize: '1.2rem', marginLeft: '8px' }}>
                 ({filteredRooms.length})

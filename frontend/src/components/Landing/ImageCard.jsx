@@ -77,7 +77,7 @@ export default function ImageCard({
               fontSize: 16,
               color: "#1c1b19",
               lineHeight: 1.2,
-              fontFamily: "'Playfair Display', serif", // Đồng bộ font banner
+              fontFamily: "'Inter', sans-serif", // Đồng bộ font banner
             }}
             noWrap
           >

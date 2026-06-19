@@ -29,7 +29,7 @@ export default function ContactCTA() {
           variant="h4"
           gutterBottom
           sx={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'Inter', sans-serif",
             fontWeight: 700,
             fontSize: { xs: "1.75rem", md: "2.2rem" },
             position: "relative",
@@ -67,7 +67,7 @@ export default function ContactCTA() {
             py: 1.2,
             fontSize: "0.95rem",
             fontWeight: 600,
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'Inter', sans-serif",
             bgcolor: "#003580", 
             color: "#ffffff",
             borderRadius: 2,

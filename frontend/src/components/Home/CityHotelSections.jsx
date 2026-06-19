@@ -64,7 +64,7 @@ export default function CityHotelSections({ citiesSorted = [] }) {
                 <Typography
                   variant="h4"
                   sx={{
-                    fontFamily: "'Playfair Display', serif",
+                    fontFamily: "'Inter', sans-serif",
                     fontWeight: 900,
                     fontSize: { xs: "1.8rem", md: "2.4rem" },
                     color: "#1C1B19",

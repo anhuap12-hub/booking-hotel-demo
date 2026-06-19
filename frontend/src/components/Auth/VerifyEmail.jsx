@@ -70,7 +70,7 @@ export default function VerifyEmail() {
               <CheckCircleOutlineIcon sx={{ fontSize: 60 }} />
             </Box>
             <Box textAlign="center">
-              <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: { xs: "1.8rem", md: "2.2rem" }, fontWeight: 800, mb: 1, color: "#1C1B19" }}>
+              <Typography sx={{ fontFamily: "'Inter', sans-serif", fontSize: { xs: "1.8rem", md: "2.2rem" }, fontWeight: 800, mb: 1, color: "#1C1B19" }}>
                 Xác thực thành công
               </Typography>
               <Typography sx={{ color: "#72716E", maxWidth: 350, mx: "auto", lineHeight: 1.8 }}>
@@ -91,7 +91,7 @@ export default function VerifyEmail() {
           <Stack spacing={4} alignItems="center" key="error" component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <ErrorOutlineIcon sx={{ fontSize: 70, color: "#EF4444", opacity: 0.8 }} />
             <Box textAlign="center">
-              <Typography sx={{ fontFamily: "'Playfair Display', serif", fontSize: "1.8rem", fontWeight: 800, mb: 1, color: "#1C1B19" }}>
+              <Typography sx={{ fontFamily: "'Inter', sans-serif", fontSize: "1.8rem", fontWeight: 800, mb: 1, color: "#1C1B19" }}>
                 Giao dịch bị gián đoạn
               </Typography>
               <Typography sx={{ color: "#72716E", maxWidth: 320, mx: "auto", lineHeight: 1.8 }}>

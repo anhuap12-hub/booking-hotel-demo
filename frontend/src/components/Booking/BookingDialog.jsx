@@ -85,7 +85,7 @@ export default function BookingDialog({ open, onClose, room }) {
     >
       <DialogTitle sx={{ p: 3, pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: '1.5rem', color: '#1c1b19' }}>
+          <Typography sx={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: '1.5rem', color: '#1c1b19' }}>
             Xác nhận đặt chỗ
           </Typography>
           <Typography variant="caption" sx={{ color: '#c2a56d', fontWeight: 800, letterSpacing: 1 }}>
@@ -134,7 +134,7 @@ export default function BookingDialog({ open, onClose, room }) {
           </Stack>
 
           <Box sx={{ p: 2.5, borderRadius: "16px", border: '1px solid #EEE' }}>
-            <Typography variant="caption" sx={{ color: '#999', fontWeight: 700, mb: 2, display: 'block' }}>THÔNG TIN KHÁCH HÀNG</Typography>
+            <Typography variant="caption" sx={{ color: '#333', fontWeight: 700, mb: 2, display: 'block' }}>THÔNG TIN KHÁCH HÀNG</Typography>
             <Stack spacing={2}>
               <TextField
                 placeholder="Tên người đại diện" fullWidth variant="standard"

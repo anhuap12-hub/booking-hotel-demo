@@ -129,7 +129,7 @@ function StatCard({ icon, value, title, subtitle }) {
           <Typography
             className="stat-value"
             sx={{ 
-              fontFamily: "'Playfair Display', serif", // Dùng font serif cho con số
+              fontFamily: "'Inter', sans-serif", // Dùng font serif cho con số
               fontSize: "1.8rem",
               fontWeight: 900,
               color: "#1C1B19",

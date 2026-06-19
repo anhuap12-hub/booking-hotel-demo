@@ -129,7 +129,7 @@ export default function BookingCard({ booking, onView }) {
             <Box flex={1} display="flex" flexDirection="column" justifyContent="space-between">
               <Box>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: "#1C1B19", fontFamily: "'Playfair Display', serif" }}>{hotel?.name || "Khách sạn"}</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: "#1C1B19", fontFamily: "'Inter', sans-serif" }}>{hotel?.name || "Khách sạn"}</Typography>
                   <Chip label={statusInfo.label} sx={{ bgcolor: statusInfo.bg, color: statusInfo.color, fontWeight: 800, borderRadius: "8px", fontSize: 11, border: `1px solid ${statusInfo.border}` }} />
                 </Stack>
                 <Typography variant="body2" sx={{ color: "#72716E", mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.5 }}><LocationOn sx={{ fontSize: 16 }} /> {hotel?.address || "Địa chỉ chưa cập nhật"}</Typography>

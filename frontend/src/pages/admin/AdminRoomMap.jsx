@@ -74,7 +74,7 @@ export default function AdminRoomMap() {
         return (
           <TableRow key={room._id} hover>
             <TableCell>{room.hotelName || "N/A"}</TableCell>
-            <TableCell sx={{ fontSize: '0.85rem', color: '#666' }}>{room.hotelAddress || "N/A"}</TableCell>
+            <TableCell sx={{ fontSize: '0.85rem', color: '#333' }}>{room.hotelAddress || "N/A"}</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>{room.roomName}</TableCell>
             <TableCell>{room.bookingDetails?.customerName || "Đang trống"}</TableCell>
             <TableCell>

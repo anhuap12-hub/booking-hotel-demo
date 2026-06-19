@@ -35,7 +35,7 @@ export default function RoomAmenities({ amenities = [] }) {
           fontWeight: 700,
           color: "#0F172A",
           mb: 3,
-          fontFamily: "'Playfair Display', serif"
+          fontFamily: "'Inter', sans-serif"
         }}
       >
         Tiện nghi phòng

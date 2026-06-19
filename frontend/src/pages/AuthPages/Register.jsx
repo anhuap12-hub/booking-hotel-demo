@@ -91,7 +91,7 @@ export default function Register() {
             <Typography sx={{ fontSize: "2rem", fontWeight: 800, color: primaryBlue, mb: 1 }}>
               Tạo tài khoản
             </Typography>
-            <Typography variant="body2" color="#666">
+            <Typography variant="body2" color="#333">
               Gia nhập <strong style={{color: primaryBlue}}>Coffee Stay</strong> để nhận ưu đãi riêng
             </Typography>
           </Box>
@@ -104,7 +104,7 @@ export default function Register() {
               value={form.username} onChange={handleChange}
               error={!!errors.username} helperText={errors.username}
               InputProps={{
-                startAdornment: <InputAdornment position="start"><PersonOutlineOutlined sx={{ color: "#999" }} /></InputAdornment>,
+                startAdornment: <InputAdornment position="start"><PersonOutlineOutlined sx={{ color: "#333" }} /></InputAdornment>,
               }}
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", "&.Mui-focused fieldset": { borderColor: primaryBlue } } }}
             />
@@ -114,7 +114,7 @@ export default function Register() {
               value={form.email} onChange={handleChange}
               error={!!errors.email} helperText={errors.email}
               InputProps={{
-                startAdornment: <InputAdornment position="start"><EmailOutlined sx={{ color: "#999" }} /></InputAdornment>,
+                startAdornment: <InputAdornment position="start"><EmailOutlined sx={{ color: "#333" }} /></InputAdornment>,
               }}
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px", "&.Mui-focused fieldset": { borderColor: primaryBlue } } }}
             />
@@ -125,10 +125,10 @@ export default function Register() {
               value={form.password} onChange={handleChange}
               error={!!errors.password} helperText={errors.password}
               InputProps={{
-                startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: "#999" }} /></InputAdornment>,
+                startAdornment: <InputAdornment position="start"><LockOutlined sx={{ color: "#333" }} /></InputAdornment>,
                 endAdornment: (
                   <InputAdornment position="end">
-                    <Button onClick={() => setShowPassword(!showPassword)} sx={{ minWidth: 40, color: "#666" }}>
+                    <Button onClick={() => setShowPassword(!showPassword)} sx={{ minWidth: 40, color: "#333" }}>
                       {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
                     </Button>
                   </InputAdornment>
@@ -148,7 +148,7 @@ export default function Register() {
           </Stack>
 
           <Box sx={{ textAlign: "center", mt: 4 }}>
-            <Typography variant="body2" color="#666">
+            <Typography variant="body2" color="#333">
               Đã là thành viên?{" "}
               <Link to="/login" style={{ color: primaryBlue, textDecoration: "none", fontWeight: 700 }}>
                 Đăng nhập

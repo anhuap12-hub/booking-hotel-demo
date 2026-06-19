@@ -2,12 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 html, body, #root {
+  font-size: 16px;
+  font-size: 16px;
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+}
+body {
+  line-height: 1.6;
+  color: #202124;
 }
 * {
   box-sizing: border-box;
 }
 
+
+
+table th,
+table td {
+  padding: 12px 14px;
+}

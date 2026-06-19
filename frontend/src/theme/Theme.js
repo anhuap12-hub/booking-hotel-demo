@@ -23,8 +23,8 @@ const theme = createTheme({
       main: "#6B7280", // xám trung tính
     },
     text: {
-      primary: "#1C1C1C",   // gần đen
-      secondary: "#6B6B6B", // xám chữ phụ
+    primary: "#1C1C1C",   // gần đen
+    secondary: "#4D4D4D", // xám chữ phụ // xám chữ phụ // xám chữ phụ
     },
     background: {
       default: "#F5F3EF", // nền be xám rất nhẹ
@@ -34,38 +34,38 @@ const theme = createTheme({
   },
 
   typography: {
-    fontFamily: "'Playfair Display', serif",
+    fontFamily: "'Inter', sans-serif",
 
     h1: {
-      fontFamily: 'Playfair Display, serif',
+      fontFamily: 'Inter, sans-serif',
       fontWeight: 600,
       letterSpacing: '-0.5px',
     },
   h2: {
-    fontFamily: 'Playfair Display, serif',
+    fontFamily: 'Inter, sans-serif',
     fontWeight: 600,
   },
   h3: {
-    fontFamily: 'Playfair Display, serif',
+    fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
   },
   h4: {
-    fontFamily: 'Playfair Display, serif',
+    fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
   },
   h5: {
-    fontFamily: 'Playfair Display, serif',
+    fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
   },
 
   body1: {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: 15,
-    lineHeight: 1.7,
+    fontFamily: ''Inter', sans-serif',
+    fontSize: 16,
+    lineHeight: 1.6,
   },
   body2: {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: 14,
+    fontFamily: ''Inter', sans-serif',
+    fontSize: 15,
     lineHeight: 1.6,
   },
     button: {
@@ -98,6 +98,13 @@ const theme = createTheme({
         root: {
           borderRadius: 16,
           boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          padding: "12px 14px",
         },
       },
     },

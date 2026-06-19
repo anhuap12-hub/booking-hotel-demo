@@ -5,7 +5,7 @@ export default function HotelDescription({ hotel }) {
     <Box>
       <Typography
         sx={{
-          fontFamily: "Playfair Display, serif",
+          fontFamily: "Inter, sans-serif",
           fontSize: "1.35rem",
           fontWeight: 500,
           color: "text.primary",

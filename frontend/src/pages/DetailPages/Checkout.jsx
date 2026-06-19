@@ -127,7 +127,7 @@ export default function Checkout() {
           {/* CỘT TRÁI: THÔNG TIN CHI TIẾT */}
           <Grid item xs={12} md={7}>
             <Box mb={5}>
-              <Typography variant="h3" sx={{ color: '#1C1B19', mb: 1.5, fontSize: {xs: '2rem', md: '2.8rem'}, fontFamily: "'Playfair Display', serif", fontWeight: 800 }}>
+              <Typography variant="h3" sx={{ color: '#1C1B19', mb: 1.5, fontSize: {xs: '2rem', md: '2.8rem'}, fontFamily: "'Inter', sans-serif", fontWeight: 800 }}>
                 Hoàn tất đặt phòng
               </Typography>
               <Stack direction="row" spacing={1.5} alignItems="center">
@@ -139,7 +139,7 @@ export default function Checkout() {
             <Stack spacing={4}>
               <Paper elevation={0} sx={{ p: 4, borderRadius: '24px', border: '1px solid rgba(194, 165, 109, 0.2)' }}>
                 <Typography variant="overline" sx={{ color: '#C2A56D', fontWeight: 800 }}>CHI TIẾT PHÒNG</Typography>
-                <Typography variant="h5" sx={{ mt: 1, fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>{roomName}</Typography>
+                <Typography variant="h5" sx={{ mt: 1, fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>{roomName}</Typography>
                 <Typography variant="body2" color="#72716E" sx={{ mb: 2 }}>{hotelName}</Typography>
 
                 <Grid container spacing={2} sx={{ bgcolor: '#F9F8F6', p: 3, borderRadius: '16px' }}>
@@ -162,7 +162,7 @@ export default function Checkout() {
                 <Box sx={{ position: 'relative', zIndex: 1 }}>
                   <Typography variant="body2" sx={{ opacity: 0.7 }}>TỔNG GIÁ TRỊ: {totalPrice.toLocaleString()} VND</Typography>
                   <Typography variant="body1" sx={{ color: '#C2A56D', fontWeight: 700, mt: 1 }}>SỐ TIỀN CẦN CỌC (30%):</Typography>
-                  <Typography variant="h2" fontWeight={800} sx={{ color: '#C2A56D', fontFamily: "'Playfair Display', serif" }}>
+                  <Typography variant="h2" fontWeight={800} sx={{ color: '#C2A56D', fontFamily: "'Inter', sans-serif" }}>
                     {depositAmount.toLocaleString()} <Typography component="span" variant="h5">VND</Typography>
                   </Typography>
                   <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)' }} />
@@ -180,7 +180,7 @@ export default function Checkout() {
               border: '1px solid rgba(194, 165, 109, 0.2)',
               position: 'sticky', top: 40, bgcolor: '#FFF'
             }}>
-              <Typography variant="h6" fontWeight={800} sx={{ fontFamily: "'Playfair Display', serif" }}>Quét mã QR để cọc</Typography>
+              <Typography variant="h6" fontWeight={800} sx={{ fontFamily: "'Inter', sans-serif" }}>Quét mã QR để cọc</Typography>
               
               <Box sx={{ mt: 3, mb: 3, p: 1.5, bgcolor: '#F9F8F6', borderRadius: '24px', display: 'inline-block' }}>
                 <img src={qrUrl} alt="QR Code" style={{ width: '100%', maxWidth: 240, borderRadius: '12px' }} />

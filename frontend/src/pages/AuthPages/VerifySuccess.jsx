@@ -66,7 +66,7 @@ export default function VerifySuccess() {
               variant="h4" 
               sx={{ 
                 color: "#1C1B19", 
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'Inter', sans-serif",
                 fontWeight: 800,
                 mb: 2,
                 letterSpacing: "-0.5px"

@@ -29,7 +29,7 @@ const WhyBook = () => {
           <Stack alignItems="center" spacing={1}>
             <Typography
               sx={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: "1.75rem",
                 fontWeight: 800,
                 color: "#1C1B19",

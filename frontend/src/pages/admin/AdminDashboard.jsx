@@ -87,7 +87,7 @@ export default function AdminDashboard() {
       {/* TIÊU ĐỀ & NÚT XUẤT */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={4} spacing={2}>
         <Box>
-          <Typography variant="h4" fontWeight={800} sx={{ fontFamily: "'Playfair Display', serif" }}>
+          <Typography variant="h4" fontWeight={800} sx={{ fontFamily: "'Inter', sans-serif" }}>
             Quản trị Tài chính
           </Typography>
           <Typography variant="body2" color="text.secondary">

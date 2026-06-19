@@ -36,7 +36,7 @@ const Sidebar = () => {
       <Box sx={{ px: 3, mb: 4 }}>
         <Typography
           sx={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: 20,
             fontWeight: 800,
             color: "#C2A56D",

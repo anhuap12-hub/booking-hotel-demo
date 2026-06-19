@@ -13,7 +13,7 @@ export default function RoomDescription({ room }) {
 
   return (
     <Box>
-      <Typography variant="h6" fontWeight={700} mb={2} fontFamily="'Playfair Display', serif">
+      <Typography variant="h6" fontWeight={700} mb={2} fontFamily="'Inter', sans-serif">
         Mô tả 
       </Typography>
 

@@ -45,7 +45,7 @@ export default function SidebarWidgets({ randomQuote }) {
           <Typography 
             fontWeight={800} 
             color="#1C1B19" 
-            sx={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", lineHeight: 1.4 }}
+            sx={{ fontFamily: "'Inter', sans-serif", fontSize: "1.1rem", lineHeight: 1.4 }}
             dangerouslySetInnerHTML={{ __html: randomQuote.title }} 
           />
           <Typography variant="body2" sx={{ mt: 1.5, mb: 2, color: "#5d5c56", fontStyle: "italic" }}>

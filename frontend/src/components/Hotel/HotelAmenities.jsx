@@ -22,7 +22,7 @@ export default function HotelAmenities({ amenities = [] }) {
     <Box sx={{ py: 2 }}>
       <Typography
         sx={{
-          fontFamily: "'Playfair Display', serif",
+          fontFamily: "'Inter', sans-serif",
           fontSize: "1.3rem",
           fontWeight: 500,
           color: "#1C1B19",

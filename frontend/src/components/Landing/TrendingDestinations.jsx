@@ -14,7 +14,7 @@ const DESTINATIONS = [
   { city: "Nha Trang", image: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=400&q=80" },
 ];
 
-const fontStack = "'Playfair Display', serif";
+const fontStack = "'Inter', sans-serif";
 
 export default function TrendingDestinations() {
   const navigate = useNavigate();

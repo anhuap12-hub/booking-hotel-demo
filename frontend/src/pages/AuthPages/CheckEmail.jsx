@@ -46,7 +46,7 @@ export default function CheckEmail() {
           <Typography 
             variant="h4" 
             sx={{ 
-              fontFamily: "'Playfair Display', serif", // Font tiêu đề sang trọng
+              fontFamily: "'Inter', sans-serif", // Font tiêu đề sang trọng
               fontWeight: 800, 
               color: "#1C1B19", // Ebony
               mb: 2,

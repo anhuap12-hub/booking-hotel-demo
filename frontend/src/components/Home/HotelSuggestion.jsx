@@ -57,7 +57,7 @@ export default function HotelSuggestion({ filters }) {
             <Typography sx={{ color: "#C2A56D", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.3em", textTransform: "uppercase" }}>
               Dành riêng cho bạn
             </Typography>
-            <Typography variant="h4" sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, color: "#1C1B19", fontSize: { xs: "1.6rem", md: "2.2rem" } }}>
+            <Typography variant="h4" sx={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, color: "#1C1B19", fontSize: { xs: "1.6rem", md: "2.2rem" } }}>
               Tuyển chọn tinh túy
             </Typography>
             <Box sx={{ width: 40, height: 2, bgcolor: "#C2A56D", mt: 1 }} />

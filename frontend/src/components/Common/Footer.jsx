@@ -76,7 +76,7 @@ export default function Footer() {
             <Stack spacing={1.5}>
               <Typography
                 sx={{
-                  fontFamily: "Playfair Display, serif",
+                  fontFamily: "Inter, sans-serif",
                   fontSize: 26,
                   fontWeight: 600,
                   color: "#f5f4f2",

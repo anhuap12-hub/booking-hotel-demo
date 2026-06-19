@@ -109,7 +109,7 @@ export default function MyBookings() {
       <Container maxWidth="md" sx={{ mt: { xs: 12, md: 15 }, pb: 10 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-end" mb={6}>
           <Box>
-            <Typography variant="h3" sx={{ fontSize: "2rem", color: "#1C1B19", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
+            <Typography variant="h3" sx={{ fontSize: "2rem", color: "#1C1B19", fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
               Kỳ nghỉ của tôi
             </Typography>
             <Typography variant="body2" sx={{ color: "#72716E", mt: 1 }}>Xem lại lịch trình và quản lý giao dịch</Typography>
@@ -157,7 +157,7 @@ export default function MyBookings() {
       {/* DETAIL DIALOG */}
       <Dialog open={!!selectedBooking && !isRefundDialogOpen} onClose={() => setSelectedBooking(null)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: "28px" } }}>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>Chi tiết kỳ nghỉ</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>Chi tiết kỳ nghỉ</Typography>
           <Button onClick={() => setSelectedBooking(null)} sx={{ minWidth: 40, color: 'text.secondary' }}><Close /></Button>
         </DialogTitle>
 <DialogContent>

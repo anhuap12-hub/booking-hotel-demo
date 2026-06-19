@@ -10,7 +10,7 @@ const darkBlue = "#003d82";    // Màu xanh đậm cho text/nút
 
 const InfoField = ({ label, value, color }) => (
   <Box>
-    <Typography variant="caption" sx={{ color: "#777", fontWeight: 700, fontSize: "0.6rem" }}>
+    <Typography variant="caption" sx={{ color: "#333", fontWeight: 700, fontSize: "0.6rem" }}>
       {label}
     </Typography>
     <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: color || "#333" }}>
@@ -72,7 +72,7 @@ export default function RightSideBar({ hotel }) {
             fontWeight: 800,
             textTransform: "none",
             bgcolor: isActive ? primaryBlue : "#e9ecef",
-            color: isActive ? "#fff" : "#999",
+            color: isActive ? "#fff" : "#333",
             "&:hover": { bgcolor: isActive ? darkBlue : "#e9ecef" },
           }}
           startIcon={isActive ? <MeetingRoomIcon /> : null}

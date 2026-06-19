@@ -10,7 +10,7 @@ const MotionBox = motion(Box);
 const cap = (s = "") => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Font chữ chuẩn hệ thống của Booking.com
-const bookingFont = "'Playfair Display', serif";
+const bookingFont = "'Inter', sans-serif";
 
 export default function PropertiesByType({ properties = [] }) {
   const navigate = useNavigate();
