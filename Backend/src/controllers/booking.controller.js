@@ -244,13 +244,15 @@ export const checkAvailability = async (req, res) => {
     const { roomId } = req.params;
     const { checkInDate, checkOutDate } = req.body;
 
-    const conflict = await Booking.findOne({
-      room: roomId,
-      status: { $in: ["confirmed", "pending"] }, 
-      paymentStatus: { $in: ["PAID", "DEPOSITED"] }, 
-      checkIn: { $lt: new Date(checkOutDate) }, 
-      checkOut: { $gt: new Date(checkInDate) }
-    });
+  const conflict = await Booking.findOne({
+  room,
+  // Chỉ chặn nếu đơn đang thực sự tồn tại và chưa bị hủy
+  status: { $in: ["pending", "confirmed"] }, 
+  // Thêm điều kiện này để chắc chắn chỉ chặn đơn chưa bị hủy
+  status: { $nin: ["cancelled", "expired"] }, 
+  checkIn: { $lt: checkOutDate },
+  checkOut: { $gt: checkInDate },
+});
 
     return res.status(200).json({ success: true, available: !conflict });
   } catch (error) {
