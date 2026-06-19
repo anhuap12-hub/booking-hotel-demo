@@ -40,10 +40,11 @@ app.use(
     credentials: true,
   })
 );
-app.use("/api/webhooks", webhookRoutes);
 /* ===================== MIDDLEWARE ===================== */
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use("/api/webhooks", webhookRoutes);
 /* ===================== DB ===================== */
 connectDB();
 
