@@ -67,7 +67,7 @@ export default function ContactCTA() {
             py: 1.2,
             fontSize: "0.95rem",
             fontWeight: 600,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Playfair Display', serif",
             bgcolor: "#003580", 
             color: "#ffffff",
             borderRadius: 2,

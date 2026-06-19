@@ -49,7 +49,7 @@ export default function DealsSection() {
         <Box>
           <Typography
             sx={{
-              fontFamily: "Inter, -apple-system, sans-serif",
+              fontFamily: "'Playfair Display', serif",
               fontSize: { xs: "1.25rem", md: "1.35rem" },
               fontWeight: 700,
               color: "#1A1A1A",
@@ -94,7 +94,7 @@ export default function DealsSection() {
           {/* Tiêu đề trong Banner */}
           <Typography
             sx={{
-              fontFamily: "Inter, -apple-system, sans-serif",
+              fontFamily: "'Playfair Display', serif",
               fontSize: { xs: "1.5rem", md: "1.8rem" },
               fontWeight: 800,
               lineHeight: 1.2,
@@ -114,7 +114,7 @@ export default function DealsSection() {
           ) : (
             <Typography
               sx={{
-                fontFamily: "Inter, sans-serif",
+                fontFamily: "'Playfair Display', serif",
                 fontSize: { xs: "0.875rem", md: "0.925rem" },
                 lineHeight: 1.6,
                 color: "#4A4A4A", // Màu xám đậm sắc nét, đọc lâu không mỏi mắt

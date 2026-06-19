@@ -34,13 +34,13 @@ const theme = createTheme({
   },
 
   typography: {
-  fontFamily: 'Inter, Roboto, Arial, sans-serif',
+    fontFamily: "'Playfair Display', serif",
 
-  h1: {
-    fontFamily: 'Playfair Display, serif',
-    fontWeight: 600,
-    letterSpacing: '-0.5px',
-  },
+    h1: {
+      fontFamily: 'Playfair Display, serif',
+      fontWeight: 600,
+      letterSpacing: '-0.5px',
+    },
   h2: {
     fontFamily: 'Playfair Display, serif',
     fontWeight: 600,
@@ -59,15 +59,15 @@ const theme = createTheme({
   },
 
   body1: {
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: "'Playfair Display', serif",
     fontSize: 15,
     lineHeight: 1.7,
   },
   body2: {
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: "'Playfair Display', serif",
     fontSize: 14,
     lineHeight: 1.6,
-    },
+  },
     button: {
       fontWeight: 500,
       letterSpacing: "0.02em",
