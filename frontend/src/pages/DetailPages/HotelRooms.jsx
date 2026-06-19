@@ -36,34 +36,44 @@ export default function HotelRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-  let mounted = true;
-  const fetchRooms = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`/rooms/hotel/${hotelId}`);
-      
-      if (mounted) {
-        // Backend trả về { success: true, data: [...] }
-        const roomsData = res.data.data || []; 
-        setRooms(roomsData);
+ useEffect(() => {
+    let mounted = true;
+    const fetchRooms = async () => {
+      try {
+        setLoading(true);
+        console.log("Đang gọi API rooms cho ID:", hotelId);
+        const res = await axios.get(`/rooms/hotel/${hotelId}`);
+        
+        if (mounted) {
+          const roomsData = res.data.data || []; 
+          console.log("Dữ liệu Rooms nhận được:", roomsData);
+          setRooms(roomsData);
 
-        // Vì Backend chỉ trả về mảng Room, để lấy thông tin Hotel 
-        // bạn có thể lấy từ room đầu tiên (vì đã populate hotel ở Backend)
-        if (roomsData.length > 0) {
-          setHotel(roomsData[0].hotel);
+          if (roomsData.length > 0 && typeof roomsData[0].hotel === 'object' && roomsData[0].hotel !== null) {
+            setHotel(roomsData[0].hotel);
+          } else {
+            // Gọi API lấy hotel riêng nếu phòng không chứa dữ liệu hotel
+            const hotelRes = await axios.get(`/hotels/${hotelId}`); 
+            console.log("Toàn bộ cấu trúc response từ API /hotels/:id :", hotelRes.data);
+            
+            if (hotelRes.data && hotelRes.data.data) {
+                setHotel(hotelRes.data.data);
+            } else if (hotelRes.data && hotelRes.data.name) {
+                setHotel(hotelRes.data);
+            }
+          }
         }
+      } catch (err) {
+        console.error("Lỗi khi fetch dữ liệu:", err);
+        if (mounted) setError("Không thể tải thông tin khách sạn");
+      } finally {
+        if (mounted) setLoading(false);
       }
-    } catch (err) {
-      if (mounted) setError("Không thể tải danh sách phòng");
-    } finally {
-      if (mounted) setLoading(false);
-    }
-  };
-  if (hotelId) fetchRooms();
-  return () => (mounted = false);
-}, [hotelId]);
-
+    };
+    
+    if (hotelId) fetchRooms();
+    return () => (mounted = false);
+  }, [hotelId]);
   // Logic lọc giữ nguyên như bạn đã viết
   const filteredRooms = useMemo(() => {
     if (!rooms.length) return [];
@@ -93,55 +103,43 @@ export default function HotelRoom() {
 
   return (
     <Box bgcolor="#F9F8F6" minHeight="100vh">
-      {/* BREADCRUMB - Minimalist Style */}
-      <Box bgcolor="#fff" borderBottom="1px solid rgba(194, 165, 109, 0.1)" py={2}>
-        <Container maxWidth="lg">
-          <Breadcrumbs 
-            separator={<NavigateNextIcon fontSize="small" sx={{ color: '#A8A7A1' }} />}
-            sx={{ '& .MuiTypography-root': { fontSize: '0.875rem' } }}
-          >
-            <Link component={RouterLink} to="/" underline="none" color="#A8A7A1" sx={{ '&:hover': { color: '#C2A56D' } }}>Trang chủ</Link>
-            <Link component={RouterLink} to="/hotels" underline="none" color="#A8A7A1" sx={{ '&:hover': { color: '#C2A56D' } }}>Khách sạn</Link>
-            <Typography color="#1C1B19" fontWeight={700}>{hotel?.name}</Typography>
-          </Breadcrumbs>
-        </Container>
-      </Box>
-
+     
       {/* HEADER SECTION - Elegant Typography */}
-      <Box bgcolor="#fff" py={6} borderBottom="1px solid rgba(194, 165, 109, 0.1)">
-        <Container maxWidth="lg">
-          <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ md: "center" }} spacing={3}>
-            <Box>
-              <Typography variant="h3" sx={{ 
-                color: "#1C1B19", 
-                fontWeight: 800, 
-                fontFamily: "'Playfair Display', serif",
-                mb: 1
-              }}>
-                {hotel?.name}
+      <Box bgcolor="#FFFFFF" py={6} borderBottom="1px solid #E0E7ED">
+      <Container maxWidth="lg">
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ md: "center" }} spacing={3}>
+          <Box>
+            <Typography variant="h3" sx={{ 
+              color: "#000000", // Xanh đậm chủ đạo
+              fontWeight: 800, 
+              fontFamily: "'Playfair Display', serif",
+              mb: 1,
+              fontSize: { xs: "1.8rem", md: "2rem" },
+            }}>
+              {hotel?.name || "Đang tải thông tin..."}
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <LocationOnOutlinedIcon sx={{ color: "#0056b3", fontSize: 20 }} />
+              <Typography sx={{ color: "#667085", fontWeight: 500 }}>
+                {hotel?.address || "Địa chỉ chưa cập nhật"}
               </Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <LocationOnOutlinedIcon sx={{ color: "#C2A56D", fontSize: 20 }} />
-                <Typography sx={{ color: "#72716E", fontWeight: 500 }}>
-                  {hotel?.address}
-                </Typography>
-              </Stack>
-            </Box>
-            <Chip
-              icon={<VerifiedUserOutlinedIcon style={{ color: '#C2A56D' }} />}
-              label="Booking Tối Ưu & Bảo Mật"
-              sx={{ 
-                borderRadius: '8px', 
-                bgcolor: 'rgba(194, 165, 109, 0.05)', 
-                color: '#1C1B19',
-                fontWeight: 700,
-                border: '1px solid rgba(194, 165, 109, 0.3)',
-                py: 2.5, px: 1
-              }}
-            />
-          </Stack>
-        </Container>
-      </Box>
+            </Stack>
+          </Box>
+          <Chip
+            icon={<VerifiedUserOutlinedIcon style={{ color: '#0056b3' }} />}
+            label="Booking Tối Ưu & Bảo Mật"
+            sx={{ 
+              borderRadius: '8px', 
+              bgcolor: '#eef6ff', 
+              color: '#0056b3',
+              fontWeight: 700,
+              border: '1px solid #cce0ff',
+              py: 2.5, px: 1
+            }}
+          />
+        </Stack>
+      </Container>
+    </Box>
 
       {/* MAIN CONTENT */}
       <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -151,43 +149,37 @@ export default function HotelRoom() {
           <Box display="flex" gap={{ md: 6 }} flexDirection={{ xs: 'column', md: 'row' }} alignItems="flex-start">
             
             {/* SIDEBAR FILTER - Sticky & Styled */}
-            <Box
-              width={{ xs: '100%', md: 320 }}
-              flexShrink={0}
-              sx={{ 
-                position: { md: "sticky" }, 
-                top: { md: 100 },
-                mb: { xs: 4, md: 0 }
-              }}
-            >
-              <Paper elevation={0} sx={{ border: '1px solid rgba(194, 165, 109, 0.2)', borderRadius: '24px', overflow: 'hidden' }}>
-                <Box sx={{ p: 2.5, bgcolor: '#1C1B19', color: '#C2A56D', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <FilterListIcon fontSize="small" />
-                  <Typography fontWeight={700} variant="body1">Bộ lọc tìm kiếm</Typography>
-                </Box>
-                <Box sx={{ p: 1 }}>
-                  <RoomFilter />
-                </Box>
-              </Paper>
+            <Box width={{ xs: '100%', md: 320 }}>
+          <Paper elevation={0} sx={{ border: '1px solid #E0E7ED', borderRadius: '16px', overflow: 'hidden' }}>
+            <Box sx={{ p: 2.5, bgcolor: '#0056b3', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <FilterListIcon fontSize="small" />
+              <Typography fontWeight={700}>Bộ lọc tìm kiếm</Typography>
             </Box>
+            <Box sx={{ p: 1, bgcolor: '#FFFFFF' }}>
+              <RoomFilter />
+            </Box>
+          </Paper>
+        </Box>
 
             {/* LIST AREA */}
             <Box flex={1}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: "#1C1B19", fontFamily: "'Playfair Display', serif" }}>
-                  Phòng sẵn có <span style={{ color: '#C2A56D', fontSize: '1.2rem', marginLeft: '8px' }}>({filteredRooms.length})</span>
-                </Typography>
-                
-                {(filter.type !== "all" || filter.amenities.length > 0 || filter.price < 10000000) && (
-                  <Button 
-                    size="small" 
-                    onClick={resetFilter}
-                    sx={{ color: '#C2A56D', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: 'rgba(194, 165, 109, 0.05)' } }}
-                  >
-                    Xóa tất cả bộ lọc
-                  </Button>
-                )}
-              </Stack>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: "#003580", fontFamily: "'Playfair Display', serif" }}>
+              Phòng sẵn có 
+              <span style={{ color: '#0056b3', fontSize: '1.2rem', marginLeft: '8px' }}>
+                ({filteredRooms.length})
+              </span>
+            </Typography>
+            
+            {(filter.type !== "all" || filter.amenities.length > 0 || filter.price < 10000000) && (
+              <Button 
+                onClick={resetFilter}
+                sx={{ color: '#0056b3', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#eef6ff' } }}
+              >
+                Xóa tất cả bộ lọc
+              </Button>
+            )}
+          </Stack>
 
               <Fade in={true} timeout={1000}>
                 <Box>

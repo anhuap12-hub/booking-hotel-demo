@@ -2,38 +2,34 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Container, Grid, Paper, Typography, TextField, 
-  Button, Box, Stack, Divider, ThemeProvider, createTheme, Fade, Avatar
+  Button, Box, Stack, Divider, ThemeProvider, createTheme, Fade 
 } from '@mui/material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { vi } from 'date-fns/locale';
 import { differenceInDays, startOfDay, addDays } from 'date-fns';
-import { AccountCircleOutlined, DateRangeOutlined, ChevronLeftOutlined } from '@mui/icons-material';
+import { ChevronLeftOutlined, PersonOutline, PhoneAndroidOutlined, GroupsOutlined, DateRangeOutlined } from '@mui/icons-material';
 
-// THEME: Tinh chỉnh Ebony & Gold
+// THEME: Blue & White (Hiện đại, sang trọng)
 const theme = createTheme({
   palette: { 
-    primary: { main: '#1C1B19' }, // Ebony
-    secondary: { main: '#C2A56D' } // Gold
+    primary: { main: '#0056b3' },
+    background: { default: '#F8FAFC' }
   },
   typography: {
     fontFamily: "'Inter', sans-serif",
-    h5: { fontFamily: "'Playfair Display', serif", fontWeight: 800 }
+    h4: { fontFamily: "'Playfair Display', serif", fontWeight: 800 },
+    h5: { fontFamily: "'Playfair Display', serif", fontWeight: 800 },
+    h6: { fontFamily: "'Playfair Display', serif", fontWeight: 700 }
   },
   components: {
     MuiOutlinedInput: {
       styleOverrides: {
-        root: {
-          borderRadius: 12,
-          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#C2A56D' },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderWidth: '1px', borderColor: '#1C1B19' },
-        },
-      },
+        root: { borderRadius: 12, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#0056b3' } }
+      }
     },
     MuiButton: {
-      styleOverrides: {
-        root: { borderRadius: 12, textTransform: 'none', fontWeight: 700 }
-      }
+      styleOverrides: { root: { borderRadius: 12, textTransform: 'none', fontWeight: 700 } }
     }
   },
 });
@@ -47,15 +43,12 @@ export default function BookingInfo() {
   const unitPrice = room?.finalPrice || room?.price || 0;
 
   const [info, setInfo] = useState({
-    firstName: '',
-    lastName: '',
-    phone: '',
+    firstName: '', lastName: '', phone: '',
     checkIn: startOfDay(new Date()),
     checkOut: startOfDay(addDays(new Date(), 1)),
   });
 
   const [errors, setErrors] = useState({});
-
   const nights = useMemo(() => {
     const d = differenceInDays(info.checkOut, info.checkIn);
     return d > 0 ? d : 1;
@@ -64,174 +57,128 @@ export default function BookingInfo() {
   const totalPrice = unitPrice * nights;
   const depositAmount = Math.round(totalPrice * 0.3);
 
-  const validate = () => {
-    let tempErrors = {};
-    if (!info.lastName.trim()) tempErrors.lastName = "Vui lòng nhập họ";
-    if (!info.firstName.trim()) tempErrors.firstName = "Vui lòng nhập tên";
-    if (!info.phone.trim()) tempErrors.phone = "Vui lòng nhập số điện thoại";
-    else if (!/^\d{10,11}$/.test(info.phone)) tempErrors.phone = "Số điện thoại không hợp lệ";
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
-  };
-
   const handleNext = () => {
-    if (validate()) {
-      navigate(`/checkout/${roomId}`, {
-        state: { 
-          ...info,
-          checkIn: info.checkIn.toISOString(),
-          checkOut: info.checkOut.toISOString(),
-          roomName: room?.name,
-          hotelName: room?.hotel?.name,
-          guestName: `${info.lastName} ${info.firstName}`,
-          guestPhone: info.phone,
-          nights,
-          unitPrice,
-          totalPrice,
-          depositAmount 
-        }
-      });
+  const newErrors = {};
+  if (!info.lastName.trim()) newErrors.lastName = "Hãy điền Họ và tên đệm của bạn";
+  if (!info.firstName.trim()) newErrors.firstName = "Hãy điền tên của bạn";
+  if (!info.phone.trim()) newErrors.phone = "Hãy điền số điện thoại của bạn";
+  
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return; // Dừng lại, không điều hướng
+  }
+
+  // Nếu không có lỗi, mới điều hướng
+  navigate(`/checkout/${roomId}`, {
+    state: { 
+      ...info,
+      checkIn: info.checkIn.toISOString(), checkOut: info.checkOut.toISOString(),
+      roomName: room?.name, hotelName: room?.hotel?.name,
+      guestName: `${info.lastName} ${info.firstName}`,
+      guestPhone: info.phone, nights, unitPrice, totalPrice, depositAmount 
     }
-  };
+  });
+};
 
   return (
     <ThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={vi}>
-        <Box sx={{ bgcolor: "#F9F8F6", minHeight: "100vh", py: 8 }}>
+        <Box sx={{ bgcolor: "#F8FAFC", minHeight: "100vh", py: 6 }}>
           <Container maxWidth="lg">
-            {/* Quay lại */}
-            <Button 
-              startIcon={<ChevronLeftOutlined />} 
-              onClick={() => navigate(-1)}
-              sx={{ color: "#72716E", mb: 3 }}
-            >
+            <Button startIcon={<ChevronLeftOutlined />} onClick={() => navigate(-1)} sx={{ color: "#64748B", mb: 3 }}>
               Quay lại danh sách phòng
             </Button>
 
-            <Grid container spacing={5}>
-              {/* CỘT TRÁI: FORM THÔNG TIN */}
-              <Grid item xs={12} md={8}>
+            <Grid container spacing={4}>
+              {/* CỘT TRÁI: THÔNG TIN KHÁCH HÀNG & LỊCH */}
+              <Grid item xs={12} md={7}>
                 <Fade in timeout={800}>
-                  <Box>
-                    <Typography variant="h4" sx={{ color: "#1C1B19", mb: 4 }}>
-                      Xác nhận thông tin nghỉ dưỡng
-                    </Typography>
+                  <Stack spacing={3}>
+                    <Typography variant="h4" sx={{ color: "#0F172A", mb: 1 }}>Xác nhận thông tin</Typography>
                     
-                    <Paper sx={{ p: 5, borderRadius: "24px", border: '1px solid rgba(194, 165, 109, 0.2)', bgcolor: '#fff' }} elevation={0}>
-                      {/* Section Khách hàng */}
-                      <Stack direction="row" spacing={2} alignItems="center" mb={4}>
-                        <Avatar sx={{ bgcolor: '#1C1B19', color: '#C2A56D' }}><AccountCircleOutlined /></Avatar>
-                        <Typography variant="h6" fontWeight={700}>Thông tin khách hàng</Typography>
-                      </Stack>
-                      
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField fullWidth label="Họ" variant="outlined"
-                            error={!!errors.lastName} helperText={errors.lastName}
-                            onChange={(e) => setInfo({...info, lastName: e.target.value})} />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField fullWidth label="Tên" 
-                            error={!!errors.firstName} helperText={errors.firstName}
-                            onChange={(e) => setInfo({...info, firstName: e.target.value})} />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <TextField fullWidth label="Số điện thoại di động" 
-                            error={!!errors.phone} helperText={errors.phone}
-                            onChange={(e) => setInfo({...info, phone: e.target.value})} />
-                        </Grid>
-                      </Grid>
-
-                      <Divider sx={{ my: 5, borderColor: 'rgba(194, 165, 109, 0.1)' }} />
-
-                      {/* Section Ngày tháng */}
-                      <Stack direction="row" spacing={2} alignItems="center" mb={4}>
-                        <Avatar sx={{ bgcolor: '#F9F8F6', color: '#C2A56D', border: '1px solid rgba(194, 165, 109, 0.3)' }}>
-                          <DateRangeOutlined />
-                        </Avatar>
-                        <Typography variant="h6" fontWeight={700}>Lịch trình lưu trú</Typography>
-                      </Stack>
-
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
-                          <DatePicker label="Nhận phòng (Check-in)" value={info.checkIn} minDate={startOfDay(new Date())}
-                            onChange={(v) => {
-                              const newIn = startOfDay(v);
-                              setInfo({
-                                ...info, checkIn: newIn, 
-                                checkOut: info.checkOut <= newIn ? addDays(newIn, 1) : info.checkOut
-                              });
-                            }} 
-                            slotProps={{ textField: { fullWidth: true }}} />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <DatePicker label="Trả phòng (Check-out)" value={info.checkOut} minDate={addDays(info.checkIn, 1)}
-                            onChange={(v) => setInfo({...info, checkOut: startOfDay(v)})} 
-                            slotProps={{ textField: { fullWidth: true }}} />
-                        </Grid>
-                      </Grid>
+                    {/* THÔNG TIN KHÁCH HÀNG DỌC */}
+                    <Paper sx={{ p: 4, borderRadius: "20px", border: '1px solid #E2E8F0' }} elevation={0}>
+                      <Typography variant="h6" sx={{ color: '#000000', mb: 3 }}>Thông tin người nhận phòng</Typography>
+                      <Stack spacing={2}>
+  <TextField 
+    fullWidth label="Họ và tên đệm" 
+    error={!!errors.lastName} 
+    helperText={errors.lastName}
+    onChange={(e) => {
+      setInfo({...info, lastName: e.target.value});
+      if (errors.lastName) setErrors({...errors, lastName: ""}); // Xóa lỗi khi người dùng bắt đầu nhập
+    }} 
+  />
+  <TextField 
+    fullWidth label="Tên" 
+    error={!!errors.firstName} 
+    helperText={errors.firstName}
+    onChange={(e) => {
+      setInfo({...info, firstName: e.target.value});
+      if (errors.firstName) setErrors({...errors, firstName: ""});
+    }} 
+  />
+  <TextField 
+    fullWidth label="Số điện thoại" 
+    error={!!errors.phone} 
+    helperText={errors.phone}
+    onChange={(e) => {
+      setInfo({...info, phone: e.target.value});
+      if (errors.phone) setErrors({...errors, phone: ""});
+    }} 
+  />
+</Stack>
                     </Paper>
-                  </Box>
+
+                    {/* LỊCH DƯỚI THÔNG TIN */}
+                    <Paper sx={{ p: 4, borderRadius: "20px", border: '1px solid #E2E8F0' }} elevation={0}>
+  <Typography variant="h6" sx={{ color: '#000000', mb: 3 }}>Lịch trình lưu trú</Typography>
+  <Stack direction="row" spacing={2}>
+    <DatePicker 
+      label="Nhận phòng" 
+      value={info.checkIn} 
+      minDate={startOfDay(new Date())} // Chỉ cho phép từ hôm nay trở đi
+      onChange={(v) => {
+        const newCheckIn = startOfDay(v);
+        setInfo(prev => ({
+          ...prev, 
+          checkIn: newCheckIn,
+          // Nếu checkOut cũ nhỏ hơn hoặc bằng checkIn mới thì tự động tăng checkOut lên 1 ngày
+          checkOut: info.checkOut <= newCheckIn ? addDays(newCheckIn, 1) : info.checkOut
+        }));
+      }} 
+      slotProps={{ textField: { fullWidth: true } }} 
+    />
+    <DatePicker 
+      label="Trả phòng" 
+      value={info.checkOut} 
+      minDate={addDays(info.checkIn, 1)} // Ngày trả phải sau ngày nhận ít nhất 1 ngày
+      onChange={(v) => setInfo(prev => ({ ...prev, checkOut: startOfDay(v) }))} 
+      slotProps={{ textField: { fullWidth: true } }} 
+    />
+  </Stack>
+</Paper>
+                  </Stack>
                 </Fade>
               </Grid>
 
-              {/* CỘT PHẢI: TÓM TẮT DỊCH VỤ */}
-              <Grid item xs={12} md={4}>
+              {/* CỘT PHẢI: CHI TIẾT THANH TOÁN */}
+              <Grid item xs={12} md={5}>
                 <Box sx={{ position: 'sticky', top: 40 }}>
-                  <Paper sx={{ 
-                    p: 4, borderRadius: "24px", bgcolor: '#1C1B19', color: '#fff',
-                    backgroundImage: 'linear-gradient(135deg, #1C1B19 0%, #2D2C2A 100%)',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
-                  }} elevation={0}>
-                    <Typography variant="h6" sx={{ color: "#C2A56D", fontWeight: 800, mb: 3 }}>
-                      Chi tiết thanh toán
-                    </Typography>
-
-                    <Stack spacing={2.5}>
-                      <Box display="flex" justifyContent="space-between">
-                        <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>Phòng</Typography>
-                        <Typography fontWeight={600} textAlign="right">{room?.name}</Typography>
-                      </Box>
-                      <Box display="flex" justifyContent="space-between">
-                        <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>Thời gian</Typography>
-                        <Typography fontWeight={600}>{nights} đêm</Typography>
-                      </Box>
-                      <Box display="flex" justifyContent="space-between">
-                        <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>Đơn giá</Typography>
-                        <Typography fontWeight={600}>{unitPrice.toLocaleString()}₫</Typography>
-                      </Box>
-
-                      <Divider sx={{ my: 1, borderColor: 'rgba(194, 165, 109, 0.3)', borderStyle: 'dashed' }} />
-                      
-                      <Box display="flex" justifyContent="space-between" alignItems="baseline">
-                        <Typography sx={{ color: "#C2A56D", fontWeight: 700 }}>Tổng cộng</Typography>
-                        <Typography variant="h5" fontWeight={800}>{totalPrice.toLocaleString()}₫</Typography>
-                      </Box>
-
-                      <Box sx={{ 
-                        p: 2, borderRadius: 2, bgcolor: 'rgba(194, 165, 109, 0.1)', 
-                        border: '1px solid rgba(194, 165, 109, 0.2)', mt: 2 
-                      }}>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography variant="body2" fontWeight={700} color="#C2A56D">Yêu cầu cọc (30%)</Typography>
-                          <Typography variant="body1" fontWeight={900} color="#C2A56D">{depositAmount.toLocaleString()}₫</Typography>
-                        </Stack>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block', mt: 1 }}>
-                          * Quý khách sẽ thanh toán số tiền cọc này để xác nhận giữ phòng.
-                        </Typography>
-                      </Box>
+                  <Paper sx={{ p: 4, borderRadius: "20px", bgcolor: '#0056b3', color: '#fff' }} elevation={0}>
+                    <Typography variant="h5" sx={{ mb: 3, color: '#fff' }}>Chi tiết thanh toán</Typography>
+                    <Stack spacing={2} sx={{ mb: 3 }}>
+                      <Row label="Phòng:" value={room?.name} />
+                      <Row label="Thời gian:" value={`${nights} đêm`} />
+                      <Row label="Đơn giá:" value={`${unitPrice.toLocaleString()}đ`} />
+                      <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
+                      <Row label="Tổng cộng:" value={`${totalPrice.toLocaleString()}đ`} variant="h6" />
                     </Stack>
-
-                    <Button 
-                      fullWidth 
-                      variant="contained" 
-                      onClick={handleNext} 
-                      sx={{ 
-                        mt: 4, py: 2, bgcolor: '#C2A56D', color: '#1C1B19',
-                        '&:hover': { bgcolor: '#D4BB8D' },
-                        fontSize: '1rem'
-                      }}
-                    >
+                    <Box sx={{ p: 2, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.1)' }}>
+                      <Typography variant="caption" sx={{ display: 'block', opacity: 0.8 }}>Yêu cầu đặt cọc (30%)</Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 900 }}>{depositAmount.toLocaleString()}đ</Typography>
+                    </Box>
+                    <Button fullWidth variant="contained" onClick={handleNext} sx={{ mt: 3, py: 1.8, bgcolor: '#fff', color: '#0056b3', '&:hover': { bgcolor: '#F1F5F9' } }}>
                       Tiến hành đặt phòng
                     </Button>
                   </Paper>
@@ -242,5 +189,14 @@ export default function BookingInfo() {
         </Box>
       </LocalizationProvider>
     </ThemeProvider>
+  );
+}
+
+function Row({ label, value, variant = "body1" }) {
+  return (
+    <Box display="flex" justifyContent="space-between">
+      <Typography sx={{ opacity: 0.8 }}>{label}</Typography>
+      <Typography variant={variant} fontWeight={700}>{value}</Typography>
+    </Box>
   );
 }

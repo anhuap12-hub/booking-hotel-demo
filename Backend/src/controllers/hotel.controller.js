@@ -95,7 +95,7 @@ export const getAllHotels = async (req, res) => {
 
 export const getHotelById = async (req, res) => {
   try {
-    const hotel = await Hotel.findById(req.params.id).populate({ path: "rooms" }).lean();
+   const hotel = await Hotel.findById(req.params.id).populate({ path: "rooms" }).lean();
     if (!hotel) return res.status(404).json({ success: false, message: "Hotel not found" });
 
     let cheapestPrice = null;

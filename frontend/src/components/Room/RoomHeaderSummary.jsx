@@ -1,8 +1,12 @@
 import { Box, Typography, Stack, Chip, Rating } from "@mui/material";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 
+const BLUE = "#0056b3";
+const SOFT_GRAY = "#F8FAFC";
+const TEXT_PRIMARY = "#0F172A";
+const TEXT_SECONDARY = "#64748B";
+
 export default function RoomHeaderSummary({ room }) {
-  // Giữ nguyên logic lấy dữ liệu an toàn
   const hotelName = room?.hotel?.name || "Khách sạn";
   const address = room?.hotel?.address || room?.hotel?.city || "Đang cập nhật địa chỉ";
 
@@ -12,18 +16,17 @@ export default function RoomHeaderSummary({ room }) {
       justifyContent="space-between"
       alignItems={{ xs: "flex-start", sm: "flex-end" }}
       spacing={2}
-      sx={{ mt: 4, mb: 2 }} // Thêm margin bottom để tạo khoảng cách với Gallery
+      sx={{ mt: 4, mb: 3 }}
     >
       <Box>
-        {/* Tên phòng - Đồng bộ Font Playfair Display */}
+        {/* Tên phòng */}
         <Typography
           variant="h3"
           sx={{
-            fontFamily: "'Playfair Display', serif",
             fontWeight: 800,
             mb: 1.5,
-            fontSize: { xs: "2rem", md: "2.8rem" },
-            color: "#1C1B19", // Ebony
+            fontSize: { xs: "2rem", md: "1.5rem" },
+            color: TEXT_PRIMARY,
             lineHeight: 1.2
           }}
         >
@@ -31,18 +34,14 @@ export default function RoomHeaderSummary({ room }) {
         </Typography>
 
         <Stack direction="column" spacing={1.5}>
-          {/* Địa chỉ với icon Gold */}
+          {/* Địa chỉ */}
           <Stack direction="row" spacing={1} alignItems="center">
-            <LocationOnOutlinedIcon sx={{ fontSize: 20, color: "#C2A56D" }} />
+            <LocationOnOutlinedIcon sx={{ fontSize: 20, color: BLUE }} />
             <Typography 
               variant="body1" 
-              sx={{ 
-                color: "#72716E", 
-                fontWeight: 500,
-                fontSize: { xs: "0.9rem", md: "1rem" }
-              }}
+              sx={{ color: TEXT_SECONDARY, fontWeight: 500 }}
             >
-              {hotelName} — <span style={{ fontWeight: 400, color: "#A8A7A1" }}>{address}</span>
+              {hotelName} — <span style={{ fontWeight: 400, color: "#94A3B8" }}>{address}</span>
             </Typography>
           </Stack>
           
@@ -52,25 +51,22 @@ export default function RoomHeaderSummary({ room }) {
               value={5} 
               readOnly 
               size="small" 
-              sx={{ 
-                color: "#C2A56D", // Đổi màu sao sang Gold
-                "& .MuiRating-iconEmpty": { color: "#EFE7DD" } 
-              }} 
+              sx={{ color: "#F59E0B" }} // Vẫn giữ màu vàng cho sao để tạo độ tương phản tốt
             />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography 
                 variant="subtitle2" 
                 sx={{ 
-                  color: "#1C1B19", 
+                  color: BLUE, 
                   fontWeight: 700, 
-                  bgcolor: "#F9F8F6", 
-                  px: 1, 
-                  borderRadius: "4px" 
+                  bgcolor: "#EFF6FF", 
+                  px: 1, py: 0.5,
+                  borderRadius: "6px" 
                 }}
               >
                 5.0
               </Typography>
-              <Typography variant="caption" sx={{ color: "#72716E", fontWeight: 500 }}>
+              <Typography variant="caption" sx={{ color: TEXT_SECONDARY, fontWeight: 500 }}>
                 (Tuyệt vời — 128 đánh giá)
               </Typography>
             </Box>
@@ -78,21 +74,18 @@ export default function RoomHeaderSummary({ room }) {
         </Stack>
       </Box>
 
-      {/* Nhãn loại phòng - Chỉnh lại theo style Luxury Chip */}
+      {/* Nhãn loại phòng */}
       <Chip
         label={room?.type || "Standard"}
         sx={{ 
-          fontWeight: 800, 
+          fontWeight: 700, 
           textTransform: "uppercase",
-          letterSpacing: 1.5,
+          letterSpacing: 1,
           px: 2,
-          py: 2.5,
-          borderRadius: "12px",
-          bgcolor: "#1C1B19", // Nền đen Ebony
-          color: "#C2A56D",   // Chữ vàng Gold
-          border: "1px solid #C2A56D",
+          borderRadius: "8px",
+          bgcolor: BLUE, 
+          color: "#FFF",
           fontSize: "0.75rem",
-          boxShadow: "0 4px 10px rgba(28,27,25,0.15)"
         }}
       />
     </Stack>

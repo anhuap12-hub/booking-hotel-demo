@@ -13,8 +13,8 @@ export default function RoomDescription({ room }) {
 
   return (
     <Box>
-      <Typography variant="h6" fontWeight={700} mb={2}>
-        Về căn phòng này
+      <Typography variant="h6" fontWeight={700} mb={2} fontFamily="'Playfair Display', serif">
+        Mô tả 
       </Typography>
 
       <Typography 

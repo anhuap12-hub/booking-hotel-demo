@@ -26,3 +26,6 @@ export const getAvailableRooms = (checkIn, checkOut, hotelId) =>
   instance.get("/rooms/available", {
     params: { checkIn, checkOut, hotelId },
   });
+
+export const getAvailableAmenities = (hotelId) =>
+  instance.get(`/rooms/amenities/${hotelId}`);

@@ -2,23 +2,25 @@ import { Grid, Stack, Typography, Box } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
+const BLUE = "#0056b3";
+const BORDER_COLOR = "#E2E8F0"; // Xám nhạt cho viền
+
 export default function RoomAmenities({ amenities = [] }) {
-  // 1. Kiểm tra nếu không có tiện nghi
   if (!amenities || amenities.length === 0) {
     return (
       <Box 
         sx={{ 
           p: 3, 
-          bgcolor: "#F9F8F6", 
-          borderRadius: "16px", 
+          bgcolor: "#F8FAFC", 
+          borderRadius: "12px", 
           display: 'flex', 
           alignItems: 'center', 
           gap: 2,
-          border: "1px dashed #D6C9B8"
+          border: `1px solid ${BORDER_COLOR}`
         }}
       >
-        <InfoOutlinedIcon sx={{ color: "#C2A56D" }} />
-        <Typography sx={{ color: "#72716E", fontSize: "0.9rem", fontWeight: 500 }}>
+        <InfoOutlinedIcon sx={{ color: BLUE }} />
+        <Typography sx={{ color: "#64748B", fontSize: "0.9rem", fontWeight: 500 }}>
           Dịch vụ và tiện nghi đang được cập nhật cho hạng phòng này.
         </Typography>
       </Box>
@@ -29,56 +31,47 @@ export default function RoomAmenities({ amenities = [] }) {
     <Box>
       <Typography 
         sx={{ 
-          fontFamily: "'Playfair Display', serif",
           fontSize: "1.5rem",
           fontWeight: 700,
-          color: "#1C1B19",
-          mb: 4,
-          position: "relative",
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            bottom: -8,
-            left: 0,
-            width: 40,
-            height: 2,
-            bgcolor: "#C2A56D"
-          }
+          color: "#0F172A",
+          mb: 3,
+          fontFamily: "'Playfair Display', serif"
         }}
       >
         Tiện nghi phòng
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {amenities.map((item, idx) => (
           <Grid item xs={12} sm={6} md={4} key={idx}>
             <Stack 
               direction="row" 
-              spacing={2} 
+              spacing={1.5} 
               alignItems="center"
               sx={{
                 p: 1.5,
-                borderRadius: "12px",
-                transition: "0.2s",
+                borderRadius: "8px",
+                border: `1px solid ${BLUE}`, // Thêm viền rõ ràng
+                bgcolor: "#FFF",
+                transition: "all 0.2s ease",
                 "&:hover": {
-                  bgcolor: "rgba(194, 165, 109, 0.05)",
+                  borderColor: BLUE,
+                  bgcolor: "#F0F7FF",
                 }
               }}
             >
               <CheckCircleOutlineIcon 
                 sx={{ 
-                  color: "#C2A56D", 
-                  fontSize: 20,
-                  opacity: 0.8 
+                  color: BLUE, 
+                  fontSize: 20 
                 }} 
               />
               
               <Typography 
                 sx={{ 
-                  color: "#1C1B19",
+                  color: "#334155",
                   fontSize: "0.95rem",
                   fontWeight: 500,
-                  letterSpacing: 0.2,
                   textTransform: "capitalize"
                 }}
               >

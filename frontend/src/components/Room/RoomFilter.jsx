@@ -1,168 +1,114 @@
 import {
-  Box,
-  Typography,
-  Slider,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
-  Divider,
-  RadioGroup,
-  Radio,
-  FormControl,
+  Box, Typography, Slider, FormGroup, FormControlLabel, 
+  Checkbox, Divider, RadioGroup, Radio, FormControl,
 } from "@mui/material";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { useFilter } from "../../context/FilterContext";
-
-/* ===== CONSTANTS ===== */
-const AMENITIES = [
-  { id: "wifi", label: "Wifi miễn phí" },
-  { id: "pool", label: "Hồ bơi" },
-  { id: "parking", label: "Chỗ đậu xe" },
-  { id: "gym", label: "Phòng Gym" },
-  { id: "air_conditioning", label: "Điều hòa" },
-  { id: "television", label: "Tivi" },
-];
+import axios from "../../api/axios";
 
 const ROOM_TYPES = ["Single", "Double", "Suite", "Deluxe", "Family"];
 const MAX_PRICE = 10_000_000;
+const primaryBlue = "#0056b3";
 
 export default function RoomFilter() {
+  const { hotelId } = useParams();
   const { filter, setFilter } = useFilter();
+  const [amenitiesList, setAmenitiesList] = useState([]);
 
-  /* ===== SAFETY GUARDS ===== */
+  // Lấy giá trị từ filter context với fallback
   const price = Number.isFinite(Number(filter.price)) ? Number(filter.price) : MAX_PRICE;
-  const maxPeople = Number.isFinite(Number(filter.maxPeople)) && filter.maxPeople > 0
-      ? Number(filter.maxPeople) : 1;
   const amenities = Array.isArray(filter.amenities) ? filter.amenities : [];
 
+  useEffect(() => {
+    const fetchAmenities = async () => {
+      try {
+        const res = await axios.get(`/rooms/amenities/${hotelId}`);
+        // Chuyển đổi dữ liệu trả về thành định dạng label thân thiện
+        const formatted = res.data.data.map(item => ({
+            id: item,
+            label: item.charAt(0).toUpperCase() + item.slice(1).replace(/_/g, ' ')
+        }));
+        setAmenitiesList(formatted);
+      } catch (err) {
+        console.error("Lỗi lấy tiện ích:", err);
+      }
+    };
+    if (hotelId) fetchAmenities();
+  }, [hotelId]);
+
   const formatVND = (value) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(value);
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
 
   return (
-    <Box
-      sx={{
-        p: 3,
-        bgcolor: "#FFF",
-        borderRadius: "20px",
-        border: "1px solid rgba(194,165,109,0.15)", // Viền Gold siêu mảnh
-        position: "sticky",
-        top: 130, // Đồng bộ khoảng cách với Booking Card
-        boxShadow: "0 10px 30px rgba(28,27,25,0.05)",
-        maxHeight: "calc(100vh - 160px)",
-        overflowY: "auto", // Cho phép cuộn bên trong nếu bộ lọc quá dài
-        "&::-webkit-scrollbar": { width: "4px" },
-        "&::-webkit-scrollbar-thumb": { bgcolor: "#EFE7DD", borderRadius: "10px" }
-      }}
-    >
-      <Typography 
-        sx={{ 
-          fontFamily: "'Playfair Display', serif", 
-          fontSize: "1.2rem", 
-          fontWeight: 800, 
-          color: "#1C1B19", 
-          mb: 3 
-        }}
-      >
+    <Box sx={{
+      p: 3, bgcolor: "#FFF", borderRadius: "20px",
+      border: "1px solid #e1e8ed",
+      position: "sticky", top: 130,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+      maxHeight: "calc(100vh - 160px)", overflowY: "auto",
+      "&::-webkit-scrollbar": { width: "4px" },
+      "&::-webkit-scrollbar-thumb": { bgcolor: "#ddd", borderRadius: "10px" }
+    }}>
+      <Typography sx={{ fontSize: "1.2rem", fontWeight: 800, color: "#333", mb: 3 }}>
         Bộ lọc tìm kiếm
       </Typography>
 
-      {/* ===== GIÁ MỖI ĐÊM ===== */}
+      {/* ===== GIÁ ===== */}
       <Box mb={4}>
-        <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#C2A56D", mb: 2, letterSpacing: 0.5 }}>
+        <Typography sx={{ fontSize: 13, fontWeight: 700, color: primaryBlue, mb: 2 }}>
           GIÁ MỖI ĐÊM: {formatVND(price)}
         </Typography>
-
-        <Slider
-          value={price}
-          min={0}
-          max={MAX_PRICE}
-          step={500_000}
+        <Slider value={price} min={0} max={MAX_PRICE} step={500_000}
           onChange={(_, v) => setFilter((prev) => ({ ...prev, price: Number(v) }))}
-          sx={{
-            color: "#C2A56D", // Màu Gold thương hiệu
-            height: 4,
-            "& .MuiSlider-thumb": {
-              width: 18,
-              height: 18,
-              bgcolor: "#FFF",
-              border: "2px solid currentColor",
-              "&:hover, &.Mui-focusVisible": { boxShadow: "0px 0px 0px 8px rgba(194, 165, 109, 0.16)" },
-            },
-            "& .MuiSlider-rail": { opacity: 0.2, bgcolor: "#A8A7A1" },
-          }}
+          sx={{ color: primaryBlue, "& .MuiSlider-thumb": { bgcolor: "#FFF", border: "2px solid currentColor" } }}
         />
-
-        <Box display="flex" justifyContent="space-between" mt={1}>
-          <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 500 }}>0 ₫</Typography>
-          <Typography variant="caption" sx={{ color: "#A8A7A1", fontWeight: 500 }}>10tr+ ₫</Typography>
-        </Box>
       </Box>
 
-      <Divider sx={{ my: 3, borderColor: "rgba(0,0,0,0.04)" }} />
+      <Divider sx={{ my: 3 }} />
 
       {/* ===== LOẠI PHÒNG ===== */}
       <Box mb={3}>
-        <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 2, color: "#1C1B19" }}>
-          Loại phòng
-        </Typography>
-
+        <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 1, color: "#333" }}>Loại phòng</Typography>
         <FormControl component="fieldset">
-          <RadioGroup
-            value={filter.type || "all"}
-            onChange={(e) => setFilter((prev) => ({ ...prev, type: e.target.value }))}
-          >
-            <FormControlLabel
-              value="all"
-              control={<Radio size="small" sx={{ color: "#C2A56D", "&.Mui-checked": { color: "#C2A56D" } }} />}
-              label={<Typography sx={{ fontSize: 14, fontWeight: 500 }}>Tất cả</Typography>}
-            />
+          <RadioGroup value={filter.type || "all"} onChange={(e) => setFilter((prev) => ({ ...prev, type: e.target.value }))}>
+            <FormControlLabel value="all" control={<Radio size="small" sx={{ color: primaryBlue, "&.Mui-checked": { color: primaryBlue } }} />} label="Tất cả" />
             {ROOM_TYPES.map((t) => (
-              <FormControlLabel
-                key={t}
-                value={t}
-                control={<Radio size="small" sx={{ color: "#C2A56D", "&.Mui-checked": { color: "#C2A56D" } }} />}
-                label={<Typography sx={{ fontSize: 14, fontWeight: 500 }}>{t}</Typography>}
-              />
+              <FormControlLabel key={t} value={t} control={<Radio size="small" sx={{ color: primaryBlue, "&.Mui-checked": { color: primaryBlue } }} />} label={t} />
             ))}
           </RadioGroup>
         </FormControl>
       </Box>
 
-      <Divider sx={{ my: 3, borderColor: "rgba(0,0,0,0.04)" }} />
+      <Divider sx={{ my: 3 }} />
 
-      {/* ===== SỨC CHỨA ===== */}
-      <Box mb={4}>
-        <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 1, color: "#1C1B19" }}>
-          Số lượng khách: {maxPeople}
-        </Typography>
-
-        <Slider
-          value={maxPeople}
-          min={1}
-          max={10}
-          marks
-          valueLabelDisplay="auto"
-          onChange={(_, v) => setFilter((prev) => ({ ...prev, maxPeople: Number(v) }))}
-          sx={{ color: "#1C1B19" }} // Màu đen Ebony cho thanh này để tạo sự khác biệt
-        />
-      </Box>
-
-      <Divider sx={{ my: 3, borderColor: "rgba(0,0,0,0.04)" }} />
-
-      {/* ===== TIỆN ÍCH ===== */}
+      {/* ===== TIỆN ÍCH (ĐỘNG) ===== */}
       <Box>
-        <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 2, color: "#1C1B19" }}>
+        <Typography sx={{ fontSize: 14, fontWeight: 700, mb: 2, color: "#333" }}>
           Tiện ích đi kèm
         </Typography>
-
-        <FormGroup>
-          {AMENITIES.map((a) => (
+        
+        <FormGroup 
+          sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            flexWrap: 'nowrap',
+            // Đã xóa maxHeight và overflowY để hiển thị tất cả
+          }}
+        >
+          {amenitiesList.map((a) => (
             <FormControlLabel
               key={a.id}
-              label={<Typography sx={{ fontSize: 13.5, fontWeight: 500, color: "#444" }}>{a.label}</Typography>}
+              sx={{ 
+                marginRight: 0, 
+                marginBottom: 0.5,
+                '& .MuiFormControlLabel-label': { width: '100%' }
+              }}
+              label={
+                <Typography sx={{ fontSize: 13.5, color: "#555", display: 'block' }}>
+                  {a.label}
+                </Typography>
+              }
               control={
                 <Checkbox
                   size="small"
@@ -170,15 +116,17 @@ export default function RoomFilter() {
                   onChange={(e) =>
                     setFilter((prev) => ({
                       ...prev,
-                      amenities: e.target.checked
-                        ? [...amenities, a.id]
+                      amenities: e.target.checked 
+                        ? [...amenities, a.id] 
                         : amenities.filter((x) => x !== a.id),
                     }))
                   }
-                  sx={{ color: "#C2A56D", "&.Mui-checked": { color: "#C2A56D" } }}
+                  sx={{ 
+                    color: primaryBlue, 
+                    "&.Mui-checked": { color: primaryBlue } 
+                  }}
                 />
               }
-              sx={{ mb: 0.5 }}
             />
           ))}
         </FormGroup>

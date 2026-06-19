@@ -9,7 +9,8 @@ import {
   getRoomBookedDates,
   getRoomDetail,
   getAdminRoomMap,
-  updateRoomStatus
+  updateRoomStatus,
+  getAvailableAmenities
 } from "../controllers/room.controller.js";
 import { protect } from "../middleware/auth.js";
 import { adminOnly } from "../middleware/role.js";
@@ -22,6 +23,7 @@ router.get("/hotel/:hotelId", getRoomsByHotel);
 router.get("/:id/booked-dates", getRoomBookedDates);
 router.get("/", getAllRooms);
 router.get("/:id", getRoomDetail);
+router.get("/amenities/:hotelId", getAvailableAmenities);
 
 router.post("/by-hotel/:hotelId", protect, adminOnly, createRoom);
 router.patch("/:id/status", protect, adminOnly, updateRoomStatus);

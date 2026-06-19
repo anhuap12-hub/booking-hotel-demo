@@ -39,7 +39,7 @@ export const getAllRooms = async (req, res) => {
 export const getRoomsByHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
-    const rooms = await Room.find({ hotel: hotelId }); // Thêm .find({ status: "active" }) nếu muốn lọc
+    const rooms = await Room.find({ hotel: hotelId }).populate("hotel");
     
     // Luôn bọc trong { success, data }
     res.status(200).json({ success: true, data: rooms }); 
@@ -301,6 +301,20 @@ export const updateRoomStatus = async (req, res) => {
     );
     if (!updatedRoom) return res.status(404).json({ message: "Không tìm thấy phòng" });
     res.status(200).json({ success: true, data: updatedRoom });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+export const getAvailableAmenities = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    // Tìm tất cả các phòng thuộc khách sạn này, lấy ra mảng amenities và loại bỏ giá trị trùng lặp
+    const rooms = await Room.find({ hotel: hotelId }, "amenities");
+    
+    // Gom tất cả vào 1 mảng và dùng Set để lọc trùng
+    const allAmenities = [...new Set(rooms.flatMap(r => r.amenities))].filter(Boolean);
+    
+    res.status(200).json({ success: true, data: allAmenities });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

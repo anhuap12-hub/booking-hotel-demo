@@ -104,7 +104,7 @@ const AdminHotels = () => {
                     <Chip label={hotel.status === "active" ? "Hoạt động" : "Tạm dừng"} color={hotel.status === "active" ? "success" : "default"} size="small" />
                   </TableCell>
                   <TableCell align="center">
-                    <Chip label={hasMaintenance ? "Có bảo trì" : (hasActive ? "Sẵn sàng" : "Chưa có")} 
+                    <Chip label={hasMaintenance ? "Có bảo trì" : (hasActive ? "Sẵn sàng" : "Trống")} 
                           color={hasMaintenance ? "warning" : "info"} size="small" variant="outlined" />
                   </TableCell>
                   <TableCell align="center">{roomsList.length} phòng</TableCell>
