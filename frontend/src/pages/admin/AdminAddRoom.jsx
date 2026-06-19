@@ -1,199 +1,271 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "../../api/axios";
-import { uploadBatch } from "../../api/upload.api"; // Import hàm upload mới
-import imageCompression from 'browser-image-compression';
+import { useEffect, useState, useCallback } from "react";
 import {
-  TextField, Button, Select, MenuItem, Stack, InputLabel,
-  FormControl, Box, Typography, CircularProgress, Alert,
-  Grid, Divider, Chip, Paper
+  Box, Typography, Stack, Paper, Table, TableHead, TableRow, TableCell,
+  TableBody, Chip, Button, CircularProgress, Tooltip, Divider
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+// THÊM: markNoShow vào phần import
+import { getAdminBookings, updateContactStatus, markBookingPaid, confirmRefunded, markNoShow, cancelBookingByAdmin } from "../../api/admin.api";
+import AdminBookingLogsDialog from "./AdminBookingLogsDialog";
+import { 
+  CheckCircle, Cancel, Payment, 
+  CurrencyExchange, PersonOff // THÊM: Icon khách bùng
+} from "@mui/icons-material";
 
-export default function AdminAddRoom() {
-  const { hotelId } = useParams();
-  const navigate = useNavigate();
+/* ================= HELPERS ================= */
 
-  const [form, setForm] = useState({
-    name: "",
-    type: "single",
-    price: "",
-    maxPeople: 1,
-    desc: "",
-    status: "active",
-  });
-  
-  const [amenities, setAmenities] = useState([]);
-  const [newAmenity, setNewAmenity] = useState("");
-  const [photos, setPhotos] = useState([]); 
-  const [previews, setPreviews] = useState([]); 
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Dọn dẹp bộ nhớ ảnh preview
-  useEffect(() => {
-    return () => previews.forEach(url => {
-        if(url.startsWith('blob:')) URL.revokeObjectURL(url);
-    });
-  }, [previews]);
-
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleAddAmenity = (e) => {
-    if (e.key === "Enter" && newAmenity.trim()) {
-      e.preventDefault();
-      if (!amenities.includes(newAmenity.trim())) {
-        setAmenities([...amenities, newAmenity.trim()]);
-      }
-      setNewAmenity("");
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/"));
-    if (photos.length + files.length > 5) {
-        alert("Chỉ được phép upload tối đa 5 ảnh.");
-        return;
-    }
-    setPhotos(prev => [...prev, ...files]);
-    const urls = files.map(file => URL.createObjectURL(file));
-    setPreviews(prev => [...prev, ...urls]);
-    e.target.value = null;
-  };
-
-  const handleDeletePhoto = (index) => {
-    URL.revokeObjectURL(previews[index]);
-    setPhotos(photos.filter((_, i) => i !== index));
-    setPreviews(previews.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-try {
-  let uploadedPhotos = [];
-
-  if (photos.length > 0) {
- 
-    const options = { maxSizeMB: 0.8, maxWidthOrHeight: 1280, useWebWorker: true };
-    const compressedFiles = await Promise.all(
-      photos.map(async (file) => {
-        try {
-          const compressedBlob = await imageCompression(file, options);
-          return new File([compressedBlob], file.name, { type: file.type });
-        } catch { return file; }
-      })
-    );
-
-    const formData = new FormData();
-    compressedFiles.forEach(file => formData.append("photos", file));
-
-    const uploadRes = await uploadBatch(formData);
-    
-    uploadedPhotos = uploadRes.data.data.map(item => ({
-      url: item.url,
-      public_id: item.public_id
-    })); 
+const bookingColor = (status) => {
+  switch (status) {
+    case "pending": return { color: "#C2A56D", bg: "rgba(194, 165, 109, 0.1)", label: "Chờ cọc" };
+    case "confirmed": return { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", label: "Thành công" };
+    case "cancelled": return { color: "#EF4444", bg: "rgba(239, 68, 68, 0.1)", label: "Đã hủy" };
+    case "no_show": return { color: "#F59E0B", bg: "rgba(245, 158, 11, 0.1)", label: "Bùng phòng" };
+    default: return { color: "#72716E", bg: "#F5F5F5", label: status };
   }
+};
 
-  await axios.post(`/rooms/by-hotel/${hotelId}`, {
-    ...form,
-    price: Number(form.price),
-    maxPeople: Number(form.maxPeople),
-    amenities,
-    photos: uploadedPhotos, 
-  });
-      
-      alert("Thêm phòng thành công!");
-      navigate(`/admin/hotels/${hotelId}/rooms`);
+const paymentStatusConfig = (status, isPaidFull, hasPaidSomething) => {
+  if (status === "REFUND_PENDING") return { label: "CHỜ HOÀN TIỀN", color: "error" };
+  if (status === "REFUNDED") return { label: "ĐÃ HOÀN TIỀN", color: "secondary" };
+  if (isPaidFull) return { label: "ĐÃ THANH TOÁN", color: "success" };
+  if (hasPaidSomething) return { label: "ĐÃ ĐẶT CỌC", color: "primary" }; // Flow 30% cọc
+  return { label: "CHƯA THANH TOÁN", color: "warning" };
+};
+
+/* ================= MAIN COMPONENT ================= */
+
+export default function AdminBookings() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [openLogs, setOpenLogs] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+
+  const fetchBookings = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await getAdminBookings();
+      setBookings(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Lỗi chi tiết:", err);
-      const msg = err.response?.data?.message || "Không thể kết nối đến server.";
-      setError(msg);
+      console.error("Fetch error:", err);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  const handleConfirm = async (id) => {
+    if (window.confirm("Xác nhận trạng thái THÀNH CÔNG cho đơn này?")) {
+      await updateContactStatus(id, { contactStatus: "CLOSED", result: "CONFIRMED" });
+      fetchBookings();
+    }
   };
 
+  const handleCancel = async (id) => {
+  if (window.confirm("Xác nhận HỦY đơn này? Phòng sẽ được giải phóng ngay lập tức.")) {
+    try {
+      await cancelBookingByAdmin(id); // Gọi đúng hàm API admin
+      
+      alert("Đã hủy đơn thành công!");
+      fetchBookings(); // Tải lại danh sách
+    } catch (err) {
+      console.error("Lỗi khi hủy đơn:", err);
+      alert("Không thể hủy đơn: " + (err.response?.data?.message || "Lỗi server"));
+    }
+  }
+};
+
+  // THÊM: Hàm xử lý khách không đến
+  const handleNoShow = async (id) => {
+    if (window.confirm("Xác nhận khách KHÔNG ĐẾN? Phòng sẽ trống và tiền cọc KHÔNG được hoàn.")) {
+      try {
+        await markNoShow(id);
+        fetchBookings();
+      } catch (err) {
+        alert("Lỗi: " + (err.response?.data?.message || "Không thể thực hiện"));
+      }
+    }
+  };
+
+  const handlePaid = async (id) => {
+    if (window.confirm("Xác nhận đã thu đủ số tiền mặt còn lại?")) {
+      try {
+        await markBookingPaid(id); 
+        fetchBookings();
+      } catch (err) {
+        alert("Lỗi thanh toán: " + (err.response?.data?.message || "Không thể cập nhật"));
+      }
+    }
+  };
+
+  const handleConfirmRefund = async (id) => {
+    if (window.confirm("Xác nhận đã hoàn trả tiền qua NH?")) {
+      try {
+        await confirmRefunded(id);
+        fetchBookings();
+      } catch (err) {
+        alert("Lỗi hoàn tiền: " + (err.response?.data?.message || "Thất bại"));
+      }
+    }
+  };
+
+  if (loading) return <Box py={10} textAlign="center"><CircularProgress sx={{ color: '#C2A56D' }} /></Box>;
+
   return (
-    <Box sx={{ maxWidth: 800, mx: "auto", mt: 4, mb: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: "16px", border: "1px solid #E5E2DC", bgcolor: "#FDFCFB" }}>
-        <Typography variant="h5" fontWeight={700} mb={1} color="#3E2C1C">Thêm Phòng Mới</Typography>
-        <Typography variant="body2" color="text.secondary" mb={4}>Điền thông tin chi tiết để tạo hạng phòng mới cho khách sạn.</Typography>
-        
-        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+    <>
+      <Stack spacing={3} sx={{ p: 1 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h5" fontWeight={800} color="#1C1B19">Quản trị Lưu trú</Typography>
+          <Button variant="outlined" size="small" onClick={fetchBookings}>Làm mới</Button>
+        </Box>
 
-        <Stack spacing={4} component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={7}>
-              <Stack spacing={3}>
-                <TextField label="Tên phòng / Số phòng" name="name" value={form.name} onChange={handleChange} required fullWidth placeholder="VD: Deluxe Ocean View" />
-                <TextField label="Mô tả" name="desc" value={form.desc} onChange={handleChange} multiline rows={3} fullWidth />
-                <Stack direction="row" spacing={2}>
-                  <TextField type="number" label="Giá (VNĐ)" name="price" value={form.price} onChange={handleChange} required fullWidth />
-                  <TextField type="number" label="Sức chứa (Người)" name="maxPeople" value={form.maxPeople} onChange={handleChange} required fullWidth />
-                </Stack>
-              </Stack>
-            </Grid>
-            <Grid item xs={12} md={5}>
-              <Stack spacing={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Loại phòng</InputLabel>
-                  <Select name="type" value={form.type} label="Loại phòng" onChange={handleChange}>
-                    <MenuItem value="single">Phòng đơn (Single)</MenuItem>
-                    <MenuItem value="double">Phòng đôi (Double)</MenuItem>
-                    <MenuItem value="suite">Cao cấp (Suite)</MenuItem>
-                    <MenuItem value="family">Gia đình (Family)</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>Trạng thái</InputLabel>
-                  <Select name="status" value={form.status} label="Trạng thái" onChange={handleChange}>
-                    <MenuItem value="active">Sẵn sàng đón khách</MenuItem>
-                    <MenuItem value="maintenance">Đang bảo trì</MenuItem>
-                  </Select>
-                </FormControl>
-              </Stack>
-            </Grid>
-          </Grid>
+        <Paper sx={{ borderRadius: "16px", border: "1px solid #E5E2DC", overflow: "hidden", boxShadow: 'none' }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: "#F9F8F6" }}>
+                <TableCell sx={{ fontWeight: 700 }}>Khách hàng</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Lưu trú</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Tài chính (VNĐ)</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>Thao tác</TableCell>
+              </TableRow>
+            </TableHead>
 
-          <Divider />
+            <TableBody>
+              {bookings.map((b) => {
+                const total = b.totalPrice || 0;
+                const paid = b.depositAmount || 0;
+                
+                // FIXED LOGIC: Chỉ ẩn nút khi Backend báo đã PAID
+                const isPaidFull = b.paymentStatus === "PAID";
+                const isCancelled = b.status === "cancelled";
+                const isNoShow = b.status === "no_show";
+                const isRefundPending = b.paymentStatus === "REFUND_PENDING";
 
-          <Box>
-            <Typography variant="subtitle2" mb={1} fontWeight={600}>Tiện ích phòng</Typography>
-            <TextField fullWidth size="small" value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)} onKeyDown={handleAddAmenity} placeholder="Nhập tiện ích rồi nhấn Enter" />
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-              {amenities.map((item, idx) => (
-                <Chip key={idx} label={item} onDelete={() => setAmenities(amenities.filter(a => a !== item))} color="primary" variant="outlined" />
-              ))}
-            </Box>
-          </Box>
+                const bStatus = bookingColor(b.status);
+                const pStatus = paymentStatusConfig(b.paymentStatus, isPaidFull, paid > 0 && !isPaidFull);
 
-          <Box>
-            <Typography variant="subtitle2" mb={1} fontWeight={600}>Hình ảnh (Tối đa 5 ảnh)</Typography>
-            <Button variant="outlined" component="label" sx={{ mb: 2, textTransform: 'none' }} disabled={photos.length >= 5}>
-              + Tải ảnh lên
-              <input type="file" hidden multiple onChange={handleFileChange} accept="image/*" />
-            </Button>
-            <Stack direction="row" spacing={2} flexWrap="wrap">
-              {previews.map((url, i) => (
-                <Box key={i} sx={{ position: "relative", width: 100, height: 80 }}>
-                  <Box component="img" src={url} sx={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 1, border: "1px solid #ddd" }} />
-                  <Button onClick={() => handleDeletePhoto(i)} sx={{ position: "absolute", top: -8, right: -8, minWidth: 24, width: 24, height: 24, bgcolor: "#d32f2f", color: "white", borderRadius: "50%", p: 0, "&:hover": {bgcolor: "#b71c1c"} }}>
-                    <CloseIcon sx={{ fontSize: 14 }} />
-                  </Button>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
+                return (
+                  <TableRow key={b._id} sx={{ opacity: (isCancelled || isNoShow) ? 0.6 : 1 }}>
+                   <TableCell>
+  <Typography variant="body2" fontWeight={700}>
+    {b.guest?.name || "N/A"}
+  </Typography>
+  <Stack spacing={0}>
+    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+      {b.guest?.phone}
+    </Typography>
 
-          <Button type="submit" variant="contained" disabled={loading} sx={{ bgcolor: "#3E2C1C", color: "#C2A56D", py: 1.5, fontWeight: 700, "&:hover": { bgcolor: "#1a130d" } }}>
-            {loading ? <CircularProgress size={24} sx={{ color: "#C2A56D" }} /> : "XÁC NHẬN THÊM PHÒNG"}
-          </Button>
-        </Stack>
-      </Paper>
-    </Box>
+    <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+      {b.guest?.email || b.user?.email || ""}
+    </Typography>
+  </Stack>
+</TableCell>
+
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>
+                        {new Date(b.checkIn).toLocaleDateString('vi-VN')} - {new Date(b.checkOut).toLocaleDateString('vi-VN')}
+                      </Typography>
+                      <Typography variant="caption" color="primary">{b.roomSnapshot?.name}</Typography>
+                    </TableCell>
+
+                    <TableCell>
+                      <Stack spacing={0.5} width={180}>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="caption">Tổng tiền:</Typography>
+                          <Typography variant="caption" fontWeight={700}>{total.toLocaleString()}</Typography>
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" color="primary.main">
+                          <Typography variant="caption">Đã thu:</Typography>
+                          <Typography variant="caption" fontWeight={700}>-{paid.toLocaleString()}</Typography>
+                        </Box>
+                        <Divider sx={{ my: 0.5 }} />
+                        <Box display="flex" justifyContent="space-between" color={isPaidFull ? "success.main" : "error.main"}>
+                          <Typography variant="caption" fontWeight={700}>{isPaidFull ? "Đã xong" : "Còn nợ:"}</Typography>
+                          <Typography variant="body2" fontWeight={900}>
+                            {isPaidFull ? "0 đ" : (total - paid).toLocaleString() + " đ"}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </TableCell>
+
+                    <TableCell>
+                      <Stack spacing={1}>
+                        <Chip size="small" label={bStatus.label} sx={{ bgcolor: bStatus.bg, color: bStatus.color, fontWeight: 800 }} />
+                        <Chip size="small" label={pStatus.label} color={pStatus.color} sx={{ fontWeight: 800 }} />
+                      </Stack>
+                    </TableCell>
+
+                    <TableCell align="right">
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        
+                        {isRefundPending && (
+                          <Button size="small" variant="contained" color="error" startIcon={<CurrencyExchange />} onClick={() => handleConfirmRefund(b._id)}>
+                            Hoàn cọc
+                          </Button>
+                        )}
+
+                        {!isCancelled && !isNoShow && !isRefundPending && (
+                          <>
+                            {b.status !== "confirmed" && (
+                              <Tooltip title="Xác nhận khách đến/Xong">
+                                <Button size="small" variant="contained" color="success" onClick={() => handleConfirm(b._id)}>
+                                  <CheckCircle fontSize="small" />
+                                </Button>
+                              </Tooltip>
+                            )}
+                            
+                            {/* NÚT NO-SHOW MỚI */}
+                            <Tooltip title="Khách bùng (No-show)">
+                              <Button size="small" variant="outlined" color="warning" onClick={() => handleNoShow(b._id)}>
+                                <PersonOff fontSize="small" />
+                              </Button>
+                            </Tooltip>
+
+                            <Tooltip title="Hủy đơn">
+                              <Button size="small" variant="outlined" color="error" onClick={() => handleCancel(b._id)}>
+                                <Cancel fontSize="small" />
+                              </Button>
+                            </Tooltip>
+
+                            {/* NÚT THU TIỀN: Luôn hiện nếu chưa PAID */}
+                            {!isPaidFull && (
+                              <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={<Payment />}
+                              onClick={() => handlePaid(b._id)}
+                              sx={{ 
+                              bgcolor: "#2e7d32", // Màu xanh lá đậm (Success) thể hiện việc tiền đã vào túi
+                              fontWeight: 700,
+                              textTransform: "none", // Giữ nguyên chữ thường cho dễ đọc
+                              borderRadius: "8px",
+                              px: 2,
+                              "&:hover": {
+                              bgcolor: "#1b5e20", // Màu đậm hơn khi di chuột vào
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                               }
+                                }}
+                                >
+                               Xác nhận thu tiền mặt
+                                </Button>
+                            )}
+                          </>
+                        )}
+
+                        <Button size="small" variant="text" onClick={() => { setSelectedBooking(b); setOpenLogs(true); }}>
+                          Logs
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Stack>
+
+      <AdminBookingLogsDialog open={openLogs} onClose={() => setOpenLogs(false)} booking={selectedBooking} />
+    </>
   );
 }
