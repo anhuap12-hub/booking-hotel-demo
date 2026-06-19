@@ -109,7 +109,7 @@ export default function MyBookings() {
       <Container maxWidth="md" sx={{ mt: { xs: 12, md: 15 }, pb: 10 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-end" mb={6}>
           <Box>
-            <Typography variant="h3" sx={{ color: "#1C1B19", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
+            <Typography variant="h3" sx={{ fontSize: "2rem", color: "#1C1B19", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
               Kỳ nghỉ của tôi
             </Typography>
             <Typography variant="body2" sx={{ color: "#72716E", mt: 1 }}>Xem lại lịch trình và quản lý giao dịch</Typography>
