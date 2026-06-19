@@ -62,38 +62,38 @@ export default function Checkout() {
   // 2. KIỂM TRA TRẠNG THÁI TỰ ĐỘNG
  // 2. KIỂM TRA TRẠNG THÁI TỰ ĐỘNG (Đã fix logic nhận diện status mới)
   useEffect(() => {
-  let interval;
+    let interval;
+    
+    // Nếu đơn hàng tồn tại và chưa được xác nhận thanh toán trên UI
+    if (booking?._id && booking?.paymentStatus === 'UNPAID') {
+      interval = setInterval(async () => {
+        try {
+          const res = await getBookingStatus(booking._id); 
+          const latestBooking = res?.data?.booking;
+          const currentStatus = latestBooking?.paymentStatus;
 
-  if (booking?._id && booking?.paymentStatus === 'UNPAID') {
-    interval = setInterval(async () => {
-      try {
-        const res = await getBookingStatus(booking._id);
-        const latestBooking = res?.data?.booking;
-        const currentStatus = latestBooking?.paymentStatus;
+          // Nếu trạng thái đã chuyển sang Đã cọc hoặc Đã trả đủ
+          if (currentStatus === 'PAID' || currentStatus === 'DEPOSITED') {
+            clearInterval(interval); 
+            setBooking(latestBooking); // Cập nhật state local
 
-        // Log trạng thái để debug xem API trả về gì
-        console.log("Current status from API:", currentStatus);
-
-        if (currentStatus === 'PAID' || currentStatus === 'DEPOSITED') {
-          clearInterval(interval); // Dừng polling ngay lập tức
-          
-          Swal.fire({
-            title: 'Thành công!',
-            text: currentStatus === 'DEPOSITED' ? 'Bạn đã đặt cọc thành công.' : 'Thanh toán hoàn tất!',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-          }).then(() => {
-            navigate('/my-bookings', { replace: true });
-          });
+            Swal.fire({
+              title: 'Thành công!',
+              text: currentStatus === 'DEPOSITED' ? 'Bạn đã đặt cọc thành công 30%.' : 'Thanh toán hoàn tất!',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false,
+            }).then(() => {
+              navigate('/my-bookings', { replace: true });
+            });
+          }
+        } catch (err) {
+          console.warn("Đang kiểm tra giao dịch..."),err;
         }
-      } catch (err) {
-        console.error("Lỗi khi kiểm tra trạng thái:", err);
-      }
-    }, 4000); // Tăng lên 4s để tránh ddos API và đợi Sepay xử lý
-  }
-  return () => clearInterval(interval);
-}, [booking?._id,booking?.paymentStatus, navigate]);
+      }, 3000); 
+    }
+    return () => clearInterval(interval);
+  }, [booking?._id, booking?.paymentStatus, navigate]);
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     // Có thể dùng Toast nhẹ ở đây nếu muốn
