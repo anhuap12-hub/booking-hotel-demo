@@ -6,61 +6,60 @@ import Transaction from "../models/Transaction.js";
 export const sepayWebhook = async (req, res) => {
   try {
     const { content, transferAmount, amount, referenceCode } = req.body;
-    const finalAmount = transferAmount || amount;
+    const finalAmount = transferAmount || amount || 0;
+
+    // 1. Kiểm tra an toàn trước khi match
+    if (!content) return res.status(200).json({ message: "No content" });
 
     const match = content.match(/DH([a-zA-Z0-9]{6,10})/i);
     const orderCode = match ? match[1] : null;
 
     if (!orderCode) return res.status(200).json({ message: "No DH code found" });
 
+    // 2. Tìm kiếm đơn hàng UNPAID duy nhất
     const booking = await Booking.findOne({
       $expr: {
         $regexMatch: {
           input: { $toString: "$_id" },
-          regex: orderCode.toLowerCase() + "$",
+          regex: orderCode + "$",
           options: "i"
         }
-      }
+      },
+      paymentStatus: "UNPAID" // Chỉ lấy đơn chưa thanh toán
     });
 
-    if (!booking) return res.status(200).json({ message: "Booking not found" });
+    if (!booking) {
+      console.log(`Webhook: Không tìm thấy đơn UNPAID cho mã ${orderCode}`);
+      return res.status(200).json({ message: "Booking not found or already paid" });
+    }
 
-    if (booking.paymentStatus === "UNPAID") {
-      await Transaction.create({
-        bookingId: booking._id,
-        amount: finalAmount,
-        type: "INFLOW",
-        method: "BANK_TRANSFER",
-        description: `Khách cọc qua SePay. Ref: ${referenceCode}`
-      });
+    // 3. Thực hiện cập nhật an toàn
+    booking.paymentStatus = "DEPOSITED";
+    booking.depositAmount = finalAmount;
+    booking.remainingAmount = Math.max(0, (booking.totalPrice || 0) - finalAmount);
+    booking.status = "confirmed";
+    booking.paidAt = new Date();
+    
+    // Đảm bảo logs là mảng
+    if (!booking.paymentLogs) booking.paymentLogs = [];
+    booking.paymentLogs.push({
+      at: new Date(),
+      action: "DEPOSITED",
+      note: `Khách cọc qua SePay. Ref: ${referenceCode}`
+    });
 
-      booking.paymentStatus = "DEPOSITED";
-      booking.depositAmount = finalAmount;
-      booking.remainingAmount = booking.totalPrice - finalAmount;
-      booking.status = "confirmed";
-      booking.paidAt = new Date();
-      
-      booking.paymentLogs.push({
-        at: new Date(),
-        action: "DEPOSITED",
-        note: `Đã nhận cọc ${finalAmount.toLocaleString()}đ qua SePay.`
-      });
+    await booking.save();
 
-      await booking.save();
-
-      if (booking.room) {
-        await Room.findByIdAndUpdate(booking.room, { displayStatus: "booked" });
-      }
-
+    // 4. Update phòng (bọc try-catch)
+    if (booking.room) {
       try {
-        await sendBookingEmail(booking);
-      } catch (e) {
-        console.error("📧 Email error:", e.message);
-      }
+        await Room.findByIdAndUpdate(booking.room, { displayStatus: "booked" });
+      } catch (err) { console.error("Room update error", err); }
     }
 
     return res.status(200).json({ success: true });
   } catch (error) {
+    console.error("WEBHOOK ERROR:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
