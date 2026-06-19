@@ -59,12 +59,12 @@ const theme = createTheme({
   },
 
   body1: {
-    fontFamily: ''Inter', sans-serif',
+    fontFamily: "'Inter', sans-serif",
     fontSize: 16,
     lineHeight: 1.6,
   },
   body2: {
-    fontFamily: ''Inter', sans-serif',
+    fontFamily: "'Inter', sans-serif",
     fontSize: 15,
     lineHeight: 1.6,
   },
